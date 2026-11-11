@@ -173,6 +173,40 @@ def test_facets(conn):
     )
 
 
+def test_reversible_card_takes_everything_from_its_faces():
+    face = {
+        "name": "Dragonlord Atarka",
+        "oracle_id": "o-atarka",
+        "mana_cost": "{5}{R}{G}",
+        "cmc": 7.0,
+        "type_line": "Legendary Creature — Elder Dragon",
+        "oracle_text": "Flying, trample",
+        "colors": ["G", "R"],
+        "power": "8",
+        "toughness": "8",
+        "image_uris": {"small": "s", "normal": "n"},
+    }
+    card = {
+        "id": "p-1",
+        "name": "Dragonlord Atarka // Dragonlord Atarka",
+        "layout": "reversible_card",
+        "card_faces": [face, {**face, "image_uris": {"small": "bs", "normal": "bn"}}],
+        "color_identity": ["G", "R"],
+        "set": "sld",
+        "collector_number": "1",
+        "released_at": "2024-01-01",
+    }
+    row = ingest.map_card(card)
+    assert row["oracle_id"] == "o-atarka"
+    assert row["cmc"] == 7.0
+    assert row["colors"] == R | G and row["color_count"] == 2
+    assert (
+        row["type_line"] == "Legendary Creature — Elder Dragon // Legendary Creature — Elder Dragon"
+    )
+    assert (row["power_num"], row["toughness_num"]) == (8.0, 8.0)
+    assert (row["img_normal"], row["img_back_normal"]) == ("n", "bn")
+
+
 def test_type_tokens():
     assert ingest.type_tokens("Legendary Creature — Elder Dragon") == {
         ("supertype", "Legendary"),
@@ -205,7 +239,9 @@ def test_sets_are_derived_when_no_list_is_given(settings):
 # --- publishing -----------------------------------------------------------------------
 
 
-def test_run_is_recorded(catalog):
+def test_run_is_recorded(settings):
+    catalog = settings
+    assert build_fixture_catalog(catalog).status == "ok"
     with closing(db.connect(catalog)) as conn:
         run = conn.execute("SELECT * FROM job_runs").fetchone()
     assert (run["job"], run["status"]) == ("catalog", "ok")

@@ -1,9 +1,11 @@
 import json
+import shutil
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
+from magicdb import db
 from magicdb.app import create_app
 from magicdb.catalog import ingest
 from magicdb.config import Settings, load_settings
@@ -38,9 +40,19 @@ def build_fixture_catalog(settings: Settings) -> ingest.UpdateResult:
     return ingest.run_update(settings, from_file=CARDS_JSON, sets_file=SETS_JSON, min_rows=1)
 
 
-@pytest.fixture
-def catalog(settings: Settings) -> Settings:
-    """Settings whose data directory holds a catalog built from the fixture."""
-    result = build_fixture_catalog(settings)
+@pytest.fixture(scope="session")
+def built_catalog(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The fixture catalog, built once per test run."""
+    data_dir = tmp_path_factory.mktemp("built") / "data"
+    result = build_fixture_catalog(load_settings({"MAGICDB_DATA_DIR": str(data_dir)}))
     assert result.status == "ok", result.message
+    return result.path
+
+
+@pytest.fixture
+def catalog(settings: Settings, built_catalog: Path) -> Settings:
+    """Settings whose data directory holds its own copy of the fixture catalog."""
+    settings.catalog_dir.mkdir(parents=True)
+    shutil.copy(built_catalog, settings.catalog_dir / built_catalog.name)
+    db.migrate(settings)
     return settings

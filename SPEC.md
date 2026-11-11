@@ -201,8 +201,8 @@ Mapping rules:
 
 - **Multi-faced cards.** If a top-level field is missing, build it from `card_faces`:
   `colors` = union of the faces; `mana_cost`, `type_line` joined with ` // `;
-  `oracle_text` joined with `\n//\n`; `power`/`toughness`/`loyalty` from the first
-  face; images from `card_faces[0].image_uris` (front) and `card_faces[1].image_uris`
+  `oracle_text` joined with `\n//\n`; `power`/`toughness`/`loyalty`/`defense`/`cmc`
+  from the first face (reversible cards have no top-level mana value); images from `card_faces[0].image_uris` (front) and `card_faces[1].image_uris`
   (back). When the top-level `image_uris` exists (split, adventure, flip) there is no
   back image.
 - **`is_extra`** = 1 when `layout` is one of `token`, `double_faced_token`, `emblem`,
@@ -367,8 +367,24 @@ a `set:`/`cn:` filter is present.
 - `unique:prints` — one row per printing.
 - `unique:cards` — one row per `oracle_id`, showing the matching printing with the
   highest `pref`:
-  `SELECT p.*, MAX(p.pref) FROM cat.printings p WHERE … GROUP BY p.oracle_id`
+  `SELECT p.id, <sort keys>, MAX(p.pref) FROM cat.printings p WHERE … GROUP BY +p.oracle_id`
   (SQLite returns the other columns from the row holding the maximum).
+
+Measured on the real catalog (120k printings), which is why the SQL has this shape:
+
+- The query selects only ids and sort keys, sorted and limited, with
+  `COUNT(*) OVER ()` for the total; the full rows of the page are fetched afterwards
+  by id. Selecting `p.*` in the grouped query is several times slower.
+- `GROUP BY +p.oracle_id` (unary plus) stops SQLite from walking `ix_p_oracle`, which
+  costs 650–750 ms against 130–250 ms for a plain scan.
+- Numeric range filters use `+column` for the same reason (`mv<=4` through `ix_p_cmc`
+  is twice as slow as a scan); equality still uses the index.
+
+A typical search takes 120–280 ms on the dev PC; that is the cost of one table scan.
+
+**Directives** (`unique:`, `order:`, `dir:`, `include:`) apply to the whole search
+wherever they are written, including inside `or` and parentheses, so that appending
+one to any query works. They cannot follow a `-`, and each can be given once.
 
 Collection filters compile to subqueries on `entries`, e.g. `have:yes` →
 `p.oracle_id IN (SELECT oracle_id FROM entries)`; `loc:"blue box"` →

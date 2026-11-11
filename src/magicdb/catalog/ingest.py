@@ -212,7 +212,8 @@ def map_card(card: dict) -> dict:
         "name_norm": normalize(card["name"]),
         "layout": card.get("layout") or "normal",
         "mana_cost": _joined(card, faces, "mana_cost", " // ") or None,
-        "cmc": card.get("cmc") or 0,
+        # reversible cards carry the mana value on their faces only
+        "cmc": _first(card, faces, "cmc") or 0,
         "type_line": type_line,
         "type_norm": type_line.lower(),
         "oracle_text": oracle_text,
