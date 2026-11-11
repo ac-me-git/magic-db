@@ -3,6 +3,132 @@
 <section class="hero">
   <h1>{{ t("app.name") }}</h1>
   <p class="tagline">{{ t("home.tagline") }}</p>
-  <p class="notice">{{ t("home.placeholder") }}</p>
+  {% if catalog %}
+  <p class="status">{{ t("home.status", count=catalog["count"] | count, date=catalog["date"]) }}</p>
+  {% else %}
+  <p class="notice">{{ t("nocatalog.text") }}</p>
+  {% endif %}
 </section>
+
+{% if options %}
+<form class="panel" action="/filter" method="get">
+  <h2>{{ t("panel.title") }}</h2>
+  <p class="hint">{{ t("panel.hint") }}</p>
+
+  <div class="fields">
+    <label>{{ t("panel.name") }}
+      <input type="text" name="name" autocomplete="off">
+    </label>
+    <label>{{ t("panel.text") }}
+      <input type="text" name="text" autocomplete="off">
+    </label>
+    <label>{{ t("panel.type") }}
+      <input type="text" name="type" list="types" autocomplete="off">
+    </label>
+    <label>{{ t("panel.subtype") }}
+      <input type="text" name="subtype" list="subtypes" autocomplete="off">
+    </label>
+    <label>{{ t("panel.keyword") }}
+      <input type="text" name="keyword" list="keywords" autocomplete="off">
+    </label>
+    <label>{{ t("panel.set") }}
+      <input type="text" name="set" list="sets" autocomplete="off" autocapitalize="off">
+    </label>
+    <label>{{ t("panel.format") }}
+      <select name="format">
+        <option value="">{{ t("panel.any") }}</option>
+        {% for value in options.formats %}<option>{{ value }}</option>{% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <fieldset>
+    <legend>{{ t("panel.colors") }}</legend>
+    <div class="checks">
+      {% for letter in "wubrgc" %}
+      <label class="check"><input type="checkbox" name="c" value="{{ letter }}"> {{ t("color." ~ letter) }}</label>
+      {% endfor %}
+    </div>
+    <div class="checks">
+      {% for mode in ("ge", "eq", "le") %}
+      <label class="check"><input type="radio" name="color_mode" value="{{ mode }}"{% if mode == "ge" %} checked{% endif %}> {{ t("panel.color_mode." ~ mode) }}</label>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>{{ t("panel.identity") }}</legend>
+    <div class="checks">
+      {% for letter in "wubrgc" %}
+      <label class="check"><input type="checkbox" name="id" value="{{ letter }}"> {{ t("color." ~ letter) }}</label>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>{{ t("panel.rarity") }}</legend>
+    <div class="checks">
+      {% for letter in "curm" %}
+      <label class="check"><input type="checkbox" name="r" value="{{ letter }}"> {{ t("rarity." ~ letter) }}</label>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <div class="fields ranges">
+    {% for key in ("mv", "pow", "tou") %}
+    <fieldset class="range">
+      <legend>{{ t("panel." ~ key) }}</legend>
+      <label>{{ t("panel.min") }} <input type="number" name="{{ key }}_min" min="0" max="99" inputmode="numeric"></label>
+      <label>{{ t("panel.max") }} <input type="number" name="{{ key }}_max" min="0" max="99" inputmode="numeric"></label>
+    </fieldset>
+    {% endfor %}
+  </div>
+
+  <fieldset>
+    <legend>{{ t("panel.collection") }}</legend>
+    <div class="checks">
+      <label class="check"><input type="checkbox" name="owned" value="1"> {{ t("panel.owned") }}</label>
+    </div>
+    {% if options.locations %}
+    <label>{{ t("panel.location") }}
+      <select name="location">
+        <option value="">{{ t("panel.any") }}</option>
+        {% for value in options.locations %}<option>{{ value }}</option>{% endfor %}
+      </select>
+    </label>
+    {% endif %}
+  </fieldset>
+
+  <div class="fields">
+    <label>{{ t("panel.show") }}
+      <select name="unique">
+        <option value="cards">{{ t("panel.show.cards") }}</option>
+        <option value="prints">{{ t("panel.show.prints") }}</option>
+      </select>
+    </label>
+    <label>{{ t("panel.order") }}
+      <select name="order">
+        {% for value in options.orders %}<option value="{{ value }}">{{ t("order." ~ value) }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>{{ t("panel.dir") }}
+      <select name="dir">
+        <option value="">{{ t("panel.dir.auto") }}</option>
+        <option value="asc">{{ t("panel.dir.asc") }}</option>
+        <option value="desc">{{ t("panel.dir.desc") }}</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="primary">{{ t("panel.submit") }}</button>
+    <button type="reset">{{ t("panel.reset") }}</button>
+  </div>
+
+  <datalist id="types">{% for value in options.types %}<option value="{{ value }}">{% endfor %}</datalist>
+  <datalist id="subtypes">{% for value in options.subtypes %}<option value="{{ value }}">{% endfor %}</datalist>
+  <datalist id="keywords">{% for value in options.keywords %}<option value="{{ value }}">{% endfor %}</datalist>
+  <datalist id="sets">{% for row in options.sets %}<option value="{{ row.code }}">{{ row.name }}</option>{% endfor %}</datalist>
+</form>
+{% endif %}
 {% endblock %}

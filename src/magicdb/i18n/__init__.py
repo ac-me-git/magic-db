@@ -9,17 +9,20 @@ _DIR = Path(__file__).parent
 
 
 @cache
-def _strings(lang: str) -> dict[str, str]:
+def strings(lang: str) -> dict[str, str]:
     return json.loads((_DIR / f"{lang}.json").read_text(encoding="utf-8"))
 
 
 def translator(lang: str) -> Callable[..., str]:
-    """Return ``t(key, **values)``; falls back to English, then to the key itself."""
-    strings = _strings(lang)
-    fallback = _strings("en")
+    """Return ``t(key, default=None, **values)``.
 
-    def t(key: str, **values: object) -> str:
-        text = strings.get(key) or fallback.get(key) or key
+    Falls back to English, then to ``default``, then to the key itself.
+    """
+    chosen = strings(lang)
+    english = strings("en")
+
+    def t(key: str, default: str | None = None, **values: object) -> str:
+        text = chosen.get(key) or english.get(key) or default or key
         return text.format(**values) if values else text
 
     return t

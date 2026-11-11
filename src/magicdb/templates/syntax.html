@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ t("syntax.title") }} · {{ t("app.name") }}{% endblock %}
+{% block content %}
+<article class="prose">
+  <h1>{{ t("syntax.title") }}</h1>
+  <p>{{ t("syntax.intro") }}</p>
+
+  <h2>{{ t("syntax.basics") }}</h2>
+  <div class="table-wrap">
+  <table class="card-list">
+    <tbody>
+      {% for example in ("lightning bolt", '"serra angel"', '!"Lightning Bolt"', "t:dragon c:r", "t:elf or t:goblin", "(t:elf or t:goblin) mv<=2", "c:r -t:creature") %}
+      <tr>
+        <td><a class="example" href="{{ search_url(example) }}">{{ example }}</a></td>
+        <td>{{ t("syntax.basic." ~ loop.index) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p>{{ t("syntax.operators") }}</p>
+
+  <h2>{{ t("syntax.filters") }}</h2>
+  <div class="table-wrap">
+  <table class="card-list">
+    <thead>
+      <tr>
+        <th>{{ t("syntax.col.filter") }}</th>
+        <th>{{ t("syntax.col.meaning") }}</th>
+        <th>{{ t("syntax.col.example") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for filter in filters %}
+      <tr>
+        <td class="keys">{% for key in filter.keys %}<code>{{ key }}</code>{% if not loop.last %} {% endif %}{% endfor %}</td>
+        <td>{{ t("syntax.filter." ~ filter.name, default=filter.summary) }}</td>
+        <td>{% for example in filter.example.split("  ") %}<a class="example" href="{{ search_url(example) }}">{{ example }}</a>{% if not loop.last %} {% endif %}{% endfor %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</article>
+{% endblock %}

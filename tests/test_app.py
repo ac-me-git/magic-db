@@ -17,6 +17,7 @@ def test_home_page(client):
     assert "magic-db" in response.text
     assert "Every Magic card" in response.text
     assert "Not approved/endorsed by Wizards" in response.text
+    assert 'action="/search"' in response.text
 
 
 def test_home_page_in_italian(settings):

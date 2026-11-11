@@ -402,13 +402,17 @@ A form next to the search box: colour checkboxes with a mode (including / exactl
 most), colour identity, mana value range, type / subtype / keyword pickers fed by
 `cat.facets`, rarity, set, format, power/toughness, "only cards I own", location.
 Submitting it **builds a query string** and goes to `/search?q=…`; the generated query
-is shown in the search box so the syntax teaches itself.
+is shown in the search box so the syntax teaches itself. The form is a plain `GET` to
+`/filter`, which builds the query (`search/panel.py`) and redirects, so it works without
+JavaScript. The panel is on the home page and always starts empty: to refine a search,
+edit the text in the search box.
 
 ## 7. Pages
 
 | Route | Content |
 |---|---|
 | `/` | search box, filter panel, catalog status line |
+| `/filter?…` | the filter panel's form target: redirects to `/search?q=…` |
 | `/search?q=&page=&view=grid\|list` | results |
 | `/card/{scryfall_id}` | large image (flip for back face), full text, legalities, prices, all printings, my copies of this card, add form |
 | `/add` | **quick add**: name autocomplete → pick printing → Enter. Location, finish, condition and language stay as they were for the next card |

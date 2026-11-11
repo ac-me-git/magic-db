@@ -1,31 +1,42 @@
 """FastAPI application factory."""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+import httpx
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
-from magicdb import __version__, db
+from magicdb import __version__, db, images, web
 from magicdb.catalog import publish
 from magicdb.config import Settings, load_settings
-from magicdb.i18n import translator
+from magicdb.templating import build_templates
 
 _PKG = Path(__file__).parent
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None, http_client: httpx.Client | None = None
+) -> FastAPI:
+    """Build the app. ``http_client`` is for tests; by default one is created on first use."""
     settings = settings or load_settings()
-    app = FastAPI(title="magic-db", version=__version__, docs_url=None, redoc_url=None)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        yield
+        if app.state.http_client is not None:
+            app.state.http_client.close()
+
+    app = FastAPI(
+        title="magic-db", version=__version__, docs_url=None, redoc_url=None, lifespan=lifespan
+    )
     app.state.settings = settings
+    app.state.http_client = http_client
+    app.state.templates = build_templates(settings)
 
     db.migrate(settings)
     publish.cleanup_old(settings)
-
-    templates = Jinja2Templates(directory=_PKG / "templates")
-    templates.env.globals.update(t=translator(settings.lang), lang=settings.lang)
-    app.state.templates = templates
 
     app.mount("/static", StaticFiles(directory=_PKG / "static"), name="static")
 
@@ -33,8 +44,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def healthz() -> dict[str, str]:
         return {"status": "ok"}
 
-    @app.get("/", response_class=HTMLResponse)
-    def home(request: Request) -> HTMLResponse:
-        return templates.TemplateResponse(request, "home.html")
-
+    app.include_router(web.router)
+    app.include_router(images.router)
+    app.add_exception_handler(404, web.not_found)
     return app

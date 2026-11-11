@@ -1,0 +1,84 @@
+{% macro nav(label, page, target_view, current=false, rel=none) -%}
+<a href="{{ search_url(q, page, target_view) }}" hx-get="{{ search_url(q, page, target_view) }}"
+   hx-target="#results" hx-swap="innerHTML show:window:top" hx-push-url="true"
+   {%- if current %} aria-current="true"{% endif %}{% if rel %} rel="{{ rel }}"{% endif %}>{{ label }}</a>
+{%- endmacro %}
+
+{% if error %}
+<div class="error" role="alert">
+  <strong>{{ t("results.error_title") }}</strong>
+  <p>{{ error }}</p>
+  <p><a href="/syntax">{{ t("nav.syntax") }}</a></p>
+</div>
+{% else %}
+<div class="results-bar">
+  <p class="count">
+    {{ t("results.count." ~ result.unique ~ (".one" if result.total == 1 else ""), n=result.total | count) }}
+  </p>
+  <p class="views">
+    {{ nav(t("results.view.grid"), result.page, "grid", current=(view == "grid")) }}
+    {{ nav(t("results.view.list"), result.page, "list", current=(view == "list")) }}
+  </p>
+</div>
+
+{% if not result.rows %}
+<div class="empty">
+  <p>{{ t("results.none") }}</p>
+  {% if result.suggestions %}
+  <p>{{ t("results.did_you_mean") }}
+    {% for name in result.suggestions %}
+    <a href="{{ search_url('!"' ~ name ~ '"', 1, view) }}">{{ name }}</a>{% if not loop.last %}, {% endif %}
+    {% endfor %}
+  </p>
+  {% endif %}
+</div>
+{% elif view == "list" %}
+<div class="table-wrap">
+<table class="card-list">
+  <thead>
+    <tr>
+      <th>{{ t("card.name") }}</th>
+      <th class="wide">{{ t("card.cost") }}</th>
+      <th class="wide">{{ t("card.type") }}</th>
+      <th>{{ t("card.set") }}</th>
+      <th class="wide">{{ t("card.rarity") }}</th>
+      <th class="num">{{ t("card.price") }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for card in result.rows %}
+    <tr>
+      <td><a href="/card/{{ card.id }}">{{ card.name }}</a>
+          <span class="narrow sub">{{ card.type_line }}</span></td>
+      <td class="mana wide">{{ card.mana_cost or "" }}</td>
+      <td class="wide">{{ card.type_line }}</td>
+      <td class="nowrap"><span class="set-code">{{ card.set_code }}</span> {{ card.collector_number }}</td>
+      <td class="wide">{{ t("rarity." ~ card.rarity, default=card.rarity) }}</td>
+      <td class="num">{{ card["price_" ~ currency] | money }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<ul class="card-grid">
+  {% for card in result.rows %}
+  <li>
+    <a href="/card/{{ card.id }}">
+      <img src="/img/normal/{{ card.id }}/front" alt="" width="488" height="680" loading="lazy">
+      <span class="caption">{{ card.name }}</span>
+      <span class="sub"><span class="set-code">{{ card.set_code }}</span> {{ card.collector_number }}</span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if result.pages > 1 %}
+<nav class="pager" aria-label="{{ t('results.pages') }}">
+  {% if result.page > 1 %}{{ nav("← " ~ t("results.prev"), result.page - 1, view, rel="prev") }}{% else %}<span></span>{% endif %}
+  <span>{{ t("results.page", page=result.page, pages=result.pages) }}</span>
+  {% if result.page < result.pages %}{{ nav(t("results.next") ~ " →", result.page + 1, view, rel="next") }}{% else %}<span></span>{% endif %}
+</nav>
+{% endif %}
+{% endif %}

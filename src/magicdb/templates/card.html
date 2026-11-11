@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{{ card.name }} · {{ t("app.name") }}{% endblock %}
+
+{% macro face_text(name, cost, type_line, text, power, toughness, loyalty, defense, flavor) %}
+<section class="face">
+  <h2>{{ name }} <span class="mana">{{ cost or "" }}</span></h2>
+  <p class="type-line">{{ type_line }}</p>
+  {% if text %}<p class="oracle">{{ text }}</p>{% endif %}
+  {% if power is not none and toughness is not none %}<p class="stats">{{ power }}/{{ toughness }}</p>{% endif %}
+  {% if loyalty is not none %}<p class="stats">{{ t("card.loyalty") }}: {{ loyalty }}</p>{% endif %}
+  {% if defense is not none %}<p class="stats">{{ t("card.defense") }}: {{ defense }}</p>{% endif %}
+  {% if flavor %}<p class="flavor">{{ flavor }}</p>{% endif %}
+</section>
+{% endmacro %}
+
+{% block content %}
+<article class="card-page">
+  <div class="card-art">
+    {% if card.img_back_normal %}
+    <input type="checkbox" id="flip" class="flip-toggle">
+    <img class="front" src="/img/normal/{{ card.id }}/front" alt="{{ card.name }}" width="488" height="680">
+    <img class="back" src="/img/normal/{{ card.id }}/back" alt="{{ card.name }}" width="488" height="680" loading="lazy">
+    <label for="flip" class="button flip-label">{{ t("card.flip") }}</label>
+    {% else %}
+    <img src="/img/normal/{{ card.id }}/front" alt="{{ card.name }}" width="488" height="680">
+    {% endif %}
+  </div>
+
+  <div class="card-info">
+    <h1>{{ card.name }}</h1>
+    {% if faces %}
+      {% for face in faces %}
+      {{ face_text(face.get("name"), face.get("mana_cost"), face.get("type_line"),
+                   face.get("oracle_text"), face.get("power"), face.get("toughness"),
+                   face.get("loyalty"), face.get("defense"), face.get("flavor_text")) }}
+      {% endfor %}
+    {% else %}
+      {{ face_text(card.name, card.mana_cost, card.type_line, card.oracle_text, card.power,
+                   card.toughness, card.loyalty, card.defense, card.flavor_text) }}
+    {% endif %}
+
+    <dl class="facts">
+      <dt>{{ t("card.set") }}</dt>
+      <dd><a href="{{ search_url('set:' ~ card.set_code ~ ' unique:prints order:set') }}">{{ card.set_name }}</a>
+          <span class="set-code">{{ card.set_code }}</span> #{{ card.collector_number }}</dd>
+      <dt>{{ t("card.rarity") }}</dt>
+      <dd>{{ t("rarity." ~ card.rarity, default=card.rarity) }}</dd>
+      <dt>{{ t("card.released") }}</dt>
+      <dd>{{ card.released_at }}</dd>
+      {% if card.artist %}
+      <dt>{{ t("card.artist") }}</dt>
+      <dd>{{ card.artist }}</dd>
+      {% endif %}
+      <dt>{{ t("card.finishes") }}</dt>
+      <dd>{% for finish in finishes %}{{ t("finish." ~ finish, default=finish) }}{% if not loop.last %}, {% endif %}{% endfor %}</dd>
+      <dt>{{ t("card.price") }}</dt>
+      <dd>{{ card["price_" ~ currency] | money }}
+          · {{ t("finish.foil") }} {{ card["price_" ~ currency ~ "_foil"] | money }}</dd>
+      <dt>{{ t("card.legal") }}</dt>
+      <dd>{% if legal %}{{ legal | join(", ") }}{% else %}{{ t("card.legal.none") }}{% endif %}</dd>
+    </dl>
+
+    {% if card.scryfall_uri %}
+    <p><a href="{{ card.scryfall_uri }}" rel="noopener noreferrer" target="_blank">{{ t("card.scryfall") }}</a></p>
+    {% endif %}
+  </div>
+</article>
+
+<section class="printings">
+  <h2>{{ t("card.printings", n=printings | length) }}</h2>
+  <div class="table-wrap">
+  <table class="card-list">
+    <thead>
+      <tr>
+        <th>{{ t("card.set") }}</th>
+        <th>#</th>
+        <th class="wide">{{ t("card.rarity") }}</th>
+        <th class="wide">{{ t("card.released") }}</th>
+        <th class="num">{{ t("card.price") }}</th>
+        <th class="num">{{ t("finish.foil") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in printings %}
+      <tr{% if p.id == card.id %} class="current"{% endif %}>
+        <td><a href="/card/{{ p.id }}">{{ p.set_name }}</a> <span class="set-code">{{ p.set_code }}</span>
+            {% if p.is_digital %}<span class="tag">{{ t("card.digital") }}</span>{% endif %}
+            <span class="narrow sub">{{ p.released_at[:4] }}</span></td>
+        <td>{{ p.collector_number }}</td>
+        <td class="wide">{{ t("rarity." ~ p.rarity, default=p.rarity) }}</td>
+        <td class="wide nowrap">{{ p.released_at }}</td>
+        <td class="num">{{ p["price_" ~ currency] | money }}</td>
+        <td class="num">{{ p["price_" ~ currency ~ "_foil"] | money }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

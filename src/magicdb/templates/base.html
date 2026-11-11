@@ -10,6 +10,17 @@
 <body>
   <header class="site-header">
     <a class="brand" href="/">{{ t("app.name") }}</a>
+    <form class="search-box" action="/search" method="get" role="search">
+      <input type="search" name="q" value="{{ q | default('') }}"
+             placeholder="{{ t('search.placeholder') }}" aria-label="{{ t('search.button') }}"
+             autocomplete="off" autocapitalize="off" spellcheck="false">
+      {% if view is defined and view != "grid" %}<input type="hidden" name="view" value="{{ view }}">{% endif %}
+      <button type="submit">{{ t("search.button") }}</button>
+    </form>
+    <nav class="site-nav">
+      <a href="/">{{ t("nav.filters") }}</a>
+      <a href="/syntax">{{ t("nav.syntax") }}</a>
+    </nav>
   </header>
   <main>
     {% block content %}{% endblock %}
