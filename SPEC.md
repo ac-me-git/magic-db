@@ -53,8 +53,9 @@ magic-db/
     jobs.py           in-process scheduler, backup, rotation
     images.py         image cache proxy
     i18n/             en.json, it.json
+    migrations/       0001_init.sql, 0002_... (collection.db only; inside the package
+                      so that the wheel and the Windows executable carry them)
     templates/  static/
-  migrations/         0001_init.sql, 0002_... (collection.db only)
   tests/  tests/fixtures/
   scripts/make_fixture.py
   docs/
@@ -96,7 +97,10 @@ Scryfall bulk data. Every request to `api.scryfall.com` sends
 `User-Agent: magic-db/<version>` and `Accept: application/json`.
 
 - `GET https://api.scryfall.com/bulk-data` → take the entry with `type == "default_cards"`;
-  use its `download_uri` and `updated_at`.
+  use its `updated_at` and its download link: `jsonl_download_uri` (gzipped JSON Lines,
+  one card per line — what Scryfall serves as of November 2026), falling back to the
+  older `download_uri` (one JSON array). The reader recognises gzip and array-vs-lines
+  from the file content, never from its name.
 - `GET https://api.scryfall.com/sets` → all sets.
 
 `default_cards` holds one object per printing, in English (or the printed language when
@@ -109,8 +113,8 @@ prices. Never call the per-card API in a loop.
    `meta`, stop ("already up to date").
 2. Stream-download the file to `data/tmp/`. Do not load it in memory.
 3. Create `data/tmp/cards-<timestamp>.db` with the schema below, **without indexes**.
-4. Parse with `ijson.items(f, "item")`, insert in batches of 5,000 with `executemany`
-   inside one transaction.
+4. Parse as a stream — line by line for JSON Lines, `ijson.items(f, "item")` for an
+   array — and insert in batches of 5,000 with `executemany` inside one transaction.
 5. Insert sets. Compute `pref` and `facets`. Create indexes. `ANALYZE`.
 6. Sanity check: `PRAGMA integrity_check` is `ok`, row count > 50,000 and
    ≥ 90% of the live catalog's row count. On failure delete the temp file, record the
@@ -215,7 +219,7 @@ Mapping rules:
 ## 5. Collection database (`collection.db`)
 
 WAL mode, `foreign_keys=ON`. Schema changes only through numbered files in
-`migrations/`, applied at startup and tracked with `PRAGMA user_version`. A backup is
+`src/magicdb/migrations/`, applied at startup and tracked with `PRAGMA user_version`. A backup is
 taken automatically before applying any migration.
 
 ```sql
