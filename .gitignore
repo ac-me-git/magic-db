@@ -1,0 +1,14 @@
+data/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+.env
+
+# Real collection exports dropped here by the owner; only trimmed *-sample.csv files are committed
+tests/fixtures/*.csv
+!tests/fixtures/*-sample.csv
