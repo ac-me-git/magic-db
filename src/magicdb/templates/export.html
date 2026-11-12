@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ t("export.title") }} · {{ t("app.name") }}{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ t("export.title") }}</h1>
+<p class="status">{{ t("export.holds", copies=totals.copies | count, entries=totals.entries | count) }}</p>
+
+<ul class="locations">
+  <li class="location">
+    <div class="location-head"><a href="/export/csv"><strong>{{ t("export.csv") }}</strong></a></div>
+    <p class="hint">{{ t("export.csv_hint") }}</p>
+  </li>
+  <li class="location">
+    <div class="location-head"><a href="/export/json"><strong>{{ t("export.json") }}</strong></a></div>
+    <p class="hint">{{ t("export.json_hint") }}</p>
+  </li>
+</ul>
+<p class="hint">{{ t("export.reimport") }} <a href="/import">{{ t("import.title") }}</a></p>
+{% endblock %}

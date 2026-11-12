@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% from "_forms.html" import problem with context %}
+{% block title %}{{ t("import.title") }} · {{ t("app.name") }}{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ t("import.preview_title") }}</h1>
+<p class="hint">{{ t("import.nothing_written") }}</p>
+
+{{ problem(error) }}
+
+<dl class="facts">
+  <dt>{{ t("import.file") }}</dt>
+  <dd>{{ filename or "—" }}</dd>
+  <dt>{{ t("import.format") }}</dt>
+  <dd>{{ t("import.profile." ~ profile) }}</dd>
+  <dt>{{ t("import.rows") }}</dt>
+  <dd>{{ summary.rows | count }}</dd>
+  <dt>{{ t("import.matched") }}</dt>
+  <dd><strong>{{ summary.matched | count }}</strong> ({{ t("import.copies", n=summary.copies | count) }})</dd>
+  {% if summary.guessed %}
+  <dt>{{ t("import.guessed") }}</dt>
+  <dd>{{ summary.guessed | count }} — {{ t("import.guessed_hint") }}</dd>
+  {% endif %}
+  <dt>{{ t("import.ambiguous") }}</dt>
+  <dd>{{ summary.ambiguous | count }}</dd>
+  <dt>{{ t("import.failed") }}</dt>
+  <dd>{{ summary.failed | count }}</dd>
+</dl>
+
+{% if summary.matched %}
+<form class="panel" method="post" action="/import/{{ token }}/confirm">
+  <h2>{{ t("import.options") }}</h2>
+  <input type="hidden" name="filename" value="{{ filename }}">
+
+  <fieldset>
+    <legend>{{ t("import.option.location", n=without.location | count) }}</legend>
+    <div class="fields">
+      <label>{{ t("entry.location") }}
+        <select name="location">
+          <option value="">{{ t("entry.unassigned") }}</option>
+          <option value="new"{% if chosen.location == "new" %} selected{% endif %}>{{ t("import.option.new_location") }}</option>
+          {% for place in options.locations %}
+          <option value="{{ place.id }}"{% if place.id | string == chosen.location %} selected{% endif %}>{{ place.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>{{ t("import.option.new_name") }}
+        <input type="text" name="new_location" value="{{ chosen.new_location }}" maxlength="80">
+      </label>
+      <label>{{ t("locations.kind") }}
+        <select name="new_kind">
+          {% for kind in options.kinds %}
+          <option value="{{ kind }}"{% if kind == chosen.new_kind %} selected{% endif %}>{{ t("kind." ~ kind) }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+  </fieldset>
+
+  <div class="fields">
+    <label>{{ t("import.option.condition", n=without.condition | count) }}
+      <select name="condition">
+        {% for value in options.conditions %}
+        <option value="{{ value }}"{% if value == chosen.condition %} selected{% endif %}>{{ value }} · {{ t("condition." ~ value) }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>{{ t("import.option.language", n=without.language | count) }}
+      <select name="language">
+        {% for value in options.languages %}
+        <option value="{{ value }}"{% if value == chosen.language %} selected{% endif %}>{{ t("lang." ~ value) }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <fieldset>
+    <legend>{{ t("import.option.mode") }}</legend>
+    <div class="checks">
+      <label class="check"><input type="radio" name="mode" value="add"{% if chosen.mode != "replace" %} checked{% endif %}> {{ t("import.mode.add") }}</label>
+      <label class="check"><input type="radio" name="mode" value="replace"{% if chosen.mode == "replace" %} checked{% endif %}> {{ t("import.mode.replace", n=owned | count) }}</label>
+    </div>
+  </fieldset>
+
+  <p class="hint">{{ t("import.backup_first") }}</p>
+  <div class="actions">
+    <button type="submit" class="primary">{{ t("import.confirm", n=summary.matched | count) }}</button>
+    <a class="button" href="/import">{{ t("entry.cancel") }}</a>
+  </div>
+</form>
+{% else %}
+<div class="empty"><p>{{ t("import.nothing_to_import") }}</p><p><a href="/import">{{ t("import.try_another") }}</a></p></div>
+{% endif %}
+
+{% if problems %}
+<h2 class="section-title">{{ t("import.problems_title", n=(summary.ambiguous + summary.failed) | count) }}</h2>
+<p><a href="/import/{{ token }}/unresolved.csv">{{ t("import.download_unresolved") }}</a></p>
+<div class="table-wrap">
+<table class="card-list">
+  <thead>
+    <tr><th class="num">{{ t("import.line") }}</th><th>{{ t("card.name") }}</th><th>{{ t("card.set") }}</th><th>{{ t("import.problem") }}</th></tr>
+  </thead>
+  <tbody>
+    {% for row in problems %}
+    <tr>
+      <td class="num">{{ row.line }}</td>
+      <td>{{ row.name }}</td>
+      <td class="nowrap"><span class="set-code">{{ row.set_code }}</span> {{ row.collector_number }}</td>
+      <td>{{ t("import.problem." ~ row.problem, **row.detail) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if hidden_problems %}<p class="hint">{{ t("import.more_problems", n=hidden_problems | count) }}</p>{% endif %}
+{% endif %}
+
+{% if sample %}
+<h2 class="section-title">{{ t("import.sample_title") }}</h2>
+<div class="table-wrap">
+<table class="card-list">
+  <thead>
+    <tr><th class="num">{{ t("entry.qty") }}</th><th>{{ t("card.name") }}</th><th>{{ t("card.set") }}</th><th>{{ t("entry.finish") }}</th></tr>
+  </thead>
+  <tbody>
+    {% for row in sample %}
+    <tr>
+      <td class="num">{{ row.fields.quantity }}</td>
+      <td><a href="/card/{{ row.card.scryfall_id }}">{{ row.card.name }}</a></td>
+      <td class="nowrap"><span class="set-code">{{ row.card.set_code }}</span> {{ row.card.collector_number }}</td>
+      <td>{{ t("finish." ~ row.fields.finish) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}

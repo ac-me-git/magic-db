@@ -158,16 +158,18 @@ def _place(conn: sqlite3.Connection, card: dict[str, object], fields: dict[str, 
     Returns ``(entry_id, merged)``.
     """
     now = db.utcnow()
+    added = fields.get("added_at") or now  # imports and moves carry the original date
     twin = _twin(conn, card["scryfall_id"], fields)
     if twin is not None:
         price = fields["purchase_price"]
         conn.execute(
             "UPDATE entries SET quantity = quantity + ?, notes = ?, purchase_price = ?, "
-            "updated_at = ? WHERE id = ?",
+            "created_at = MIN(created_at, ?), updated_at = ? WHERE id = ?",
             (
                 fields["quantity"],
                 _merge_notes(twin["notes"], fields["notes"]),
                 twin["purchase_price"] if price is None else price,
+                fields.get("added_at") or twin["created_at"],
                 now,
                 twin["id"],
             ),
@@ -190,7 +192,7 @@ def _place(conn: sqlite3.Connection, card: dict[str, object], fields: dict[str, 
             fields["location_id"],
             fields["notes"],
             fields["purchase_price"],
-            now,
+            added,
             now,
         ),
     )
@@ -227,7 +229,12 @@ def _relocate(
     A whole row with nothing to merge into simply changes place: it keeps its id and
     the date it was added.
     """
-    fields = {**_fields_of(entry), "quantity": quantity, "location_id": location_id}
+    fields = {
+        **_fields_of(entry),
+        "quantity": quantity,
+        "location_id": location_id,
+        "added_at": entry["created_at"],  # moved copies keep the date they were added
+    }
     whole = quantity == entry["quantity"]
     if whole and _twin(conn, entry["scryfall_id"], fields, except_id=entry["id"]) is None:
         conn.execute(
@@ -398,6 +405,70 @@ def get_entry(conn: sqlite3.Connection, entry_id: int) -> sqlite3.Row | None:
         "LEFT JOIN locations l ON l.id = e.location_id WHERE e.id = ?",
         (entry_id,),
     ).fetchone()
+
+
+def import_entries(
+    conn: sqlite3.Connection,
+    items: list[dict],
+    *,
+    replace: bool = False,
+    locations: list[dict] | None = None,
+    source: str = "",
+) -> dict[str, object]:
+    """Add many entries at once, in one transaction with one history row.
+
+    Each item has ``card`` (scryfall_id, oracle_id, name, set_code, collector_number)
+    and the entry fields, with ``location`` and ``location_kind`` as names instead of an
+    id, and optionally ``added_at``. Locations are created as needed; ``locations``
+    lists ones to create first, in order, even if nothing is put in them. With
+    ``replace`` the collection is emptied first (locations are kept).
+    """
+    created: list[str] = []
+    with conn:
+        if replace:
+            conn.execute("DELETE FROM entries")
+        known = {
+            row["name"].lower(): row["id"] for row in conn.execute("SELECT id, name FROM locations")
+        }
+
+        def place(name: object, kind: object, notes: object = None) -> int | None:
+            if not str(name or "").strip():
+                return None
+            name, kind, notes = _location_fields(name, kind if kind in KINDS else "other", notes)
+            if name.lower() not in known:
+                position = conn.execute(
+                    "SELECT IFNULL(MAX(sort_order), 0) + 1 FROM locations"
+                ).fetchone()[0]
+                cursor = conn.execute(
+                    "INSERT INTO locations (name, kind, notes, sort_order, created_at) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (name, kind, notes, position, db.utcnow()),
+                )
+                known[name.lower()] = cursor.lastrowid
+                created.append(name)
+            return known[name.lower()]
+
+        for location in locations or ():
+            place(location.get("name"), location.get("kind"), location.get("notes"))
+        copies = 0
+        for item in items:
+            fields = _clean(
+                {key: item.get(key) for key in ("quantity", "notes", "purchase_price")}
+                | {key: item[key] for key in ("finish", "condition", "language")}
+            )
+            fields["location_id"] = place(item.get("location"), item.get("location_kind"))
+            fields["added_at"] = item.get("added_at") or None
+            _place(conn, item["card"], fields)
+            copies += fields["quantity"]
+        result = {
+            "source": source,
+            "replace": replace,
+            "entries": len(items),
+            "copies": copies,
+            "new_locations": created,
+        }
+        _log(conn, "import", **result)
+    return result
 
 
 # --- locations ------------------------------------------------------------------------

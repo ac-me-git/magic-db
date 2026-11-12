@@ -495,9 +495,37 @@ English only.
 table) then **confirm**. Confirm takes a backup first, then writes in one transaction.
 
 Formats are *profiles* (a mapping from column names to fields plus value translations)
-in `collection/importers/`: `native` (the export above), `topdecked`, `moxfield`,
-`manabox`. The `topdecked` profile is written from a real export supplied by the owner
-in `tests/fixtures/topdecked-sample.csv` — do not guess its columns.
+in `collection/importers/profiles.py`: `native` (the export above, and as a last resort
+any CSV with a `Name` column), `topdecked`, `moxfield`, `manabox`. The JSON dump is
+recognised by its `magic_db_export` key and also restores empty locations, their notes
+and their order.
+
+**TopDecked.** The profile was written from a real 9,385-row binder export.
+`tests/fixtures/topdecked-sample.csv` reproduces its structure with cards of the test
+fixture (`scripts/make_topdecked_sample.py`). Two quirks, present in every row:
+
+- prices use a decimal comma without quotes, so `€0,15` arrives as two fields and
+  everything after it sits one column to the right of its header;
+- empty trailing columns are left out.
+
+So the header is not trusted for positions: the first six fields are fixed
+(quantity, name, set code, set name, collector number, finish), the Scryfall id is
+found by its shape, and the fields after it are read in header order (acquired date,
+acquired price, language, …, condition, notes), re-joining split prices. The file has
+one row per copy and no location: it is the export of one binder, whose name is in the
+file name (`binder-<name>-<uuid>.csv`) and is offered as a new location.
+
+The `moxfield` and `manabox` profiles follow those tools' documented column names and
+have **not** been checked against real exports.
+
+**Defaults.** Rows that give no location, condition or language get the ones chosen on
+the preview page (`Defaults`).
+
+**Upload.** Between preview and confirm the file waits in `data/tmp/import-<token>.upload`
+(random token, forgotten after a day, 20 MB at most). Confirm re-reads it, so the
+preview and the import always agree. `service.import_entries` writes everything in one
+transaction with one `import` row in `history`; the imported "added on" date is kept,
+and when rows merge the earliest date wins.
 
 **Condition translation.** Files from tools that use the US (TCGplayer) scale are
 converted on import:
@@ -518,7 +546,11 @@ preview; it is never silently defaulted.
 
 Each row is resolved to a printing in this order: Scryfall ID → set code + collector
 number → name + set code → name + set name → name alone (only if the card has a single
-printing; otherwise "ambiguous"). Unresolved rows can be downloaded as a CSV. Import
+printing; otherwise "ambiguous"). Refinements: a set + number that points to a card
+with a different name is not trusted (the name decides); when name + set finds several
+versions and there is no number, the catalog's preferred one is taken and the row is
+counted as "guessed"; lookups by name ignore digital-only printings; a name matches a
+whole card or one face of it. Unresolved rows can be downloaded as a CSV. Import
 modes: *add to collection* (default) or *replace collection*.
 
 ### Backup

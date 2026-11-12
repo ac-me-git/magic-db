@@ -1,0 +1,31 @@
+QUANTITY,"NAME",SETCODE,"SETNAME","COLLECTOR NUMBER",FINISH,PRICE,RARITY,ID,ACQUIRED DATE,ACQUIRED PRICE,LANG,PRICE SALE,SIGNING,ALTERATION,CONDITION,NOTES,TAGS
+1,"Lightning Bolt",m10,"Magic 2010",146,nonfoil,€1,52,common,435589bb-27c6-4a6d-9d63-394d5092b9d8,2025-02-11T15:31:46.500Z
+1,"Lightning Bolt",m10,"Magic 2010",146,nonfoil,€1,52,common,435589bb-27c6-4a6d-9d63-394d5092b9d8,2025-02-11T15:31:46.501Z
+1,"Lightning Bolt",m10,"Magic 2010",146,foil,€5,36,common,435589bb-27c6-4a6d-9d63-394d5092b9d8,2025-02-11T15:31:46.502Z
+1,"Lightning Bolt",lea,"Limited Edition Alpha",161,nonfoil,€387,57,common,d573ef03-4730-45aa-93dd-e45ac1dbaf4a,2025-02-11T15:31:46.503Z
+1,"Serra Angel",dom,"Dominaria",33,foil,€0,02,uncommon,b56b9131-4f7e-4912-ba47-63ed82f21d1b,2025-02-11T15:31:46.504Z
+1,"Sol Ring",c21,"Commander 2021",263,nonfoil,€0,86,uncommon,4cbc6901-6a4a-4d0a-83ea-7eefa3b35021,2025-02-11T15:31:46.505Z
+1,"Jace, the Mind Sculptor",wwk,"Worldwake",31,nonfoil,€16,79,mythic,0e606072-a3aa-4300-ba90-ec92a721fa76,2025-02-11T15:31:46.506Z
+1,"Delver of Secrets // Insectile Aberration",isd,"Innistrad",51,nonfoil,€0,71,common,11bf83bb-c95b-4b4f-9a56-ce7a1816307a,2025-02-11T15:31:46.507Z
+1,"Fire // Ice",apc,"Apocalypse",128,nonfoil,€1,90,uncommon,f98f4538-5b5b-475d-b98f-49d01dae6f04,2025-02-11T15:31:46.508Z
+1,"Black Lotus",lea,"Limited Edition Alpha",232,nonfoil,€33768,47,rare,b0faa7f2-b547-42c4-a810-839da50dadfe,2025-02-11T15:31:46.509Z
+1,"Shivan Dragon",m20,"Core Set 2020",335,nonfoil,€0,09,rare,227cf1b5-f85b-41fe-be98-66e383652039,2025-02-11T15:31:46.510Z
+1,"Niv-Mizzet Reborn",war,"War of the Spark",208,foil,€4,23,mythic,56a2609d-b535-400b-81d9-72989a33c70f,2025-02-11T15:31:46.511Z
+1,"Abu Ja'far",arn,"Arabian Nights",1,nonfoil,€16,23,uncommon,0e9ad288-d164-44a6-96ec-4185a1587f1a,2025-02-11T15:31:46.512Z
+1,"Army of Allah",arn,"Arabian Nights",2,nonfoil,€16,92,common,3d170015-b125-49a6-a15e-8fd116bbcb14,2025-02-11T15:31:46.513Z
+1,"Camel",arn,"Arabian Nights",3,nonfoil,€3,92,common,e0078aa8-bfb8-43b0-a6b7-1991596c21e1,2025-02-11T15:31:46.514Z
+1,"Eye for an Eye",arn,"Arabian Nights",4,nonfoil,€19,10,uncommon,2933ca2a-097b-44f4-ae56-ad524d26fd06,2025-02-11T15:31:46.515Z
+1,"Jihad",arn,"Arabian Nights",5,nonfoil,€0,00,rare,b6c7705a-2987-4ef1-92b1-2c55d989ec6f,2025-02-11T15:31:46.516Z
+1,"King Suleiman",arn,"Arabian Nights",6,nonfoil,€104,01,rare,4d3dce0f-2168-4f63-b2f9-156a11beeea7,2025-02-11T15:31:46.517Z
+1,"Moorish Cavalry",arn,"Arabian Nights",7,nonfoil,€3,76,common,f86f0781-7614-4779-a58d-f13ce96bdf33,2025-02-11T15:31:46.518Z
+1,"Piety",arn,"Arabian Nights",8,nonfoil,€2,29,common,f649c571-d7ec-4ebc-9e18-b0657cab495b,2025-02-11T15:31:46.519Z
+1,"Repentant Blacksmith",arn,"Arabian Nights",9,nonfoil,€38,56,rare,61fc30b6-1355-425b-a86f-18f59f83141c,2025-02-11T15:31:46.520Z
+1,"Shahrazad",arn,"Arabian Nights",10,nonfoil,€366,17,rare,0014def3-4063-4929-ac51-76aef1bb2a68,2025-02-11T15:31:46.521Z
+1,"War Elephant",arn,"Arabian Nights",11,nonfoil,€4,66,common,7416c366-95cc-4799-b6c6-34d8fad8c202,2025-02-11T15:31:46.522Z
+1,"Dandân",arn,"Arabian Nights",12,nonfoil,€22,34,common,414d3cae-b8cf-4d53-bd6b-1aa83a828ba9,2025-02-11T15:31:46.523Z
+1,"Fishliver Oil",arn,"Arabian Nights",13,nonfoil,€3,16,common,deb6ed87-aa07-4b5e-ac40-1e16dc2a817a,2025-02-11T15:31:46.524Z
+1,"Flying Men",arn,"Arabian Nights",14,nonfoil,€13,05,common,25ab9a2b-e248-4ae2-aac3-b49fdb3e260a,2025-02-11T15:31:46.525Z
+1,"Giant Tortoise",arn,"Arabian Nights",15,nonfoil,€3,48,common,096f7ac8-c639-4347-9767-7305eaf490ba,2025-02-11T15:31:46.526Z
+1,"Island Fish Jasconius",arn,"Arabian Nights",16,nonfoil,€27,13,rare,8537cb0f-4821-417b-80cc-ea57d51ee9b8,2025-02-11T15:31:46.527Z
+1,"Merchant Ship",arn,"Arabian Nights",17,nonfoil,€34,34,uncommon,2b827094-fb2c-46db-b898-02e0c308601f,2025-02-11T15:31:46.528Z
+1,"Old Man of the Sea",arn,"Arabian Nights",18,nonfoil,€198,50,rare,d10f8a05-78b0-42a7-adcd-83f6bafe5417,2025-02-11T15:31:46.529Z

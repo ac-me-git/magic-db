@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ t("import.title") }} · {{ t("app.name") }}{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ t("import.title") }}</h1>
+<p class="hint">{{ t("import.intro") }}</p>
+
+{% if error %}
+<div class="error" role="alert"><p>{{ t("import.error." ~ error) }}</p></div>
+{% endif %}
+
+<form class="panel" method="post" action="/import" enctype="multipart/form-data">
+  <label>{{ t("import.file") }}
+    <input type="file" name="file" accept=".csv,.json,.txt,text/csv,application/json" required>
+  </label>
+  <div class="actions">
+    <button type="submit" class="primary">{{ t("import.preview") }}</button>
+  </div>
+</form>
+
+<h2 class="section-title">{{ t("import.formats") }}</h2>
+<ul class="plain">
+  <li><strong>magic-db</strong> — {{ t("import.format.native") }}</li>
+  <li><strong>TopDecked</strong> — {{ t("import.format.topdecked") }}</li>
+  <li><strong>Moxfield</strong>, <strong>ManaBox</strong> — {{ t("import.format.others") }}</li>
+  <li>{{ t("import.format.generic") }}</li>
+</ul>
+{% endblock %}

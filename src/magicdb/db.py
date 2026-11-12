@@ -9,7 +9,7 @@ import re
 import sqlite3
 from collections.abc import Iterator
 from contextlib import closing
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from fastapi import Request
@@ -34,13 +34,26 @@ def _migrations() -> list[tuple[int, Path]]:
     return sorted(found)
 
 
-def _backup_before_migration(conn: sqlite3.Connection, settings: Settings) -> Path:
+def backup_collection(conn: sqlite3.Connection, settings: Settings, prefix: str) -> Path:
+    """Copy the collection database to ``<backups>/<prefix>-<timestamp>.db``.
+
+    Uses SQLite's online backup, so it is safe while the app is running. Only the
+    collection (the connection's main database) is copied, never the attached catalog.
+    """
     settings.backup_dir.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    target = settings.backup_dir / f"pre-migration-{stamp}.db"
+    moment = datetime.now()
+    while True:
+        target = settings.backup_dir / f"{prefix}-{moment.strftime('%Y%m%d-%H%M%S')}.db"
+        if not target.exists():
+            break
+        moment += timedelta(seconds=1)
     with closing(sqlite3.connect(target)) as copy:
         conn.backup(copy)
     return target
+
+
+def _backup_before_migration(conn: sqlite3.Connection, settings: Settings) -> Path:
+    return backup_collection(conn, settings, "pre-migration")
 
 
 def migrate(settings: Settings) -> int:

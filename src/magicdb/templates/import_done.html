@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ t("import.title") }} · {{ t("app.name") }}{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ t("import.done_title") }}</h1>
+<div class="done" role="status">
+  <p>{{ t("import.done", copies=copies | count, entries=entries | count) }}</p>
+  {% if skipped %}
+  <p>{{ t("import.done_skipped", n=skipped | count) }}
+     <a href="/import/{{ token }}/unresolved.csv">{{ t("import.download_unresolved") }}</a></p>
+  {% endif %}
+</div>
+<p class="links"><a href="/collection">{{ t("collection.title") }}</a> · <a href="/import">{{ t("import.another") }}</a></p>
+{% endblock %}

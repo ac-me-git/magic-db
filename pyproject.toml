@@ -39,3 +39,7 @@ src = ["src", "."]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# test data (CSV rows, expected tuples) reads better on one line
+"tests/*" = ["E501"]
