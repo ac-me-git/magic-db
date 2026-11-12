@@ -1,35 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ t("stats.title") }} · {{ t("app.name") }}{% endblock %}
 
-{% macro label(chart, key) -%}
-{% if chart == "color" %}{{ t("color." ~ key) }}
-{%- elif chart == "rarity" %}{{ t("rarity." ~ key, default=key) }}
-{%- elif chart == "finish" %}{{ t("finish." ~ key) }}
-{%- elif chart == "condition" %}{{ key }} · {{ t("condition." ~ key) }}
-{%- elif chart == "language" %}{{ t("lang." ~ key, default=key) }}
-{%- elif chart == "location" %}{{ key or t("entry.unassigned") }}
-{%- else %}{{ key }}{% endif %}
-{%- endmacro %}
-
-{% macro chart(name) %}
-{% set bars = charts[name] %}
-{% if bars %}
-{% set most = bars | map(attribute="copies") | max %}
-<section class="chart">
-  <h2>{{ t("stats.chart." ~ name) }}</h2>
-  <ul class="bars">
-    {% for bar in bars %}
-    <li>
-      <span class="bar-label">{{ label(name, bar.key) }}</span>
-      <span class="bar-track"><span class="bar{% if name == 'color' %} color-{{ bar.key }}{% endif %}" style="width: {{ (100 * bar.copies / most) | round(1) }}%"></span></span>
-      <span class="bar-number" title="{{ t('stats.copies') }}">{{ bar.copies | count }}</span>
-      <span class="bar-number sub" title="{{ t('stats.cards') }}">{{ bar.cards | count }}</span>
-    </li>
-    {% endfor %}
-  </ul>
-</section>
-{% endif %}
-{% endmacro %}
+{% from "_charts.html" import chart with context %}
 
 {% macro sort_link(value) -%}
 <a href="/stats?{{ {'location': location, 'sets': value, 'set_type': set_type} | urlencode }}#sets"
@@ -66,7 +38,7 @@
 
 <div class="charts">
   {% for name in ("color", "rarity", "type", "mana_value", "year", "finish", "condition", "language", "location") %}
-  {{ chart(name) }}
+  {{ chart(name, charts[name], t("stats.chart." ~ name)) }}
   {% endfor %}
 </div>
 

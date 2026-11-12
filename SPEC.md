@@ -773,6 +773,13 @@ Rules:
   the deck by board and card type with the state of every row, the estimated cost of
   what is missing (cheapest paper printing of each card), a download as text and a link
   to see the cards as images (`deck:"name"`). A card's page lists the decks it is in.
+- `/decks/{id}/stats`, the second tab of a deck, describes the **main deck** (the
+  sideboard is counted but not analysed): cards, lands, other cards, average mana
+  value, and four bar charts — by card type (a card counts under each of its types),
+  by mana value and by colour (both leave lands out: they are colourless and cost
+  nothing, and would bury the rest), and the coloured mana symbols in the costs (a
+  hybrid symbol counts for both its colours; generic and `X` are not colours). The
+  charts are the ones of the collection statistics (`_charts.html`).
 - The JSON export carries the decks, and importing it recreates the ones whose name is
   not already there. The CSV export does not.
 - Deck names cannot contain a double quote (it becomes an apostrophe), so that

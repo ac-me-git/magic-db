@@ -85,6 +85,16 @@ def deck(request: Request, conn: web.Conn, deck_id: str, added: str = "") -> HTM
     return deck_page(request, conn, as_id(deck_id), added=added[:200])
 
 
+@router.get("/decks/{deck_id}/stats", response_class=HTMLResponse)
+def deck_statistics(request: Request, conn: web.Conn, deck_id: str) -> HTMLResponse:
+    try:
+        summary = service.summary(conn, as_id(deck_id))
+        rows = service.deck_rows(conn, as_id(deck_id), currency(request))
+    except CollectionError:
+        return web.render(request, "not_found.html", 404)
+    return web.render(request, "deck_stats.html", deck=summary, stats=service.deck_stats(rows))
+
+
 @router.post("/decks/{deck_id}")
 def update_deck(
     request: Request,

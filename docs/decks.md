@@ -57,6 +57,16 @@ to correct; everything else is added.
 The Decks page also has one list of every contested card: how many you own, how many
 your decks want in total, and which decks.
 
+## Statistics
+
+Every deck has a second tab, **Statistics**, about its main deck:
+
+- how many lands and how many other cards, and the average mana value of the latter;
+- cards by type — an artifact creature counts as both;
+- the mana curve and the colours, leaving lands out;
+- the coloured mana symbols in the costs, which says how much of each colour the deck
+  really asks for. A hybrid symbol counts for both its colours.
+
 ## Other things
 
 - "See the cards as images" searches for `deck:"name"`; you can combine that filter with

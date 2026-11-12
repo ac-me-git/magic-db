@@ -431,5 +431,16 @@
   "error.unknown_deck_row": "That card is no longer in the deck.",
   "error.bad_deck_quantity": "The quantity must be a whole number from 1 to 999.",
   "error.bad_board": "A card goes in the main deck or in the sideboard.",
-  "decks.tile": "{cards} cards · {missing} missing"
+  "decks.tile": "{cards} cards · {missing} missing",
+  "deck.tab.list": "List",
+  "deck.tab.stats": "Statistics",
+  "deck.stats.empty": "The main deck is empty: there is nothing to count yet.",
+  "deck.stats.lands": "Lands",
+  "deck.stats.legend": "In every chart the first number is how many copies are in the deck, the second how many different cards.",
+  "deck.stats.spells": "Other cards",
+  "deck.stats.average_mv": "Average mana value",
+  "deck.stats.scope": "These numbers are about the main deck.",
+  "deck.stats.sideboard": "The sideboard ({n} cards) is not counted.",
+  "deck.stats.chart.color": "By colour (lands excluded)",
+  "deck.stats.chart.pips": "Mana symbols in the costs"
 }

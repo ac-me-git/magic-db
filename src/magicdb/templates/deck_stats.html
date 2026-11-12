@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_forms.html" import dial with context %}
+{% from "_charts.html" import chart with context %}
+{% block title %}{{ deck.name }} · {{ t("deck.tab.stats") }}{% endblock %}
+{% block content %}
+<p class="links"><a href="/decks">← {{ t("decks.title") }}</a></p>
+<div class="deck-head">
+  {{ dial(deck, "big") }}
+  <div>
+    <h1 class="page-title">{{ deck.name }} {% if deck.format %}<span class="tag">{{ deck.format }}</span>{% endif %}</h1>
+    {% if deck.notes %}<p class="hint">{{ deck.notes }}</p>{% endif %}
+  </div>
+</div>
+
+<nav class="tabs" aria-label="{{ deck.name }}">
+  <a href="/decks/{{ deck.id }}">{{ t("deck.tab.list") }}</a>
+  <a href="/decks/{{ deck.id }}/stats" aria-current="page">{{ t("deck.tab.stats") }}</a>
+</nav>
+
+{% if not stats.copies %}
+<div class="empty"><p>{{ t("deck.stats.empty") }}</p></div>
+{% else %}
+<dl class="tiles">
+  <div><dt>{{ t("deck.board.main") }}</dt><dd>{{ stats.copies | count }}</dd></div>
+  <div><dt>{{ t("deck.stats.lands") }}</dt><dd>{{ stats.lands | count }}</dd></div>
+  <div><dt>{{ t("deck.stats.spells") }}</dt><dd>{{ stats.spells | count }}</dd></div>
+  <div><dt>{{ t("deck.stats.average_mv") }}</dt><dd>{% if stats.average_mv is not none %}{{ "%.2f" | format(stats.average_mv) | replace(".", "," if lang == "it" else ".") }}{% else %}—{% endif %}</dd></div>
+</dl>
+<p class="hint">{{ t("deck.stats.scope") }}{% if stats.sideboard %} {{ t("deck.stats.sideboard", n=stats.sideboard | count) }}{% endif %}
+   {{ t("deck.stats.legend") }}</p>
+
+<div class="charts">
+  {{ chart("type", stats.charts.type, t("stats.chart.type")) }}
+  {{ chart("mana_value", stats.charts.mana_value, t("stats.chart.mana_value")) }}
+  {{ chart("color", stats.charts.color, t("deck.stats.chart.color")) }}
+  {{ chart("pips", stats.charts.pips, t("deck.stats.chart.pips")) }}
+</div>
+{% endif %}
+{% endblock %}

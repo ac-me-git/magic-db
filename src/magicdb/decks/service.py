@@ -11,16 +11,20 @@ Words used here and on the pages:
   card put together.
 """
 
+import re
 import sqlite3
 from dataclasses import dataclass, field
 
-from magicdb import db
+from magicdb import db, stats
+from magicdb.catalog.ingest import COLOR_BITS
 from magicdb.collection import service as collection
 from magicdb.collection.service import CollectionError
 from magicdb.decks import text
 from magicdb.search import suggest
 from magicdb.search.compiler import exact_name
 from magicdb.stats import TYPE_ORDER, types_of
+
+_MANA_SYMBOL = re.compile(r"\{([^}]+)\}")
 
 BOARDS = ("main", "side")
 MAX_NAME = 80
@@ -61,6 +65,7 @@ class Row:
     type_line: str = ""
     mana_cost: str | None = None
     cmc: float = 0
+    colors: int | None = None  # bitmask, as in the catalog; None if the card is unknown
     price: float | None = None  # cheapest paper printing
 
     @property
@@ -101,6 +106,17 @@ class Summary:
     @property
     def complete(self) -> bool:
         return self.copies > 0 and self.have == self.copies
+
+
+@dataclass(frozen=True)
+class DeckStats:
+    copies: int  # in the main deck
+    cards: int  # distinct
+    lands: int
+    spells: int  # everything that is not a land
+    average_mv: float | None  # of the spells
+    sideboard: int
+    charts: dict[str, list[stats.Bar]]  # type, color, mana_value, pips
 
 
 @dataclass
@@ -189,7 +205,7 @@ def _catalog_facts(conn: sqlite3.Connection, ids: list[str], currency: str) -> d
     for chunk in _chunks(ids):
         marks = ", ".join("?" * len(chunk))
         for row in conn.execute(
-            f"SELECT p.oracle_id, p.id, p.type_line, p.mana_cost, p.cmc, MAX(p.pref) "
+            f"SELECT p.oracle_id, p.id, p.type_line, p.mana_cost, p.cmc, p.colors, MAX(p.pref) "
             f"FROM cat.printings p WHERE p.oracle_id IN ({marks}) GROUP BY p.oracle_id",
             chunk,
         ):
@@ -198,6 +214,7 @@ def _catalog_facts(conn: sqlite3.Connection, ids: list[str], currency: str) -> d
                 "type_line": row["type_line"],
                 "mana_cost": row["mana_cost"],
                 "cmc": row["cmc"],
+                "colors": row["colors"],
                 "price": None,
             }
         for row in conn.execute(
@@ -469,6 +486,59 @@ def deck_rows(conn: sqlite3.Connection, deck_id: int, currency: str = "eur") -> 
     order = {kind: index for index, kind in enumerate((*TYPE_ORDER, "Other"))}
     rows.sort(key=lambda r: (r.board, order[r.group], r.cmc, r.name.lower(), r.id))
     return rows
+
+
+def deck_stats(rows: list[Row]) -> DeckStats:
+    """What the main deck is made of. The sideboard is counted but not analysed.
+
+    Colours and the mana curve leave lands out, as players do: lands are colourless
+    and cost nothing, and would bury everything else.
+    """
+    main = [row for row in rows if row.board == "main"]
+    cards = [
+        {
+            "quantity": row.quantity,
+            "oracle_id": row.oracle_id,
+            "type_line": row.type_line,
+            "colors": row.colors,
+            "cmc": row.cmc if row.printing else None,
+        }
+        for row in main
+    ]
+    spells = [card for card in cards if "Land" not in types_of(card)]
+    lands = sum(card["quantity"] for card in cards) - sum(card["quantity"] for card in spells)
+    costed = [card for card in spells if card["cmc"] is not None]
+    copies = sum(card["quantity"] for card in costed)
+    total_mv = sum(card["cmc"] * card["quantity"] for card in costed)
+
+    pips: dict[str, int] = {}
+    pip_cards: dict[str, set[str]] = {}
+    for row in main:
+        for symbol in _MANA_SYMBOL.findall(row.mana_cost or ""):
+            for letter in set(symbol.split("/")) & set(COLOR_BITS):
+                pips[letter.lower()] = pips.get(letter.lower(), 0) + row.quantity
+                pip_cards.setdefault(letter.lower(), set()).add(row.oracle_id)
+
+    return DeckStats(
+        copies=sum(row.quantity for row in main),
+        cards=len({row.oracle_id for row in main}),
+        lands=lands,
+        spells=sum(card["quantity"] for card in spells),
+        average_mv=total_mv / copies if copies else None,
+        sideboard=sum(row.quantity for row in rows if row.board == "side"),
+        charts={
+            "type": stats._ordered(stats._count(cards, types_of), TYPE_ORDER),
+            "color": stats._ordered(stats._count(spells, stats.color_of), stats.COLOR_ORDER),
+            "mana_value": stats._ordered(
+                stats._count(spells, stats.mana_value_of), stats.MV_BUCKETS
+            ),
+            "pips": [
+                stats.Bar(letter, pips[letter], len(pip_cards[letter]))
+                for letter in stats.COLOR_ORDER
+                if letter in pips
+            ],
+        },
+    )
 
 
 def shortages(conn: sqlite3.Connection) -> list[Shortage]:

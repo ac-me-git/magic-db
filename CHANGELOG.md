@@ -35,6 +35,7 @@ First version.
 - Deck lists with main deck and sideboard, built by hand or by pasting a list.
 - Completion of each deck against the collection, missing cards and their estimated
   cost, and the cards that several decks contend for.
+- Statistics of each deck: card types, colours, mana curve, mana symbols in the costs.
 - Download a deck as text; `deck:` search filter.
 
 ### Your data

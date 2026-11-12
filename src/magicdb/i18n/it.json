@@ -466,5 +466,16 @@
   "error.bad_deck_quantity": "La quantità deve essere un numero intero da 1 a 999.",
   "error.bad_board": "Una carta va nel mazzo principale oppure nella sideboard.",
   "syntax.filter.deck": "È in un mazzo il cui nome contiene",
-  "decks.tile": "{cards} carte · {missing} mancanti"
+  "decks.tile": "{cards} carte · {missing} mancanti",
+  "deck.tab.list": "Lista",
+  "deck.tab.stats": "Statistiche",
+  "deck.stats.empty": "Il mazzo principale è vuoto: non c'è ancora niente da contare.",
+  "deck.stats.lands": "Terre",
+  "deck.stats.legend": "In ogni grafico il primo numero è quante copie ci sono nel mazzo, il secondo quante carte diverse.",
+  "deck.stats.spells": "Altre carte",
+  "deck.stats.average_mv": "Valore di mana medio",
+  "deck.stats.scope": "Questi numeri riguardano il mazzo principale.",
+  "deck.stats.sideboard": "La sideboard ({n} carte) non è contata.",
+  "deck.stats.chart.color": "Per colore (terre escluse)",
+  "deck.stats.chart.pips": "Simboli di mana nei costi"
 }

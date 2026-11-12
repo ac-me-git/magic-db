@@ -11,6 +11,11 @@
   </div>
 </div>
 
+<nav class="tabs" aria-label="{{ deck.name }}">
+  <a href="/decks/{{ deck.id }}" aria-current="page">{{ t("deck.tab.list") }}</a>
+  <a href="/decks/{{ deck.id }}/stats">{{ t("deck.tab.stats") }}</a>
+</nav>
+
 {{ problem(error) }}
 {% if error and suggestions %}
 <p class="hint">{{ t("results.did_you_mean") }}
