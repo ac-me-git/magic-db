@@ -458,6 +458,36 @@ mode. The card page lists every copy of the card and adds the printing shown.
 then serves it with a long cache header. If the download fails, return a placeholder
 SVG.
 
+**Header.** On every page: the logo (the way to the home page and its filter panel),
+the search box, and two links — "My collection", which opens the statistics, and "My
+decks". The statistics page is the collection's landing page and links to the card
+list, quick add, locations, import and export; quick add is also linked from the
+administration page. Syntax and Administration are in the footer.
+
+- **Where to search.** The Search button is a split button. Pressing it (or Enter)
+  searches where the last search did; its menu chooses "all cards" or "my collection"
+  (`scope=all|collection` in the address, kept by paging, views and sorting). In the
+  collection scope a search is limited to the *printings* in the collection
+  (`search.run(..., owned_only=True)`), so a card is shown in a printing that is
+  owned. The badge with the copies owned is shown in both scopes. The menu is a
+  `<details>` with two submit buttons: it needs no JavaScript.
+- **Suggestions.** While a name is typed, up to 8 card names appear under the box
+  (`GET /search/suggest`, loaded by HTMX), names starting with the text first, the
+  typed part in normal weight and the rest in bold. Choosing one searches for exactly
+  that card. Nothing is suggested once the text contains filter syntax, and in the
+  collection scope only names that are in the collection are offered.
+- **Sorting by column.** In the list view the column headers sort the results (name,
+  cost, type, set, rarity, price); the header of the order in use shows its direction
+  and turns it round. Above the image view there is a line with the same orders plus
+  release date. The links rewrite the `order:` and `dir:` of the query
+  (`search.with_order`), so the search box always shows the search as it is. `type`
+  was added to the orders for this. The collection list's headers sort it too.
+- `static/app.js` is the one script the project writes itself: arrow keys and Escape
+  in the suggestions, and closing the menus on a click elsewhere. Everything works
+  without it.
+- Style sheet and scripts are addressed with a fingerprint of their content
+  (`templating.asset`), so a browser never keeps an old one after an upgrade.
+
 **Safety lock.** A switch that makes the collection read-only, against accidental
 changes (`lock.py`). It is one state for the whole server, saved in the `settings`
 table (migration 0002) so that it survives a restart, and mirrored in

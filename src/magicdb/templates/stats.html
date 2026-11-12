@@ -9,7 +9,15 @@
 {%- endmacro %}
 
 {% block content %}
-<h1 class="page-title">{{ t("stats.title") }}</h1>
+<h1 class="page-title">{{ t("collection.title") }}</h1>
+<p class="links">
+  <a href="/collection">{{ t("collection.hub.list") }}</a> ·
+  <a href="/add">{{ t("nav.add") }}</a> ·
+  <a href="/locations">{{ t("locations.title") }}</a> ·
+  <a href="/import">{{ t("import.title") }}</a> ·
+  <a href="/export">{{ t("export.title") }}</a>
+</p>
+<h2 class="section-title">{{ t("stats.title") }}</h2>
 
 <form class="filters" method="get" action="/stats">
   <select name="location" aria-label="{{ t('entry.location') }}">

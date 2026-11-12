@@ -4,25 +4,39 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ t("app.name") }}{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
-  <script src="{{ url_for('static', path='htmx.min.js') }}" defer></script>
+  <link rel="stylesheet" href="{{ asset('app.css') }}">
+  <script src="{{ asset('htmx.min.js') }}" defer></script>
+  <script src="{{ asset('app.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
 <body>
   <header class="site-header">
     <a class="brand" href="/">{{ t("app.name") }}</a>
     <form class="search-box" action="/search" method="get" role="search">
-      <input type="search" name="q" value="{{ q | default('') }}"
-             placeholder="{{ t('search.placeholder') }}" aria-label="{{ t('search.button') }}"
-             autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="search-field">
+        <input type="search" name="q" id="q" value="{{ q | default('') }}"
+               placeholder="{{ t('search.placeholder') }}" aria-label="{{ t('search.button') }}"
+               autocomplete="off" autocapitalize="off" spellcheck="false"
+               role="combobox" aria-controls="suggestions" aria-autocomplete="list"
+               hx-get="/search/suggest" hx-trigger="input changed delay:150ms" hx-target="#suggestions"
+               hx-vals='{"scope": "{{ scope }}"}'>
+        <div id="suggestions" class="suggestions" role="listbox"></div>
+      </div>
       {% if view is defined and view != "grid" %}<input type="hidden" name="view" value="{{ view }}">{% endif %}
-      <button type="submit">{{ t("search.button") }}</button>
+      <div class="split">
+        <button type="submit" name="scope" value="{{ scope }}">{{ t("search.button.collection") if scope == "collection" else t("search.button") }}</button>
+        <details class="split-menu">
+          <summary aria-label="{{ t('search.scope') }}" title="{{ t('search.scope') }}"></summary>
+          <div class="menu">
+            <button type="submit" name="scope" value="all"{% if scope == "all" %} aria-current="true"{% endif %}>{{ t("search.scope.all") }}</button>
+            <button type="submit" name="scope" value="collection"{% if scope == "collection" %} aria-current="true"{% endif %}>{{ t("search.scope.collection") }}</button>
+          </div>
+        </details>
+      </div>
     </form>
     <nav class="site-nav">
-      <a href="/">{{ t("nav.filters") }}</a>
-      <a href="/collection">{{ t("nav.collection") }}</a>
+      <a href="/stats">{{ t("nav.collection") }}</a>
       <a href="/decks">{{ t("nav.decks") }}</a>
-      <a href="/add">{{ t("nav.add") }}</a>
     </nav>
     <form class="lock-switch {{ 'is-locked' if locked else 'is-unlocked' }}" method="post" action="/lock">
       <input type="hidden" name="next" value="{{ here }}">

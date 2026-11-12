@@ -13,6 +13,8 @@ First version.
   number, format legality, artist, flavour text, year, date, price; `or`, parentheses,
   negation; one result per card or per printing; six sort orders.
 - A filter panel that writes the query for you.
+- Suggestions of card names while typing; search all cards or only your collection;
+  sort the results by clicking a column.
 - "Did you mean" for misspelt names.
 - Card pages with every printing, prices and legalities; mana and tap symbols as images.
 - Card images and symbols downloaded once and served from disk.

@@ -60,7 +60,9 @@ def selected(html, field):
 
 def test_navigation_links(client):
     home = client.get("/").text
-    assert 'href="/collection"' in home and 'href="/add"' in home
+    menu = home.split('class="site-nav"')[1].split("</nav>")[0]
+    assert 'href="/stats"' in menu and 'href="/decks"' in menu and menu.count("<a ") == 2
+    assert 'href="/add"' in client.get("/admin").text  # where "Add cards" lives now
 
 
 def test_add_page_starts_empty_with_defaults(client):

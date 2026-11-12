@@ -1,5 +1,6 @@
 """Jinja environment shared by every page, and the per-visitor interface language."""
 
+import hashlib
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlencode
@@ -18,13 +19,24 @@ ONE_YEAR = 365 * 24 * 60 * 60
 _SYMBOL = {"eur": "€", "usd": "$"}
 
 
-def search_url(q: str, page: int = 1, view: str = "grid") -> str:
+SCOPES = ("all", "collection")
+
+
+def search_url(q: str, page: int = 1, view: str = "grid", scope: str = "all") -> str:
     params: dict[str, str | int] = {"q": q}
     if page > 1:
         params["page"] = page
     if view != "grid":
         params["view"] = view
+    if scope != "all":
+        params["scope"] = scope
     return "/search?" + urlencode(params)
+
+
+def scope_of(request: Request) -> str:
+    """Where the visitor is searching: every card, or only their collection."""
+    scope = request.query_params.get("scope", "all")
+    return scope if scope in SCOPES else "all"
 
 
 def safe_next(target: str | None, default: str = "/") -> str:
@@ -77,6 +89,21 @@ def format_money(value: float | None, currency: str, lang: str) -> str:
 _translator = lru_cache(translator)
 
 
+STATIC_DIR = Path(__file__).parent / "static"
+
+
+@lru_cache
+def asset(name: str) -> str:
+    """The address of a static file, with a fingerprint of its content.
+
+    A browser keeps style sheets and scripts for a long time. The fingerprint changes
+    when the file does, so after an upgrade nobody is left with yesterday's style on
+    today's pages.
+    """
+    digest = hashlib.sha256((STATIC_DIR / name).read_bytes()).hexdigest()[:10]
+    return f"/static/{name}?v={digest}"
+
+
 def build_templates(settings: Settings) -> Jinja2Templates:
     def per_request(request: Request) -> dict[str, object]:
         lang = resolve_language(request, settings.lang)
@@ -87,6 +114,7 @@ def build_templates(settings: Settings) -> Jinja2Templates:
             "languages": LANGS,
             "here": here,
             "locked": getattr(request.app.state, "locked", False),
+            "scope": scope_of(request),
         }
 
     templates = Jinja2Templates(
@@ -101,6 +129,6 @@ def build_templates(settings: Settings) -> Jinja2Templates:
     def count(context: Context, value: int) -> str:
         return format_count(value, context.get("lang", settings.lang))
 
-    templates.env.globals.update(currency=settings.currency, search_url=search_url)
+    templates.env.globals.update(currency=settings.currency, search_url=search_url, asset=asset)
     templates.env.filters.update(money=money, count=count, symbols=render_symbols)
     return templates

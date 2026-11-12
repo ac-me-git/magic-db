@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from markupsafe import Markup, escape
 
 from magicdb import db, search
 from magicdb.catalog import ingest
@@ -17,13 +18,15 @@ from magicdb.config import LANGS
 from magicdb.decks import service as decks
 from magicdb.search import panel
 from magicdb.search.compiler import LIKE, ORDERS, _contains
-from magicdb.templating import LANG_COOKIE, ONE_YEAR, safe_next
+from magicdb.templating import LANG_COOKIE, ONE_YEAR, safe_next, scope_of, search_url
 
 router = APIRouter()
 Conn = Annotated[sqlite3.Connection, Depends(db.get_conn)]
 
 VIEWS = ("grid", "list")
 AUTOCOMPLETE_LIMIT = 15
+SUGGEST_LIMIT = 8
+_SYNTAX = re.compile(r'[:=<>()"!]|\bor\b', re.IGNORECASE)
 _ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
 
@@ -91,9 +94,16 @@ def search_page(
         return no_catalog(request)
     view = view if view in VIEWS else "grid"
     page_number = int(page) if page.isascii() and page.isdigit() and len(page) < 7 else 1
+    scope = scope_of(request)
     result, error = None, None
     try:
-        result = search.run(conn, q, page_number, currency=request.app.state.settings.currency)
+        result = search.run(
+            conn,
+            q,
+            page_number,
+            currency=request.app.state.settings.currency,
+            owned_only=scope == "collection",
+        )
     except search.QueryError as exc:
         error = str(exc)
     owned: dict[str, int] = {}
@@ -110,7 +120,52 @@ def search_page(
         result=result,
         error=error,
         owned=owned,
+        sort=search.sort_links(q, result) if result is not None else {},
     )
+
+
+@router.get("/search/suggest", response_class=HTMLResponse)
+def search_suggestions(request: Request, conn: Conn, q: str = "") -> str:
+    """Names to offer under the search box while typing, as links.
+
+    Only for a plain name: once the text has filter syntax in it there is nothing
+    sensible to complete. In the collection, only names that are in the collection.
+    """
+    text = q.strip()
+    if len(text) < 2 or _SYNTAX.search(text):
+        return ""
+    scope = scope_of(request)
+    if scope == "collection":
+        names = [
+            row["name"]
+            for row in conn.execute(
+                f"SELECT DISTINCT name FROM entries WHERE name {LIKE} "
+                f"ORDER BY name {LIKE} DESC, LENGTH(name), name LIMIT ?",
+                (_contains(text), _contains(text)[1:], SUGGEST_LIMIT),
+            )
+        ]
+    else:
+        names = autocomplete(conn, text)[:SUGGEST_LIMIT]
+    return "".join(
+        f'<a role="option" href="{escape(search_url(exact(name), scope=scope))}">'
+        f"{highlight(name, text)}</a>"
+        for name in names
+    )
+
+
+def exact(name: str) -> str:
+    """The search for exactly this card."""
+    return f'!"{name}"'
+
+
+def highlight(name: str, typed: str) -> Markup:
+    """The name with what was typed in normal weight and the rest in bold, as search
+    engines show completions."""
+    at = name.lower().find(typed.lower())
+    if at < 0:
+        return Markup(f"<b>{escape(name)}</b>")
+    end = at + len(typed)
+    return Markup(f"<b>{escape(name[:at])}</b>{escape(name[at:end])}<b>{escape(name[end:])}</b>")
 
 
 @router.get("/card/{card_id}", response_class=HTMLResponse)

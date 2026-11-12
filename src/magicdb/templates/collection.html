@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% from "_forms.html" import traits with context %}
 {% block title %}{{ t("collection.title") }} · {{ t("app.name") }}{% endblock %}
+{% macro sorter(label, key) -%}
+<a class="sorter{% if sort == key %} is-sorted{% endif %}" href="{{ sort_url(key) }}">{{ label }}{% if sort == key %}<span aria-hidden="true"> ▼</span>{% endif %}</a>
+{%- endmacro %}
+
 {% block content %}
 <h1 class="page-title">{{ t("collection.title") }}</h1>
 <p class="status">{{ t("collection.totals", copies=everything.copies | count, entries=everything.entries | count, value=everything.value | money) }}</p>
@@ -35,13 +39,13 @@
 <table class="card-list">
   <thead>
     <tr>
-      <th class="num">{{ t("entry.qty") }}</th>
-      <th>{{ t("card.name") }}</th>
-      <th class="wide">{{ t("card.set") }}</th>
+      <th class="num">{{ sorter(t("entry.qty"), "quantity") }}</th>
+      <th>{{ sorter(t("card.name"), "name") }}</th>
+      <th class="wide">{{ sorter(t("card.set"), "set") }}</th>
       <th class="wide">{{ t("entry.traits") }}</th>
-      <th class="wide">{{ t("entry.location") }}</th>
-      <th class="num">{{ t("entry.value") }}</th>
-      <th></th>
+      <th class="wide">{{ sorter(t("entry.location"), "location") }}</th>
+      <th class="num">{{ sorter(t("entry.value"), "value") }}</th>
+      <th>{{ sorter(t("collection.sort.added"), "added") }}</th>
     </tr>
   </thead>
   <tbody>

@@ -225,6 +225,10 @@ def collection_page(
         page=page_number,
         pages=max(1, -(-totals["entries"] // service.PER_PAGE)),
         page_url=url,
+        sort_url=lambda key: (
+            "/collection?"
+            + urlencode({k: v for k, v in {"q": q, "location": location, "sort": key}.items() if v})
+        ),
         options=forms.options(conn),
     )
 

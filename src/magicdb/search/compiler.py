@@ -20,7 +20,7 @@ COMPARE = ("=", "!=", "<", "<=", ">", ">=")
 NUMERIC_OPS = (":", *COMPARE)
 LIKE = "LIKE ? ESCAPE '\\'"
 
-ORDERS = ("name", "mv", "released", "rarity", "price", "set")
+ORDERS = ("name", "mv", "released", "rarity", "price", "set", "type")
 DESCENDING_BY_DEFAULT = ("released", "rarity", "price")
 CONDITIONS = ("MT", "NM", "EX", "GD", "LP", "PL", "PO")
 FINISHES = ("nonfoil", "foil", "etched")

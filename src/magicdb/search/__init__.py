@@ -1,5 +1,6 @@
 """Card search: one query language for the search box and the filter panel (SPEC §6)."""
 
+import re
 import sqlite3
 from dataclasses import dataclass, field
 
@@ -10,6 +11,7 @@ from magicdb.catalog.ingest import normalize
 from magicdb.search.compiler import (
     DESCENDING_BY_DEFAULT,
     FILTERS,
+    ORDERS,
     Context,
     compile_query,
     is_only_words,
@@ -17,7 +19,18 @@ from magicdb.search.compiler import (
 from magicdb.search.errors import CatalogUnavailable, QueryError
 from magicdb.search.parser import parse
 
-__all__ = ["FILTERS", "CatalogUnavailable", "QueryError", "Result", "run", "suggest"]
+__all__ = [
+    "FILTERS",
+    "CatalogUnavailable",
+    "QueryError",
+    "Result",
+    "run",
+    "sort_links",
+    "suggest",
+    "with_order",
+]
+
+_SORT_DIRECTIVE = re.compile(r"(?<![\w\":])(?:order|dir):[A-Za-z]+\s*", re.IGNORECASE)
 
 PER_PAGE = 60
 SUGGESTIONS = 5
@@ -29,6 +42,7 @@ _ORDER_KEYS: dict[str, list[tuple[str, bool]]] = {
     "mv": [("p.cmc", True)],
     "released": [("p.released_at", True)],
     "rarity": [("p.rarity_ord", True)],
+    "type": [("p.type_norm", True)],
     "set": [("p.set_code", True), ("p.collector_sort", True), ("p.collector_number", True)],
 }
 _TIE_BREAK = [("p.name_norm", False), ("p.released_at", False), ("p.id", False)]
@@ -58,6 +72,27 @@ def _order_keys(ctx: Context) -> list[tuple[str, str]]:
     return chosen + [(expr, "ASC") for expr, _ in _TIE_BREAK]
 
 
+def with_order(query: str, order: str, direction: str | None = None) -> str:
+    """The same search, sorted another way: any ``order:`` and ``dir:`` it has are
+    replaced. Used by the column headers of the results."""
+    parts = [_SORT_DIRECTIVE.sub("", query).strip()]
+    if order != "name" or direction:
+        parts.append(f"order:{order}")
+    if direction:
+        parts.append(f"dir:{direction}")
+    return " ".join(part for part in parts if part)
+
+
+def sort_links(query: str, result: "Result") -> dict[str, str]:
+    """For every order, the query that sorts by it. Asking for the order already in use
+    turns it the other way round."""
+    other = "asc" if result.direction == "desc" else "desc"
+    return {
+        order: with_order(query, order, other if order == result.order else None)
+        for order in ORDERS
+    }
+
+
 def suggest(conn: sqlite3.Connection, text: str) -> list[str]:
     """Card names that look like ``text``, best first ("did you mean…")."""
     names = dict(conn.execute("SELECT name, name_norm FROM cat.names"))
@@ -78,8 +113,12 @@ def run(
     *,
     currency: str = "eur",
     per_page: int = PER_PAGE,
+    owned_only: bool = False,
 ) -> Result:
     """Run a search and return one page of ``cat.printings`` rows.
+
+    With ``owned_only`` the search is over the collection: only printings that are in
+    it, so a card is shown in a printing you actually have.
 
     Raises ``QueryError`` (message fit for the user) when the text cannot be understood.
     """
@@ -87,6 +126,8 @@ def run(
         raise CatalogUnavailable("the card catalog has not been downloaded yet")
     node = parse(query)
     where, params, ctx = compile_query(node, currency)
+    if owned_only:
+        where = f"({where}) AND p.id IN (SELECT scryfall_id FROM entries)"
     page = max(1, page)
 
     keys = _order_keys(ctx)

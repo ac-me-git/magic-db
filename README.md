@@ -69,12 +69,14 @@ uv run magicdb
 
 | Page | What it is for |
 |---|---|
-| **Filters** (home) | The search box and the filter panel |
-| **Collection** | What you own; from here: locations, statistics, import, export |
-| **Decks** | Deck lists and how complete each one is |
-| **Add cards** | Quick add: type a name, pick the printing, press Enter |
+| **The logo** (home) | The filter panel: build a search by picking colours, types, sets… |
+| **The search box** | On every page. Suggests card names as you type; the arrow on the Search button chooses between all cards and your collection |
+| **My collection** | Statistics, and from there: the card list, quick add, locations, import, export |
+| **My decks** | Deck lists and how complete each one is |
 | **Syntax** (footer) | Every search filter, with examples you can click |
 | **Administration** (footer) | Catalog and backup status, run them now, download a backup |
+
+In the list view, click a column's heading to sort by it; click again to reverse.
 
 The switch with the padlock, top right, locks the collection and the decks: while it is
 on you can look at everything but change nothing.

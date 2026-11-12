@@ -77,7 +77,7 @@ for a set, a collector number, or add `include:extras`.
 | `lang` | I own it in this language | `lang:it` |
 | `deck` | In a deck whose name contains | `deck:"dragons"` |
 | `unique` | Show cards (default) or every printing | `unique:prints` |
-| `order` | Sort by: name, mv, released, rarity, price, set | `order:price` |
+| `order` | Sort by: name, mv, released, rarity, price, set, type | `order:price` |
 | `dir` | Sort direction: asc or desc | `dir:desc` |
 | `include` | Also show tokens and other extras | `include:extras` |
 
