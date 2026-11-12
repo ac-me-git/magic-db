@@ -97,7 +97,7 @@ def test_search_list(client):
     page = client.get("/search?q=t:dragon&view=list")
     assert page.status_code == 200
     assert "<table" in page.text and "Shivan Dragon" in page.text
-    assert "<img" not in page.text
+    assert 'src="/img/' not in page.text  # mana symbols are images too, cards are not shown
     assert 'name="view" value="list"' in page.text  # a new search keeps the view
     assert client.get("/search?q=t:dragon&view=cinema").text.count("<img") > 0
 
@@ -215,7 +215,7 @@ def test_card_page_special_cards(client, fixture_cards):
     goyf = client.get(f"/card/{card_id(fixture_cards, 'Tarmogoyf')}").text
     assert "*/1+*" in goyf
     split = client.get(f"/card/{card_id(fixture_cards, 'Fire // Ice')}").text
-    assert "flip-toggle" not in split and "{1}{R}" in split and "{1}{U}" in split
+    assert "flip-toggle" not in split and 'alt="{R}"' in split and 'alt="{U}"' in split
 
 
 @pytest.mark.parametrize("card", [UNKNOWN, "nonsense", "1%27%20OR%201=1"])

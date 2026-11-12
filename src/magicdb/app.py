@@ -8,7 +8,7 @@ import httpx
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from magicdb import __version__, db, images, web
+from magicdb import __version__, db, images, symbols, web
 from magicdb.catalog import publish
 from magicdb.config import Settings, load_settings
 from magicdb.templating import build_templates
@@ -46,5 +46,6 @@ def create_app(
 
     app.include_router(web.router)
     app.include_router(images.router)
+    app.include_router(symbols.router)
     app.add_exception_handler(404, web.not_found)
     return app

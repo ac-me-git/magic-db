@@ -3,9 +3,9 @@
 
 {% macro face_text(name, cost, type_line, text, power, toughness, loyalty, defense, flavor) %}
 <section class="face">
-  <h2>{{ name }} <span class="mana">{{ cost or "" }}</span></h2>
+  <h2>{{ name }} <span class="mana">{{ cost | symbols }}</span></h2>
   <p class="type-line">{{ type_line }}</p>
-  {% if text %}<p class="oracle">{{ text }}</p>{% endif %}
+  {% if text %}<p class="oracle">{{ text | symbols }}</p>{% endif %}
   {% if power is not none and toughness is not none %}<p class="stats">{{ power }}/{{ toughness }}</p>{% endif %}
   {% if loyalty is not none %}<p class="stats">{{ t("card.loyalty") }}: {{ loyalty }}</p>{% endif %}
   {% if defense is not none %}<p class="stats">{{ t("card.defense") }}: {{ defense }}</p>{% endif %}

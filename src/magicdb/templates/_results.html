@@ -50,7 +50,7 @@
     <tr>
       <td><a href="/card/{{ card.id }}">{{ card.name }}</a>
           <span class="narrow sub">{{ card.type_line }}</span></td>
-      <td class="mana wide">{{ card.mana_cost or "" }}</td>
+      <td class="mana wide">{{ card.mana_cost | symbols }}</td>
       <td class="wide">{{ card.type_line }}</td>
       <td class="nowrap"><span class="set-code">{{ card.set_code }}</span> {{ card.collector_number }}</td>
       <td class="wide">{{ t("rarity." ~ card.rarity, default=card.rarity) }}</td>

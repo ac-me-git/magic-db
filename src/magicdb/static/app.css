@@ -427,10 +427,25 @@ main {
 }
 
 .mana {
-  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
-  font-size: 0.85em;
   white-space: nowrap;
   color: var(--muted);
+}
+
+/* a mana or tap symbol inline with text; its alt text is the {X} it replaces */
+.ms {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin: 0 0.06em;
+  vertical-align: -0.15em;
+  border-radius: 50%;
+  font-size: inherit;
+}
+
+.mana .ms {
+  width: 1.05em;
+  height: 1.05em;
+  box-shadow: -1px 1px 0 rgb(0 0 0 / 55%);
 }
 
 .tag {

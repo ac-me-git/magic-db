@@ -84,7 +84,8 @@ Data directory:
 data/
   collection.db
   catalog/cards-YYYYMMDDTHHMMSS.db     newest valid file is the live catalog
-  images/<size>/<aa>/<scryfall_id>-<face>.jpg
+  images/<size>/<aa>/<scryfall_id>-<face>-<version>.jpg
+  symbols/<CODE>.svg
   backups/
   tmp/
 ```
@@ -434,6 +435,17 @@ one most used while sorting physical cards.
 `data/images/`; on a miss it downloads from the URL stored in the catalog, saves it,
 then serves it with a long cache header. If the download fails, return a placeholder
 SVG.
+
+**Mana and tap symbols.** Wherever a mana cost or rules text is shown, `{2}`, `{R}`,
+`{T}`, `{R/W}` … are rendered as small images by the `symbols` template filter
+(`symbols.py`). Each image keeps the original `{X}` as `alt` text, so the page still
+reads and copies correctly and degrades to plain text if the picture is missing.
+`/symbol/{CODE}.svg` serves Scryfall's SVG card symbols
+(`https://svgs.scryfall.io/card-symbols/{CODE}.svg`) through the same download-once
+disk cache as card images, in `data/symbols/`; the repository contains none of them.
+`CODE` is the symbol without braces and slashes (`{2/W}` → `2W`), with `∞` →
+`INFINITY` and `½` → `HALF` — checked against all 84 symbols of Scryfall's
+`/symbology`. The response carries a `Content-Security-Policy` that forbids scripts.
 
 **Security.** Optional Basic auth (§3). All state-changing routes are `POST` and reject
 requests whose `Origin` header, when present, does not match the `Host`. The app is

@@ -37,6 +37,10 @@ class Settings:
         return self.data_dir / "images"
 
     @property
+    def symbols_dir(self) -> Path:
+        return self.data_dir / "symbols"
+
+    @property
     def tmp_dir(self) -> Path:
         return self.data_dir / "tmp"
 

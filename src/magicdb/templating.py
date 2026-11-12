@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 
 from magicdb.config import Settings
 from magicdb.i18n import translator
+from magicdb.symbols import render_symbols
 
 _SYMBOL = {"eur": "€", "usd": "$"}
 
@@ -43,5 +44,5 @@ def build_templates(settings: Settings) -> Jinja2Templates:
         currency=settings.currency,
         search_url=search_url,
     )
-    templates.env.filters.update(money=money, count=count)
+    templates.env.filters.update(money=money, count=count, symbols=render_symbols)
     return templates
