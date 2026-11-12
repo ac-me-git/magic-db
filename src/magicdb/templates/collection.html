@@ -55,9 +55,9 @@
       <td class="wide nowrap">{{ traits(entry) }}</td>
       <td class="wide">{{ entry.location_name or t("entry.unassigned") }}</td>
       <td class="num">{{ entry.value | money }}</td>
-      <td class="num"><a href="/collection/{{ entry.id }}/edit?next={{ here | urlencode }}"
+      <td class="num">{% if not locked %}<a href="/collection/{{ entry.id }}/edit?next={{ here | urlencode }}"
              hx-get="/collection/{{ entry.id }}/edit?next={{ here | urlencode }}"
-             hx-target="closest tr" hx-swap="outerHTML">{{ t("entry.edit") }}</a></td>
+             hx-target="closest tr" hx-swap="outerHTML">{{ t("entry.edit") }}</a>{% endif %}</td>
     </tr>
     {% endfor %}
   </tbody>

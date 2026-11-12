@@ -22,12 +22,13 @@ def conn(settings):
 
 
 def test_migrate_creates_the_schema_once(settings):
-    assert db.migrate(settings) == 1
-    assert db.migrate(settings) == 1  # nothing left to apply
+    latest = len(list(db.MIGRATIONS_DIR.glob("[0-9]*.sql")))
+    assert db.migrate(settings) == latest
+    assert db.migrate(settings) == latest  # nothing left to apply
     with closing(db.connect(settings)) as conn:
         tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master")}
-        assert {"locations", "entries", "history", "job_runs"} <= tables
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 1
+        assert {"locations", "entries", "history", "job_runs", "settings"} <= tables
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == latest
         assert conn.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
     assert not settings.backup_dir.exists()  # a brand-new database needs no backup
 

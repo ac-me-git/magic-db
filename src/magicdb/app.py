@@ -13,7 +13,7 @@ from fastapi.responses import PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import RequestResponseEndpoint
 
-from magicdb import __version__, admin, db, images, jobs, symbols, web
+from magicdb import __version__, admin, db, images, jobs, lock, symbols, web
 from magicdb.catalog import publish
 from magicdb.collection import routes as collection_routes
 from magicdb.collection import transfer
@@ -65,12 +65,27 @@ def create_app(
 
     db.migrate(settings)
     publish.cleanup_old(settings)
+    app.state.locked = lock.load(settings)
 
     app.mount("/static", StaticFiles(directory=_PKG / "static"), name="static")
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:
         return {"status": "ok"}
+
+    # Middlewares run in the reverse of the order they are added here:
+    # password first, then same origin, then the safety lock.
+
+    @app.middleware("http")
+    async def safety_lock(request: Request, call_next: RequestResponseEndpoint) -> Response:
+        """While the collection is locked, refuse whatever could change it."""
+        if (
+            app.state.locked
+            and request.method not in SAFE_METHODS
+            and not lock.allowed_while_locked(request.url.path)
+        ):
+            return web.render(request, "locked.html", 423)
+        return await call_next(request)
 
     @app.middleware("http")
     async def same_origin(request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -100,6 +115,7 @@ def create_app(
 
     app.include_router(web.router)
     app.include_router(admin.router)
+    app.include_router(lock.router)
     app.include_router(collection_routes.router)
     app.include_router(transfer.router)
     app.include_router(images.router)

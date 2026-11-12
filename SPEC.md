@@ -264,6 +264,9 @@ CREATE TABLE job_runs (
   status TEXT NOT NULL,                          -- running | ok | skipped | error
   message TEXT
 );
+
+-- migration 0002: what the owner switches from the pages (the safety lock)
+CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 ```
 
 Rules:
@@ -453,6 +456,25 @@ mode. The card page lists every copy of the card and adds the printing shown.
 `data/images/`; on a miss it downloads from the URL stored in the catalog, saves it,
 then serves it with a long cache header. If the download fails, return a placeholder
 SVG.
+
+**Safety lock.** A switch that makes the collection read-only, against accidental
+changes (`lock.py`). It is one state for the whole server, saved in the `settings`
+table (migration 0002) so that it survives a restart, and mirrored in
+`app.state.locked`. A new collection is unlocked.
+
+- While locked, cards and the collection can be searched, browsed, exported, counted
+  in the statistics and backed up; the card catalog can be updated. Nothing can change
+  the collection: adding, editing, moving, removing, importing, managing locations.
+- Enforcement is on the server, in one place: a middleware refuses every request that
+  is not a plain read (`GET`, `HEAD`, `OPTIONS`) with status 423 and a page that offers
+  to unlock, except `POST /lock` itself and `POST /admin/…`. It denies by default, so a
+  page added later that changes the collection is locked without anyone remembering.
+- A slim bar under the header of every page shows the state and has the button to
+  switch it (`POST /lock` with `state=on|off` and `next`). While locked the pages do
+  not show the forms and links that would be refused; they show a notice with "Unlock"
+  instead, which comes back to the same page.
+- The switch is a deliberate click, not a password: it guards against accidents, not
+  against people. Use `MAGICDB_PASSWORD` or an access gateway for that.
 
 **Mana and tap symbols.** Wherever a mana cost or rules text is shown, `{2}`, `{R}`,
 `{T}`, `{R/W}` … are rendered as small images by the `symbols` template filter

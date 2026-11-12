@@ -1,0 +1,8 @@
+<div class="notice locked-notice" role="status">
+  <p>{{ t("lock.notice") }}</p>
+  <form method="post" action="/lock">
+    <input type="hidden" name="state" value="off">
+    <input type="hidden" name="next" value="{{ here }}">
+    <button type="submit" class="primary">{{ t("lock.unlock") }}</button>
+  </form>
+</div>

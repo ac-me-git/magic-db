@@ -126,7 +126,7 @@ def test_csv_export(stocked):
 def test_json_export(stocked):
     service.create_location(stocked, "Empty shelf", "other", "for later")
     dump = json.loads(exporters.export_json(stocked))
-    assert dump["magic_db_export"] == 1 and dump["schema_version"] == 1
+    assert dump["magic_db_export"] == 1 and dump["schema_version"] >= 2
     assert [loc["name"] for loc in dump["locations"]] == [
         "Binder 1",
         "Blue box",

@@ -6,6 +6,7 @@
 
 {{ problem(error) }}
 
+{% if locked %}{% include "_locked_notice.html" %}{% else %}
 {% if last %}
 <div class="done" role="status">
   <p>{{ t("add.done", n=n, name=last.name, set=last.set_code | upper,
@@ -39,4 +40,5 @@
     <button type="submit" class="primary">{{ t("add.submit") }}</button>
   </div>
 </form>
+{% endif %}
 {% endblock %}

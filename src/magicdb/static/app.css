@@ -9,6 +9,8 @@
   --error-bg: #fbe9e7;
   --error-border: #c0392b;
   --row: #f0eee9;
+  --lock-bg: #fdf0c8;
+  --lock-text: #5c4400;
   color-scheme: light dark;
 }
 
@@ -24,6 +26,8 @@
     --error-bg: #3a1f1b;
     --error-border: #e57368;
     --row: #2a2825;
+    --lock-bg: #4a3a0c;
+    --lock-text: #f6e2a0;
   }
 }
 
@@ -970,4 +974,40 @@ button:disabled {
 .status-running {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* --- safety lock --------------------------------------------------------------- */
+
+.lock-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.75rem;
+  padding: 0.3rem 1rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.lock-bar button {
+  padding: 0.15rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.lock-bar.is-locked {
+  background: var(--lock-bg);
+  color: var(--lock-text);
+  font-weight: 600;
+}
+
+.lock-bar.is-unlocked {
+  color: var(--muted);
+}
+
+.locked-notice {
+  display: block;
+}
+
+.locked-notice p {
+  margin: 0 0 0.5rem;
 }

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ t("lock.refused_title") }} · {{ t("app.name") }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>{{ t("lock.refused_title") }}</h1>
+  <p>{{ t("lock.refused") }}</p>
+  {% include "_locked_notice.html" %}
+</section>
+{% endblock %}

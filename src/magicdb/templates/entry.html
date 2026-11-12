@@ -2,9 +2,11 @@
 {% block title %}{{ entry.name }} · {{ t("collection.title") }}{% endblock %}
 {% block content %}
 <h1 class="page-title">{{ t("entry.edit_title") }}</h1>
+{% if locked %}{% include "_locked_notice.html" %}{% else %}
 <table class="card-list">
   <tbody>
     {% include "_entry_edit.html" %}
   </tbody>
 </table>
+{% endif %}
 {% endblock %}

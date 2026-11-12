@@ -401,5 +401,12 @@
   "admin.settings.schedule_off": "Spenti (MAGICDB_SCHEDULER=off).",
   "admin.settings.password": "Password richiesta",
   "admin.yes": "Sì",
-  "admin.no": "No"
+  "admin.no": "No",
+  "lock.locked": "Collezione bloccata: sola lettura",
+  "lock.unlocked": "Collezione sbloccata: modifiche consentite",
+  "lock.lock": "Blocca",
+  "lock.unlock": "Sblocca",
+  "lock.notice": "La collezione è bloccata, così niente può modificarla per sbaglio. Sbloccala per aggiungere, modificare, spostare, rimuovere o importare carte.",
+  "lock.refused_title": "La collezione è bloccata",
+  "lock.refused": "Non è stato modificato niente."
 }

@@ -80,7 +80,7 @@
         <td class="nowrap"><a href="/card/{{ entry.scryfall_id }}"><span class="set-code">{{ entry.set_code }}</span> {{ entry.collector_number }}</a></td>
         <td class="nowrap">{{ traits(entry) }}</td>
         <td>{{ entry.location_name or t("entry.unassigned") }}</td>
-        <td class="num"><a href="/collection/{{ entry.id }}/edit?next={{ here | urlencode }}">{{ t("entry.edit") }}</a></td>
+        <td class="num">{% if not locked %}<a href="/collection/{{ entry.id }}/edit?next={{ here | urlencode }}">{{ t("entry.edit") }}</a>{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -90,6 +90,7 @@
   <p class="hint">{{ t("copies.none") }}</p>
   {% endif %}
 
+  {% if not locked %}
   <form class="panel" method="post" action="/add">
     <h3>{{ t("copies.add_title", set=card.set_code | upper, number=card.collector_number) }}</h3>
     <input type="hidden" name="printing" value="{{ card.id }}">
@@ -101,6 +102,7 @@
       <button type="submit" class="primary">{{ t("copies.add") }}</button>
     </div>
   </form>
+  {% endif %}
 </section>
 
 <section class="printings">

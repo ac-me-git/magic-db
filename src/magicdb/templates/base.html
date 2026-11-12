@@ -25,8 +25,13 @@
       <a href="/syntax">{{ t("nav.syntax") }}</a>
     </nav>
   </header>
-  <main>
-    {% block content %}{% endblock %}
+  <form class="lock-bar {{ 'is-locked' if locked else 'is-unlocked' }}" method="post" action="/lock">
+    <input type="hidden" name="next" value="{{ here }}">
+    <input type="hidden" name="state" value="{{ 'off' if locked else 'on' }}">
+    <span>{{ t("lock.locked") if locked else t("lock.unlocked") }}</span>
+    <button type="submit">{{ t("lock.unlock") if locked else t("lock.lock") }}</button>
+  </form>
+  <main>    {% block content %}{% endblock %}
   </main>
   <footer class="site-footer">
     <p class="languages">

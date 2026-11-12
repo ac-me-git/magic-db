@@ -17,6 +17,7 @@
       <span class="sub">{{ t("locations.holds", copies=place.copies | count, value=place.value | money) }}</span>
       {% if place.notes %}<span class="sub">{{ place.notes }}</span>{% endif %}
     </div>
+    {% if not locked %}
     <details>
       <summary>{{ t("locations.manage") }}</summary>
       <form method="post" action="/locations/{{ place.id }}">
@@ -67,6 +68,7 @@
       </form>
       {% endif %}
     </details>
+    {% endif %}
   </li>
   {% endfor %}
   {% if unassigned.entries %}
@@ -82,6 +84,7 @@
 <div class="empty"><p>{{ t("locations.none") }}</p></div>
 {% endif %}
 
+{% if locked %}{% include "_locked_notice.html" %}{% else %}
 <form class="panel" method="post" action="/locations">
   <h2>{{ t("locations.new") }}</h2>
   <div class="fields">
@@ -103,4 +106,5 @@
     <button type="submit" class="primary">{{ t("locations.create") }}</button>
   </div>
 </form>
+{% endif %}
 {% endblock %}

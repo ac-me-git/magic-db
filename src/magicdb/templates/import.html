@@ -8,6 +8,7 @@
 <div class="error" role="alert"><p>{{ t("import.error." ~ error) }}</p></div>
 {% endif %}
 
+{% if locked %}{% include "_locked_notice.html" %}{% else %}
 <form class="panel" method="post" action="/import" enctype="multipart/form-data">
   <label>{{ t("import.file") }}
     <input type="file" name="file" accept=".csv,.json,.txt,text/csv,application/json" required>
@@ -16,6 +17,7 @@
     <button type="submit" class="primary">{{ t("import.preview") }}</button>
   </div>
 </form>
+{% endif %}
 
 <h2 class="section-title">{{ t("import.formats") }}</h2>
 <ul class="plain">

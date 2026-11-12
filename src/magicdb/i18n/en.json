@@ -367,5 +367,12 @@
   "admin.settings.schedule_off": "Switched off (MAGICDB_SCHEDULER=off).",
   "admin.settings.password": "Password required",
   "admin.yes": "Yes",
-  "admin.no": "No"
+  "admin.no": "No",
+  "lock.locked": "Collection locked: read only",
+  "lock.unlocked": "Collection unlocked: changes allowed",
+  "lock.lock": "Lock",
+  "lock.unlock": "Unlock",
+  "lock.notice": "The collection is locked, so nothing can change it by accident. Unlock it to add, edit, move, remove or import cards.",
+  "lock.refused_title": "The collection is locked",
+  "lock.refused": "Nothing was changed."
 }
