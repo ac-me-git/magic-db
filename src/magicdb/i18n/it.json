@@ -408,5 +408,6 @@
   "lock.unlock": "Sblocca",
   "lock.notice": "La collezione è bloccata, così niente può modificarla per sbaglio. Sbloccala per aggiungere, modificare, spostare, rimuovere o importare carte.",
   "lock.refused_title": "La collezione è bloccata",
-  "lock.refused": "Non è stato modificato niente."
+  "lock.refused": "Non è stato modificato niente.",
+  "progress.indexing": "costruisco gli indici (il passo più lungo)…"
 }

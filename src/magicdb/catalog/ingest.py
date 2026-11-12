@@ -108,7 +108,7 @@ _LEADING_DIGITS = re.compile(r"^\d+")
 class Progress:
     """Where a running update is, for the pages that show it. Read-only for them."""
 
-    phase: str = "idle"  # idle | checking | downloading | building | publishing
+    phase: str = "idle"  # idle | checking | downloading | building | indexing | publishing
     done: int = 0  # bytes downloaded, or printings read
     total: int = 0  # 0 when not known
 
@@ -379,6 +379,7 @@ def build_catalog(
                 _flush(conn, rows, names)
         _flush(conn, rows, names)
 
+        _step("indexing")  # sets, facets, indexes: the slowest part, with nothing to count
         _insert_sets(conn, sets)
         conn.executemany(
             "INSERT INTO facets (kind, value, n) VALUES (?, ?, ?)",

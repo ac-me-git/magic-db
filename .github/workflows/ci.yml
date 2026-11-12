@@ -19,3 +19,23 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pytest
+
+  docker:
+    # Builds the image and starts it, without publishing: the Dockerfile cannot rot.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t magic-db:ci .
+      - name: The container starts, is healthy and runs as non-root
+        run: |
+          docker run -d --name magic-db -e MAGICDB_SCHEDULER=off -p 8080:8080 magic-db:ci
+          for attempt in $(seq 1 30); do
+            sleep 1
+            if curl -fsS http://127.0.0.1:8080/healthz; then ok=1; break; fi
+          done
+          docker logs magic-db
+          test "${ok:-0}" = 1
+          test "$(docker exec magic-db id -u)" != 0
+          curl -fsS http://127.0.0.1:8080/ | grep -q "magic-db"
+          curl -fsS http://127.0.0.1:8080/static/app.css > /dev/null
+          curl -fsS http://127.0.0.1:8080/syntax > /dev/null

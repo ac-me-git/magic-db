@@ -1,0 +1,85 @@
+name: Release
+
+# Pushing a tag like v1.0.0 publishes the Docker image and the Windows executable.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --python 3.12
+      - run: uv run ruff check .
+      - run: uv run pytest
+
+  docker:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --python 3.12
+      - run: uv pip install pyinstaller
+      - run: uv run python scripts/build_exe.py
+      - name: The executable starts and answers
+        shell: pwsh
+        run: |
+          $env:MAGICDB_SCHEDULER = "off"
+          $env:MAGICDB_PORT = "8099"
+          $server = Start-Process -FilePath dist\magic-db.exe -ArgumentList "--no-browser" -PassThru
+          try {
+            $ok = $false
+            foreach ($attempt in 1..30) {
+              Start-Sleep -Seconds 1
+              try {
+                if ((Invoke-WebRequest http://127.0.0.1:8099/healthz -UseBasicParsing).StatusCode -eq 200) { $ok = $true; break }
+              } catch { }
+            }
+            if (-not $ok) { throw "magic-db.exe did not answer on /healthz" }
+            if (-not (Test-Path dist\data\collection.db)) { throw "data folder was not created beside the executable" }
+          } finally {
+            Stop-Process -Id $server.Id -Force
+          }
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/magic-db.exe
+          generate_release_notes: true

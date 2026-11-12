@@ -669,7 +669,28 @@ while building it:
 - **Windows**: a single `magic-db.exe` built with PyInstaller by GitHub Actions on every
   tag and attached to the release. Double-click starts the server, keeps `data/` next to
   the executable, and opens the browser. Alternative documented path: `uv run magicdb`.
-- **CI**: `ruff check`, `ruff format --check`, `pytest` on Linux and Windows.
+- **CI**: `ruff check`, `ruff format --check`, `pytest` on Linux and Windows; a second
+  job builds the Docker image and starts it (healthy, non-root, pages answer) without
+  publishing, so the Dockerfile cannot rot.
+
+How it is built:
+
+- `scripts/build_exe.py` runs PyInstaller on `packaging/launcher.py` (one file, with a
+  console window that shows the address and stops the server when closed). The data
+  files of the package and the modules that pick their implementation at run time
+  (`uvicorn`, `ijson`, `rapidfuzz`, `python_multipart`) are collected explicitly.
+- Run as the executable (`sys.frozen`), `cli.py` defaults the data folder to `data`
+  beside the executable instead of the current directory, opens the browser 1.5 s
+  after starting (`--no-browser` to prevent it), and if it cannot start it says why
+  and waits for Enter instead of vanishing.
+- `.github/workflows/release.yml`, on a `v*` tag: tests, then the image for
+  `linux/amd64` and `linux/arm64` to `ghcr.io/<owner>/magic-db` (`latest`, `X.Y`,
+  `X.Y.Z`), and the executable — started once and checked on `/healthz` before it is
+  attached to the GitHub release.
+- The image runs as user `magicdb` (uid 10001) with `/data` as its only volume, and the
+  nightly jobs follow the container's `TZ`.
+- The whole package folder goes into the wheel (and so the image) and the executable:
+  nothing the app needs at run time may live outside `src/magicdb/`.
 
 ## 11. Legal
 

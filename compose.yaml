@@ -1,0 +1,28 @@
+# docker compose up -d      then open http://localhost:8080
+#
+# The first start downloads the card catalog (about 80 MB) and builds it: a few minutes.
+# Everything is kept in the "magic-db-data" volume; back that up, or point
+# MAGICDB_BACKUP_DIR at a folder you already back up.
+
+services:
+  magic-db:
+    image: ghcr.io/ac-me-git/magic-db:latest
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # The nightly jobs run at these hours of *this* time zone.
+      TZ: Europe/Rome
+      MAGICDB_UPDATE_HOUR: "3"
+      MAGICDB_BACKUP_HOUR: "4"
+      # MAGICDB_LANG: it            # interface language when the browser asks for neither
+      # MAGICDB_CURRENCY: usd       # default: eur
+      # MAGICDB_PASSWORD: change-me # ask for a password (any user name)
+      # MAGICDB_BACKUP_DIR: /backups
+    volumes:
+      - magic-db-data:/data
+      # - /path/on/the/host/backups:/backups
+
+volumes:
+  magic-db-data:

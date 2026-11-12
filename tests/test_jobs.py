@@ -460,7 +460,7 @@ def test_update_reports_its_phases(settings, monkeypatch):
         ingest, "_step", lambda phase, total=0: (phases.append(phase), real(phase, total))[1]
     )
     ingest.run_update(settings, from_file=CARDS_JSON, sets_file=SETS_JSON, min_rows=1)
-    assert phases == ["building", "publishing", "idle"]
+    assert phases == ["building", "indexing", "publishing", "idle"]
     assert ingest.progress.phase == "idle"
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -478,7 +478,7 @@ def test_update_reports_its_phases(settings, monkeypatch):
     phases.clear()
     with httpx.Client(transport=httpx.MockTransport(handler)) as client:
         ingest.run_update(settings, client=client, min_rows=1)
-    assert phases == ["checking", "downloading", "building", "publishing", "idle"]
+    assert phases == ["checking", "downloading", "building", "indexing", "publishing", "idle"]
 
 
 # --- settings -------------------------------------------------------------------------
@@ -601,6 +601,8 @@ def test_no_catalog_page_shows_progress(settings):
         ingest._step("building")
         ingest.progress.done = 5000
         assert "reading the cards" in client.get("/admin").text
+        ingest._step("indexing")
+        assert "building the indexes" in client.get("/admin").text
         ingest._step("idle")
     assert "has not been downloaded yet" in client.get("/admin").text
 

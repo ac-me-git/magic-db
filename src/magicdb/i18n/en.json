@@ -374,5 +374,6 @@
   "lock.unlock": "Unlock",
   "lock.notice": "The collection is locked, so nothing can change it by accident. Unlock it to add, edit, move, remove or import cards.",
   "lock.refused_title": "The collection is locked",
-  "lock.refused": "Nothing was changed."
+  "lock.refused": "Nothing was changed.",
+  "progress.indexing": "building the indexes (the longest step)…"
 }
