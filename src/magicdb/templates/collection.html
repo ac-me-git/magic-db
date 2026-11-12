@@ -4,7 +4,7 @@
 {% block content %}
 <h1 class="page-title">{{ t("collection.title") }}</h1>
 <p class="status">{{ t("collection.totals", copies=everything.copies | count, entries=everything.entries | count, value=everything.value | money) }}</p>
-<p class="links"><a href="/add">{{ t("nav.add") }}</a> · <a href="/locations">{{ t("locations.title") }}</a> · <a href="/import">{{ t("import.title") }}</a> · <a href="/export">{{ t("export.title") }}</a></p>
+<p class="links"><a href="/add">{{ t("nav.add") }}</a> · <a href="/locations">{{ t("locations.title") }}</a> · <a href="/stats">{{ t("nav.stats") }}</a> · <a href="/import">{{ t("import.title") }}</a> · <a href="/export">{{ t("export.title") }}</a></p>
 
 <form class="filters" method="get" action="/collection">
   <input type="search" name="q" value="{{ q }}" placeholder="{{ t('collection.filter.name') }}" aria-label="{{ t('collection.filter.name') }}">

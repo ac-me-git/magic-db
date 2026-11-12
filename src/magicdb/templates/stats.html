@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ t("stats.title") }} · {{ t("app.name") }}{% endblock %}
+
+{% macro label(chart, key) -%}
+{% if chart == "color" %}{{ t("color." ~ key) }}
+{%- elif chart == "rarity" %}{{ t("rarity." ~ key, default=key) }}
+{%- elif chart == "finish" %}{{ t("finish." ~ key) }}
+{%- elif chart == "condition" %}{{ key }} · {{ t("condition." ~ key) }}
+{%- elif chart == "language" %}{{ t("lang." ~ key, default=key) }}
+{%- elif chart == "location" %}{{ key or t("entry.unassigned") }}
+{%- else %}{{ key }}{% endif %}
+{%- endmacro %}
+
+{% macro chart(name) %}
+{% set bars = charts[name] %}
+{% if bars %}
+{% set most = bars | map(attribute="copies") | max %}
+<section class="chart">
+  <h2>{{ t("stats.chart." ~ name) }}</h2>
+  <ul class="bars">
+    {% for bar in bars %}
+    <li>
+      <span class="bar-label">{{ label(name, bar.key) }}</span>
+      <span class="bar-track"><span class="bar{% if name == 'color' %} color-{{ bar.key }}{% endif %}" style="width: {{ (100 * bar.copies / most) | round(1) }}%"></span></span>
+      <span class="bar-number" title="{{ t('stats.copies') }}">{{ bar.copies | count }}</span>
+      <span class="bar-number sub" title="{{ t('stats.cards') }}">{{ bar.cards | count }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endmacro %}
+
+{% macro sort_link(value) -%}
+<a href="/stats?{{ {'location': location, 'sets': value, 'set_type': set_type} | urlencode }}#sets"
+   {%- if sets_sort == value %} aria-current="true"{% endif %}>{{ t("stats.sets.sort." ~ value) }}</a>
+{%- endmacro %}
+
+{% block content %}
+<h1 class="page-title">{{ t("stats.title") }}</h1>
+
+<form class="filters" method="get" action="/stats">
+  <select name="location" aria-label="{{ t('entry.location') }}">
+    <option value="">{{ t("collection.filter.everywhere") }}</option>
+    <option value="none"{% if location == "none" %} selected{% endif %}>{{ t("entry.unassigned") }}</option>
+    {% for place in options.locations %}
+    <option value="{{ place.id }}"{% if place.id | string == location %} selected{% endif %}>{{ place.name }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">{{ t("stats.show") }}</button>
+</form>
+
+{% if not totals.entries %}
+<div class="empty"><p>{{ t("stats.empty") }}</p></div>
+{% else %}
+<dl class="tiles">
+  <div><dt>{{ t("stats.total.copies") }}</dt><dd>{{ totals.copies | count }}</dd></div>
+  <div><dt>{{ t("stats.total.cards") }}</dt><dd>{{ totals.cards | count }}</dd></div>
+  <div><dt>{{ t("stats.total.printings") }}</dt><dd>{{ totals.printings | count }}</dd></div>
+  <div><dt>{{ t("stats.total.value") }}</dt><dd>{{ totals.value | money }}</dd></div>
+</dl>
+{% if totals.unpriced %}
+<p class="hint">{{ t("stats.unpriced", n=totals.unpriced | count) }}</p>
+{% endif %}
+<p class="hint">{{ t("stats.legend") }}</p>
+
+<div class="charts">
+  {% for name in ("color", "rarity", "type", "mana_value", "year", "finish", "condition", "language", "location") %}
+  {{ chart(name) }}
+  {% endfor %}
+</div>
+
+<section id="sets">
+  <h2 class="section-title">{{ t("stats.sets.title", n=sets | length) }}</h2>
+  <p class="hint">{{ t("stats.sets.hint") }}</p>
+  <form class="filters" method="get" action="/stats#sets">
+    <input type="hidden" name="location" value="{{ location }}">
+    <input type="hidden" name="sets" value="{{ sets_sort }}">
+    <select name="set_type" aria-label="{{ t('stats.sets.type') }}">
+      <option value="">{{ t("stats.sets.all_types") }}</option>
+      {% for value in set_types %}
+      <option value="{{ value }}"{% if value == set_type %} selected{% endif %}>{{ value | replace("_", " ") }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">{{ t("collection.filter.apply") }}</button>
+    <span class="views">{{ sort_link("percent") }} {{ sort_link("name") }} {{ sort_link("date") }}</span>
+  </form>
+  <div class="table-wrap">
+  <table class="card-list">
+    <thead>
+      <tr>
+        <th>{{ t("card.set") }}</th>
+        <th class="wide">{{ t("card.released") }}</th>
+        <th class="num">{{ t("stats.sets.owned") }}</th>
+        <th class="progress-cell">%</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in sets %}
+      <tr>
+        <td><a href="{{ search_url('set:' ~ s.code ~ ' unique:prints order:set') }}">{{ s.name }}</a> <span class="set-code">{{ s.code }}</span>
+            <span class="narrow sub">{{ s.released_at[:4] }} · {{ s.set_type | replace("_", " ") }}</span></td>
+        <td class="wide nowrap">{{ s.released_at }}</td>
+        <td class="num">{{ s.owned | count }} / {{ s.total | count }}</td>
+        <td class="progress-cell"><span class="bar-track"><span class="bar{% if s.complete %} complete{% endif %}" style="width: {{ s.percent }}%"></span></span> {{ s.percent }}%</td>
+        <td class="num">{% if not s.complete %}<a href="{{ search_url(missing(s.code)) }}">{{ t("stats.sets.missing", n=(s.total - s.owned) | count) }}</a>{% else %}{{ t("stats.sets.complete") }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+{% macro entries(title, rows, show_date=false) %}
+<section>
+  <h2 class="section-title">{{ title }}</h2>
+  <div class="table-wrap">
+  <table class="card-list">
+    <tbody>
+      {% for entry in rows %}
+      <tr>
+        <td class="num">{{ entry.quantity }}</td>
+        <td><a href="/card/{{ entry.scryfall_id }}">{{ entry.name }}</a>
+            <span class="narrow sub"><span class="set-code">{{ entry.set_code }}</span> {{ entry.collector_number }}{% if entry.finish != "nonfoil" %} · {{ t("finish." ~ entry.finish) }}{% endif %}</span></td>
+        <td class="wide nowrap"><span class="set-code">{{ entry.set_code }}</span> {{ entry.collector_number }}</td>
+        <td class="wide">{% if entry.finish != "nonfoil" %}<span class="tag">{{ t("finish." ~ entry.finish) }}</span>{% endif %}</td>
+        <td class="wide">{{ entry.location_name or t("entry.unassigned") }}</td>
+        <td class="num nowrap">{% if show_date %}{{ entry.created_at[:10] }}{% else %}{{ (entry.quantity * entry.price) | money }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endmacro %}
+
+{{ entries(t("stats.valuable"), valuable) }}
+{{ entries(t("stats.recent"), recent, true) }}
+{% endif %}
+{% endblock %}

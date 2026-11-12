@@ -12,7 +12,7 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from markupsafe import escape
 
-from magicdb import db, web
+from magicdb import db, stats, web
 from magicdb.collection import forms, service
 from magicdb.collection.service import CollectionError
 from magicdb.search.compiler import exact_name
@@ -401,3 +401,42 @@ def empty_location(
 def delete_location(request: Request, conn: web.Conn, location_id: str) -> Response:
     number = as_id(location_id)
     return location_action(request, conn, lambda: service.delete_location(conn, number), "")
+
+
+# --- statistics -----------------------------------------------------------------------
+
+
+@router.get("/stats", response_class=HTMLResponse)
+def stats_page(
+    request: Request, conn: web.Conn, location: str = "", sets: str = "percent", set_type: str = ""
+) -> HTMLResponse:
+    if not db.has_catalog(conn):
+        return web.no_catalog(request)
+    try:
+        place = forms.location_id(location)
+        where = service.UNASSIGNED if location == service.UNASSIGNED else place or service.ALL
+    except CollectionError:
+        location, place, where = "", None, service.ALL
+    place_name = None
+    if place is not None:
+        found = conn.execute("SELECT name FROM locations WHERE id = ?", (place,)).fetchone()
+        place_name = found["name"] if found else None
+    sets_sort = sets if sets in stats.SET_SORTS else "percent"
+    kinds = stats.set_types(conn, where)
+    set_type = set_type if set_type in kinds else ""
+    rows = stats.collect(conn, where, currency(request))
+    return web.render(
+        request,
+        "stats.html",
+        location=location,
+        totals=stats.totals(rows),
+        charts=stats.breakdowns(rows),
+        sets=stats.set_completion(conn, where, sets_sort, set_type),
+        sets_sort=sets_sort,
+        set_type=set_type,
+        set_types=kinds,
+        missing=lambda code: stats.missing_query(code, place_name),
+        valuable=stats.most_valuable(rows),
+        recent=stats.recently_added(rows),
+        options=forms.options(conn),
+    )

@@ -596,6 +596,24 @@ SVG/CSS bars, no JavaScript library. A selector limits everything to one locatio
 - **Top 20** most valuable entries.
 - **Recently added**: last 20 entries.
 
+How it is built (`stats.py`): one query reads every entry in scope with the catalog
+columns it needs, and the totals and breakdowns are counted in Python. Details settled
+while building it:
+
+- A card counts under **each** of its types (an Artifact Creature is both); the types
+  are those of the front face, supertypes are left out.
+- Colour is one of W U B R G for a single colour, multicolour for two or more,
+  colourless for none.
+- The mana-value chart leaves lands out (they would all sit at 0); 7 and more share a
+  bucket.
+- Set completion never rounds up: 100 % means complete. With a location selected, a
+  set's "missing" link lists what is not in that location (`-loc:"name"`).
+- Set completion is two small queries joined in Python. One SQL join of entries,
+  printings and sets made SQLite walk all 120k printings: 580 ms against 6 ms on a
+  9,000-entry collection. The whole page takes about 0.2 s on that collection.
+- Location names cannot contain a double quote (it becomes an apostrophe), because a
+  quote cannot be written inside `loc:"…"`.
+
 ## 10. Distribution
 
 - **Docker**: `python:3.12-slim`, non-root user, volume `/data`, `HEALTHCHECK` on

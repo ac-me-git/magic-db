@@ -475,7 +475,8 @@ def import_entries(
 
 
 def _location_fields(name: object, kind: object, notes: object) -> tuple[str, str, str | None]:
-    name = " ".join(str(name or "").split())
+    # a double quote cannot be written in a search (loc:"…"), so names never hold one
+    name = " ".join(str(name or "").replace('"', "'").split())
     if not name or len(name) > MAX_NAME:
         raise CollectionError("bad_location_name")
     if kind not in KINDS:

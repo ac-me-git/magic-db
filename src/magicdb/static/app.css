@@ -818,3 +818,131 @@ button.danger {
 .plain li {
   margin: 0.25rem 0;
 }
+
+/* --- statistics ---------------------------------------------------------------- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.tiles > div {
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.tiles dt {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.tiles dd {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.chart {
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.chart h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.bars {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bars li {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, 32%) 1fr 3.2rem 3.2rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  font-size: 0.9rem;
+}
+
+.bar-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bar-track {
+  display: inline-block;
+  height: 0.7rem;
+  min-width: 2rem;
+  background: var(--row);
+  border-radius: 0.35rem;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.bars .bar-track {
+  display: block;
+}
+
+.bar {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: var(--accent);
+  border-radius: 0.35rem;
+}
+
+.bar.complete {
+  background: #3f9b5b;
+}
+
+.bar.color-w { background: #e9e2c0; }
+.bar.color-u { background: #3b82c4; }
+.bar.color-b { background: #6b6470; }
+.bar.color-r { background: #d3482f; }
+.bar.color-g { background: #3f9b5b; }
+.bar.color-m { background: #c9a227; }
+.bar.color-c { background: #9a9a9a; }
+
+.bar-number {
+  display: block;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bars .sub {
+  font-size: 0.85rem;
+}
+
+.progress-cell {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-cell .bar-track {
+  width: 4rem;
+  margin-right: 0.3rem;
+}
+
+@media (min-width: 40rem) {
+  .progress-cell .bar-track {
+    width: 9rem;
+  }
+}
