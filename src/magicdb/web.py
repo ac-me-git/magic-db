@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from magicdb import db, search
+from magicdb.catalog import ingest
 from magicdb.catalog.ingest import normalize
 from magicdb.collection import forms, service
 from magicdb.config import LANGS
@@ -36,7 +37,9 @@ def render(request: Request, template: str, status: int = 200, **context: object
 
 
 def no_catalog(request: Request) -> HTMLResponse:
-    return render(request, "no_catalog.html", 503)
+    return render(
+        request, "no_catalog.html", 503, running=ingest.is_running(), progress=ingest.progress
+    )
 
 
 def panel_options(conn: sqlite3.Connection) -> dict[str, list]:

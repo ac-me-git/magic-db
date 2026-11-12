@@ -77,6 +77,7 @@ Environment variables, all optional.
 | `MAGICDB_BACKUP_HOUR` | `4` | local hour of the nightly backup |
 | `MAGICDB_LANG` | `en` | UI language (`en` or `it`) for visitors whose browser asks for neither |
 | `MAGICDB_CURRENCY` | `eur` | `eur` or `usd`, for values and price sorting |
+| `MAGICDB_SCHEDULER` | `on` | `off` stops the automatic catalog update and backup (run them from `/admin` or the command line instead) |
 
 Data directory:
 
@@ -575,6 +576,30 @@ A daemon thread wakes once a minute. A job is due when the current local hour is
 configured hour and it has not succeeded today, **or** its last success is more than
 36 hours old (covers a PC that was off at night). Jobs never overlap; each run is
 recorded in `job_runs`. At first start, with no catalog, the ingest runs immediately.
+
+Details (`jobs.py`):
+
+- `is_due(now, hour, last_success, last_attempt, running)` is a pure function, tested
+  with a fake clock. A run that ends `skipped` ("already up to date", "the collection
+  is empty") counts as a success: the job looked and there was nothing to do.
+- After any attempt a job waits one hour before trying again, so a failing job (no
+  network, Scryfall down) does not retry every minute.
+- The scheduler starts in the app's lifespan, so only a real server runs it — a test
+  client never downloads or backs up by accident. `MAGICDB_SCHEDULER=off` disables it.
+- At startup, runs left `running` by a process that died are marked `error: interrupted`.
+- The nightly backup is `collection-<stamp>.db` plus `collection-<stamp>.csv`; the copy
+  is opened and checked (`integrity_check`, same number of entries) before it counts.
+- While a catalog update runs, `ingest.progress` says where it is (checking,
+  downloading, building, publishing); the "no catalog yet" page and `/admin` show it
+  and reload themselves every 5 seconds with a `<meta refresh>` (no JavaScript).
+
+**`/admin`** shows the live catalog, the backups (each downloadable; only file names
+the app gives to backups are served), the last 20 job runs in local time and the
+settings, and has "Update the catalog now" and "Back up now" (`POST
+/admin/{job}/run`, run in a background thread).
+
+**Password.** `MAGICDB_PASSWORD` turns on HTTP Basic auth for everything except
+`/healthz`: any user name, that password, compared in constant time (`app.py`).
 
 ## 9. Statistics (`/stats`)
 

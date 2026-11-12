@@ -1,0 +1,5 @@
+{% set megabyte = 1048576 %}
+{% if progress.phase == "downloading" %}{{ t("progress.downloading") }}{% if progress.total %} {{ (100 * progress.done / progress.total) | int }}%{% else %} {{ (progress.done / megabyte) | int }} MB{% endif %}
+{% elif progress.phase == "building" %}{{ t("progress.building") }} {{ progress.done | count }}{% if progress.total %} / {{ progress.total | count }}{% endif %}
+{% elif progress.phase == "publishing" %}{{ t("progress.publishing") }}
+{% else %}{{ t("progress.checking") }}{% endif %}

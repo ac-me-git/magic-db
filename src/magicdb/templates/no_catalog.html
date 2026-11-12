@@ -1,7 +1,12 @@
 {% extends "base.html" %}
+{% block head %}<meta http-equiv="refresh" content="5">{% endblock %}
 {% block content %}
 <section class="hero">
   <h1>{{ t("nocatalog.title") }}</h1>
   <p class="notice">{{ t("nocatalog.text") }}</p>
+  {% if running %}
+  <p role="status"><strong>{{ t("admin.running") }}</strong> — {% include "_progress.html" %}</p>
+  {% endif %}
+  <p class="hint">{{ t("nocatalog.reloads") }} <a href="/admin">{{ t("admin.title") }}</a></p>
 </section>
 {% endblock %}

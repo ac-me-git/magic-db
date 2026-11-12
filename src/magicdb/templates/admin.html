@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ t("admin.title") }} · {{ t("app.name") }}{% endblock %}
+{% block head %}{% if catalog.running or backup_running %}<meta http-equiv="refresh" content="5;url=/admin">{% endif %}{% endblock %}
+
+{% macro megabytes(size) %}{{ "%.1f" | format(size / 1048576) }} MB{% endmacro %}
+
+{% block content %}
+<h1 class="page-title">{{ t("admin.title") }}</h1>
+
+{% if started == "busy" %}
+<div class="error" role="alert"><p>{{ t("admin.busy") }}</p></div>
+{% elif started == "yes" %}
+<div class="done" role="status"><p>{{ t("admin.started") }}</p></div>
+{% endif %}
+
+<section class="chart">
+  <h2>{{ t("admin.catalog") }}</h2>
+  {% if catalog.running %}
+  <p role="status"><strong>{{ t("admin.running") }}</strong> — {% include "_progress.html" %}</p>
+  {% endif %}
+  {% if catalog.file %}
+  <dl class="facts">
+    <dt>{{ t("admin.catalog.printings") }}</dt><dd>{{ catalog.printings | count }}</dd>
+    <dt>{{ t("admin.catalog.scryfall") }}</dt><dd>{{ catalog.scryfall_date[:16] | replace("T", " ") }}</dd>
+    <dt>{{ t("admin.catalog.built") }}</dt><dd>{{ catalog.built_at }}</dd>
+    <dt>{{ t("admin.file") }}</dt><dd>{{ catalog.file }} ({{ megabytes(catalog.size) }})</dd>
+  </dl>
+  {% else %}
+  <p class="hint">{{ t("nocatalog.text") }}</p>
+  {% endif %}
+  <form method="post" action="/admin/catalog/run">
+    <button type="submit"{% if catalog.running %} disabled{% endif %}>{{ t("admin.catalog.run") }}</button>
+  </form>
+</section>
+
+<section class="chart">
+  <h2>{{ t("admin.backups") }}</h2>
+  {% if backup_running %}<p role="status"><strong>{{ t("admin.running") }}</strong></p>{% endif %}
+  <p class="hint">{{ t("admin.backups.where", folder=backup_dir) }}</p>
+  <form method="post" action="/admin/backup/run">
+    <button type="submit"{% if backup_running %} disabled{% endif %}>{{ t("admin.backup.run") }}</button>
+  </form>
+  {% if backups %}
+  <div class="table-wrap">
+  <table class="card-list">
+    <thead>
+      <tr><th>{{ t("admin.file") }}</th><th class="wide">{{ t("admin.date") }}</th><th class="num">{{ t("admin.size") }}</th></tr>
+    </thead>
+    <tbody>
+      {% for backup in backups %}
+      <tr>
+        <td><a href="/admin/backups/{{ backup.name }}">{{ backup.name }}</a></td>
+        <td class="wide nowrap">{{ backup.date }}</td>
+        <td class="num nowrap">{{ megabytes(backup.size) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if more_backups %}<p class="hint">{{ t("admin.backups.more", n=more_backups | count) }}</p>{% endif %}
+  {% else %}
+  <p class="hint">{{ t("admin.backups.none") }}</p>
+  {% endif %}
+</section>
+
+<section class="chart">
+  <h2>{{ t("admin.history") }}</h2>
+  {% if runs %}
+  <div class="table-wrap">
+  <table class="card-list">
+    <thead>
+      <tr><th>{{ t("admin.job") }}</th><th>{{ t("admin.when") }}</th><th>{{ t("admin.status") }}</th><th class="wide">{{ t("admin.message") }}</th></tr>
+    </thead>
+    <tbody>
+      {% for run in runs %}
+      <tr>
+        <td>{{ t("admin.job." ~ run.job, default=run.job) }}</td>
+        <td class="nowrap">{{ run.started }}</td>
+        <td><span class="tag status-{{ run.status }}">{{ t("admin.status." ~ run.status, default=run.status) }}</span>
+            <span class="narrow sub">{{ run.message or "" }}</span></td>
+        <td class="wide">{{ run.message or "" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  {% else %}
+  <p class="hint">{{ t("admin.history.none") }}</p>
+  {% endif %}
+</section>
+
+<section class="chart">
+  <h2>{{ t("admin.settings") }}</h2>
+  <dl class="facts">
+    <dt>{{ t("admin.settings.version") }}</dt><dd>{{ version }}</dd>
+    <dt>{{ t("admin.settings.data") }}</dt><dd>{{ data_dir }}</dd>
+    <dt>{{ t("admin.settings.schedule") }}</dt>
+    <dd>{% if settings.scheduler %}{{ t("admin.settings.schedule_on", update=settings.update_hour, backup=settings.backup_hour) }}{% else %}{{ t("admin.settings.schedule_off") }}{% endif %}</dd>
+    <dt>{{ t("admin.settings.password") }}</dt><dd>{{ t("admin.yes") if settings.password else t("admin.no") }}</dd>
+  </dl>
+</section>
+{% endblock %}

@@ -1,5 +1,7 @@
 """FastAPI application factory."""
 
+import base64
+import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -11,7 +13,7 @@ from fastapi.responses import PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import RequestResponseEndpoint
 
-from magicdb import __version__, db, images, symbols, web
+from magicdb import __version__, admin, db, images, jobs, symbols, web
 from magicdb.catalog import publish
 from magicdb.collection import routes as collection_routes
 from magicdb.collection import transfer
@@ -22,6 +24,17 @@ _PKG = Path(__file__).parent
 SAFE_METHODS = ("GET", "HEAD", "OPTIONS")
 
 
+def _password_matches(header: str, expected: str) -> bool:
+    scheme, _, encoded = header.partition(" ")
+    if scheme.lower() != "basic":
+        return False
+    try:
+        _, _, given = base64.b64decode(encoded, validate=True).decode("utf-8").partition(":")
+    except (ValueError, UnicodeDecodeError):
+        return False
+    return secrets.compare_digest(given.encode(), expected.encode())
+
+
 def create_app(
     settings: Settings | None = None, http_client: httpx.Client | None = None
 ) -> FastAPI:
@@ -30,7 +43,15 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        # Only a real server gets here, not a test client: the scheduler downloads
+        # the catalog and writes backups, which tests must never do by accident.
+        jobs.mark_interrupted(settings)
+        if settings.scheduler:
+            app.state.scheduler = jobs.Scheduler(settings)
+            app.state.scheduler.start()
         yield
+        if app.state.scheduler is not None:
+            app.state.scheduler.stop()
         if app.state.http_client is not None:
             app.state.http_client.close()
 
@@ -39,6 +60,7 @@ def create_app(
     )
     app.state.settings = settings
     app.state.http_client = http_client
+    app.state.scheduler = None
     app.state.templates = build_templates(settings)
 
     db.migrate(settings)
@@ -64,7 +86,20 @@ def create_app(
                 return PlainTextResponse("Cross-site request refused.", status_code=403)
         return await call_next(request)
 
+    @app.middleware("http")
+    async def password(request: Request, call_next: RequestResponseEndpoint) -> Response:
+        """Optional HTTP Basic auth (MAGICDB_PASSWORD): any user name, that password."""
+        if settings.password and request.url.path != "/healthz":
+            if not _password_matches(request.headers.get("authorization", ""), settings.password):
+                return PlainTextResponse(
+                    "Password required.",
+                    status_code=401,
+                    headers={"WWW-Authenticate": 'Basic realm="magic-db", charset="UTF-8"'},
+                )
+        return await call_next(request)
+
     app.include_router(web.router)
+    app.include_router(admin.router)
     app.include_router(collection_routes.router)
     app.include_router(transfer.router)
     app.include_router(images.router)

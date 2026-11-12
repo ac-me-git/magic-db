@@ -946,3 +946,28 @@ button.danger {
     width: 9rem;
   }
 }
+
+/* --- administration ------------------------------------------------------------ */
+
+.chart + .chart {
+  margin-top: 0.75rem;
+}
+
+.chart form {
+  margin: 0.5rem 0;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.status-error {
+  border-color: var(--error-border);
+  color: var(--error-border);
+}
+
+.status-running {
+  border-color: var(--accent);
+  color: var(--accent);
+}

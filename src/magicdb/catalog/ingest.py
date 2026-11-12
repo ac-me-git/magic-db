@@ -104,6 +104,22 @@ _SQL_DIR = Path(__file__).parent
 _LEADING_DIGITS = re.compile(r"^\d+")
 
 
+@dataclass
+class Progress:
+    """Where a running update is, for the pages that show it. Read-only for them."""
+
+    phase: str = "idle"  # idle | checking | downloading | building | publishing
+    done: int = 0  # bytes downloaded, or printings read
+    total: int = 0  # 0 when not known
+
+
+progress = Progress()
+
+
+def _step(phase: str, total: int = 0) -> None:
+    progress.phase, progress.done, progress.total = phase, 0, total
+
+
 @dataclass(frozen=True)
 class UpdateResult:
     status: str  # ok | skipped | error
@@ -359,6 +375,7 @@ def build_catalog(
                     facets.update(("keyword", k) for k in set(card.get("keywords") or ()))
                     facets.update(("format", f) for f in row["legal_in"].strip("|").split("|") if f)
             if len(rows) >= BATCH:
+                progress.done += len(rows)
                 _flush(conn, rows, names)
         _flush(conn, rows, names)
 
@@ -396,9 +413,11 @@ def _get_json(client: httpx.Client, url: str) -> dict:
 def _download(client: httpx.Client, url: str, dest: Path) -> None:
     with client.stream("GET", url) as response:
         response.raise_for_status()
+        _step("downloading", int(response.headers.get("content-length") or 0))
         with dest.open("wb") as handle:
             for chunk in response.iter_bytes(1 << 20):
                 handle.write(chunk)
+                progress.done += len(chunk)
 
 
 def _update(
@@ -426,6 +445,7 @@ def _update(
                     timeout=httpx.Timeout(30, read=120),
                     follow_redirects=True,
                 )
+            _step("checking")
             bulk = _get_json(client, f"{API}/bulk-data")["data"]
             entry = next(item for item in bulk if item["type"] == "default_cards")
             stamp = entry["updated_at"]
@@ -442,7 +462,9 @@ def _update(
             source = downloaded = settings.tmp_dir / "default_cards.download"
             _download(client, url, downloaded)
 
+        _step("building", int(publish.read_meta(live).get("row_count", 0)) if live else 0)
         count = build_catalog(iter_cards(source), sets, build, stamp)
+        _step("publishing")
         problem = publish.check(build, live, min_rows)
         if problem:
             return UpdateResult("error", f"new catalog rejected: {problem}", live)
@@ -459,6 +481,10 @@ def _update(
 
 
 _running = threading.Lock()
+
+
+def is_running() -> bool:
+    return _running.locked()
 
 
 def run_update(
@@ -495,4 +521,5 @@ def run_update(
             )
         return result
     finally:
+        _step("idle")
         _running.release()

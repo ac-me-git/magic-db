@@ -23,6 +23,7 @@ class Settings:
     backup_hour: int
     lang: str
     currency: str
+    scheduler: bool = True
 
     @property
     def collection_path(self) -> Path:
@@ -83,4 +84,5 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         backup_hour=_int(env, "MAGICDB_BACKUP_HOUR", 4, 0, 23),
         lang=_choice(env, "MAGICDB_LANG", "en", LANGS),
         currency=_choice(env, "MAGICDB_CURRENCY", "eur", CURRENCIES),
+        scheduler=_choice(env, "MAGICDB_SCHEDULER", "on", ("on", "off")) == "on",
     )
