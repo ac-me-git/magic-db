@@ -15,7 +15,7 @@ from pathlib import Path
 
 import uvicorn
 
-from magicdb import __version__
+from magicdb import __version__, selfupdate
 from magicdb.app import create_app
 from magicdb.catalog import ingest
 from magicdb.config import ConfigError, Settings, load_settings
@@ -57,7 +57,11 @@ def _update(settings: Settings, args: argparse.Namespace) -> int:
 
 def _serve(settings: Settings, open_browser: bool) -> int:
     url = local_url(settings)
-    print(f"magic-db {__version__}")
+    if is_executable():
+        selfupdate.clean_up(Path(sys.executable).resolve())
+    if os.environ.get(selfupdate.AFTER_UPDATE):
+        selfupdate.wait_for_port(settings.host, settings.port)
+    print(f"AMTG - Another Magic Tracking Gizmo (magic-db {__version__})")
     print(f"  open      {url}")
     print(f"  data in   {settings.data_dir.resolve()}")
     print("  to stop   close this window, or press Ctrl+C")

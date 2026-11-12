@@ -1358,3 +1358,13 @@ textarea {
   color: var(--text);
   font-weight: 700;
 }
+
+.commands {
+  margin: 0.5rem 0 1rem;
+  padding: 0.6rem 0.8rem;
+  overflow-x: auto;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--row);
+  border-radius: 0.4rem;
+}

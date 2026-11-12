@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ t("admin.title") }} · {{ t("app.name") }}{% endblock %}
+
+{% block content %}
+<h1 class="page-title">{{ t("admin.title") }}</h1>
+<div class="done" role="status" data-wait-restart="/admin">
+  <p><strong>{{ t("admin.version.restarting", version=version) }}</strong></p>
+  <p>{{ t("admin.version.restarting_hint") }}</p>
+</div>
+{% endblock %}

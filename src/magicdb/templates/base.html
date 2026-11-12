@@ -11,7 +11,7 @@
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="/">{{ t("app.name") }}</a>
+    <a class="brand" href="/" title="{{ t('app.full_name') }}">{{ t("app.name") }}</a>
     <form class="search-box" action="/search" method="get" role="search">
       <div class="search-field">
         <input type="search" name="q" id="q" value="{{ q | default('') }}"

@@ -3,11 +3,12 @@
 import sqlite3
 from datetime import datetime
 from typing import Annotated
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 
-from magicdb import __version__, db, jobs, web
+from magicdb import __version__, db, jobs, selfupdate, web
 from magicdb.catalog import ingest, publish
 
 router = APIRouter()
@@ -41,8 +42,10 @@ def catalog_status(request: Request, conn: sqlite3.Connection) -> dict[str, obje
 
 
 @router.get("/admin", response_class=HTMLResponse)
-def admin_page(request: Request, conn: Conn, started: str = "") -> HTMLResponse:
+def admin_page(request: Request, conn: Conn, started: str = "", failed: str = "") -> HTMLResponse:
     settings = request.app.state.settings
+    checked = selfupdate.check(settings)
+    release = selfupdate.available(settings)
     backups = jobs.list_backups(settings)
     return web.render(
         request,
@@ -70,8 +73,35 @@ def admin_page(request: Request, conn: Conn, started: str = "") -> HTMLResponse:
         data_dir=settings.data_dir.resolve(),
         backup_dir=settings.backup_dir.resolve(),
         version=__version__,
+        release=release,
+        latest=checked.release.version if checked.release else "",
+        check_error=checked.error,
+        checked_at=(
+            datetime.fromtimestamp(checked.checked_at).strftime("%Y-%m-%d %H:%M")
+            if checked.checked_at
+            else ""
+        ),
+        install_kind=selfupdate.install_kind(),
+        can_install=selfupdate.can_install(settings, release),
+        install_failed=failed[:300],
         started=started if started in ("yes", "busy") else "",
     )
+
+
+@router.post("/admin/version/check")
+def check_version(request: Request) -> Response:
+    selfupdate.check(request.app.state.settings, force=True)
+    return RedirectResponse("/admin#version", status_code=303)
+
+
+@router.post("/admin/version/install")
+def install_version(request: Request) -> Response:
+    """Replace the program with the latest release and restart (Windows executable)."""
+    try:
+        release = selfupdate.install(request.app.state.settings)
+    except selfupdate.UpdateError as error:
+        return RedirectResponse(f"/admin?{urlencode({'failed': str(error)})}", status_code=303)
+    return web.render(request, "restarting.html", version=release.version)
 
 
 @router.post("/admin/{job}/run")

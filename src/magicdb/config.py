@@ -6,6 +6,7 @@ from pathlib import Path
 
 LANGS = ("en", "it")
 CURRENCIES = ("eur", "usd")
+DEFAULT_RELEASES_URL = "https://api.github.com/repos/ac-me-git/magic-db/releases/latest"
 
 
 class ConfigError(ValueError):
@@ -24,6 +25,8 @@ class Settings:
     lang: str
     currency: str
     scheduler: bool = True
+    update_check: bool = True
+    releases_url: str = DEFAULT_RELEASES_URL
 
     @property
     def collection_path(self) -> Path:
@@ -85,4 +88,6 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         lang=_choice(env, "MAGICDB_LANG", "en", LANGS),
         currency=_choice(env, "MAGICDB_CURRENCY", "eur", CURRENCIES),
         scheduler=_choice(env, "MAGICDB_SCHEDULER", "on", ("on", "off")) == "on",
+        update_check=_choice(env, "MAGICDB_UPDATE_CHECK", "on", ("on", "off")) == "on",
+        releases_url=env.get("MAGICDB_RELEASES_URL", "").strip() or DEFAULT_RELEASES_URL,
     )

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.0 — unreleased
+
+- The program is now called **AMTG** — Another Magic Tracking Gizmo — in the header and
+  page titles. The repository, the program file, the Docker image and the settings keep
+  the name `magic-db`.
+- Administration says when a newer version has been released. The Windows executable
+  can install it with one button: it downloads the new program, checks it against the
+  digest GitHub publishes, swaps it in and restarts. Docker and source installations
+  are shown the commands to run.
+- New settings: `MAGICDB_UPDATE_CHECK=off` stops the check; `MAGICDB_RELEASES_URL`
+  points it at a fork's releases.
+
 ## 1.0.0 — 2026-11-12
 
 First version.

@@ -1,4 +1,6 @@
-# magic-db
+# AMTG — Another Magic Tracking Gizmo
+
+*(the repository, the program file and the Docker image are called `magic-db`)*
 
 A self-hosted web app to browse every Magic: The Gathering card and keep track of your
 own collection and decks. It runs on a Windows PC with nothing else to install, or in a
@@ -19,7 +21,9 @@ Docker container, and you use it from any browser — phone included.
 - **A safety lock** so that browsing on a phone cannot change the collection by accident.
 - Interface in English and Italian.
 
-No account, no subscription, no telemetry.
+No account, no subscription, no telemetry. The only things it asks the internet for are
+the card data and images from Scryfall and, when you open the Administration page,
+whether GitHub has a newer version of the program (this can be switched off).
 
 ## Quick start
 
@@ -34,7 +38,9 @@ No account, no subscription, no telemetry.
    catalog (about 80 MB) and builds it: a few minutes, with progress shown on the page.
 
 Everything magic-db writes goes in a `data` folder next to the program. To stop it, close
-its window. To update, replace `magic-db.exe` with a newer one; `data` is kept.
+its window. To update, open **Administration**: when a newer version is out it says so,
+and one button downloads it, swaps it in and restarts. (Or replace `magic-db.exe` by
+hand; `data` is kept either way.)
 
 To reach it from other devices on your network, start it with `MAGICDB_HOST=0.0.0.0`
 (see [Configuration](#configuration)), for example from a `start.bat` file:
@@ -53,6 +59,9 @@ docker compose up -d
 
 Then open `http://localhost:8080`. Data lives in the `magic-db-data` volume. Set `TZ` in
 `compose.yaml` to your time zone, so the nightly jobs run at night for you.
+
+To update: `docker compose pull`, then `docker compose up -d`. The Administration page
+tells you when there is something to update to.
 
 ### From source
 
@@ -74,7 +83,7 @@ uv run magicdb
 | **My collection** | Statistics, and from there: the card list, quick add, locations, import, export |
 | **My decks** | Deck lists and how complete each one is |
 | **Syntax** (footer) | Every search filter, with examples you can click |
-| **Administration** (footer) | Catalog and backup status, run them now, download a backup |
+| **Administration** (footer) | Whether a newer version is out (and, on Windows, install it); catalog and backup status, run them now, download a backup |
 
 In the list view, click a column's heading to sort by it; click again to reverse.
 
@@ -104,6 +113,8 @@ Everything is optional and set with environment variables.
 | `MAGICDB_LANG` | `en` | Interface language (`en` or `it`) for visitors whose browser asks for neither. Each visitor can switch at the bottom of any page |
 | `MAGICDB_CURRENCY` | `eur` | `eur` or `usd`, for prices and values |
 | `MAGICDB_SCHEDULER` | `on` | `off` stops the automatic nightly update and backup |
+| `MAGICDB_UPDATE_CHECK` | `on` | `off` stops the Administration page from asking GitHub whether a newer version is out |
+| `MAGICDB_RELEASES_URL` | this project's releases on GitHub | Where to ask for the latest release. Only for a fork that publishes its own |
 
 ## Your data, and backups
 

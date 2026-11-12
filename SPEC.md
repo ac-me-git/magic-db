@@ -78,6 +78,8 @@ Environment variables, all optional.
 | `MAGICDB_LANG` | `en` | UI language (`en` or `it`) for visitors whose browser asks for neither |
 | `MAGICDB_CURRENCY` | `eur` | `eur` or `usd`, for values and price sorting |
 | `MAGICDB_SCHEDULER` | `on` | `off` stops the automatic catalog update and backup (run them from `/admin` or the command line instead) |
+| `MAGICDB_UPDATE_CHECK` | `on` | `off`: `/admin` never asks whether a newer version is out |
+| `MAGICDB_RELEASES_URL` | `https://api.github.com/repos/ac-me-git/magic-db/releases/latest` | Where the latest release is asked for (forks; tests) |
 
 Data directory:
 
@@ -432,7 +434,7 @@ edit the text in the search box.
 | `/locations` | create, rename, reorder, delete; card count and value per location |
 | `/stats` | see §9 |
 | `/import`, `/export` | see §8 |
-| `/admin` | catalog and backup status, last job runs, "update now", "back up now", download latest backup |
+| `/admin` | software version (check, and install on Windows), catalog and backup status, last job runs, "update now", "back up now", download latest backup |
 | `/syntax` | search syntax reference, generated from the same table the parser uses |
 | `/healthz` | `{"status":"ok"}`, no auth |
 | `/img/{size}/{scryfall_id}/{face}` | image cache proxy |
@@ -457,6 +459,35 @@ mode. The card page lists every copy of the card and adds the printing shown.
 `data/images/`; on a miss it downloads from the URL stored in the catalog, saves it,
 then serves it with a long cache header. If the download fails, return a placeholder
 SVG.
+
+**Name.** The program presents itself as **AMTG**, short for "Another Magic Tracking
+Gizmo": the logo reads AMTG (the full name is its tooltip) and page titles end in
+"· AMTG". `magic-db` remains the technical name: repository, Python package, program
+file, Docker image, `MAGICDB_*` settings, export file names.
+
+**Software version** (`/admin`, first section). Shows the installed version, the latest
+released one and when that was last asked.
+
+- *Check.* Opening `/admin` asks `MAGICDB_RELEASES_URL` (GitHub's "latest release") at
+  most once every 12 hours (10 minutes after a failure), waiting 5 seconds at most;
+  "Check now" asks at once. Nothing else ever asks, and `MAGICDB_UPDATE_CHECK=off`
+  stops this too. Only tags of the form `v1.2.3` count; a release is offered when its
+  number is greater than the running one. A failed check is shown as such and never
+  breaks the page.
+- *Install* — the Windows executable only, with one button, never unattended. The
+  release's `magic-db.exe` is downloaded beside the running one, accepted only if its
+  size and SHA-256 match what GitHub publishes for the asset (no digest: no install)
+  and only from `github.com` (or the host of a custom `MAGICDB_RELEASES_URL`). The
+  running file is renamed to `magic-db.exe.old`, the new one takes its name, a new
+  process is started with the same arguments plus `--no-browser`, and the old one exits
+  1.5 s later. The new process waits up to 30 s for the port and deletes `.old` (if the
+  old program still holds it, the start after that does). Any failure before the restart leaves the program exactly as it was and
+  is explained on the page. The page shown meanwhile polls `/healthz` and returns to
+  `/admin` when the program is back. The data folder is never touched.
+- *Docker and source installs* cannot replace themselves: the page shows the commands
+  (`docker compose pull` / `up -d`; `git pull` / `uv sync`).
+- The safety lock does not block these (`/admin/…` is exempt); the same-origin check
+  and the optional password do apply.
 
 **Header.** On every page: the logo (the way to the home page and its filter panel),
 the search box, and two links — "My collection", which opens the statistics, and "My

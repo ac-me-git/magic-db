@@ -36,6 +36,6 @@ jobs:
           docker logs magic-db
           test "${ok:-0}" = 1
           test "$(docker exec magic-db id -u)" != 0
-          curl -fsS http://127.0.0.1:8080/ | grep -q "magic-db"
+          curl -fsS http://127.0.0.1:8080/ | grep -q "AMTG"
           curl -fsS http://127.0.0.1:8080/static/app.css > /dev/null
           curl -fsS http://127.0.0.1:8080/syntax > /dev/null

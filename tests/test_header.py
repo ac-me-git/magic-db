@@ -53,7 +53,7 @@ def test_menu_has_only_collection_and_decks(client):
     assert links(menu) == ["/stats", "/decks"]
     assert ">My collection</a>" in menu and ">My decks</a>" in menu
     assert 'href="/add"' not in top and "Filters" not in top
-    assert '<a class="brand" href="/">' in top  # the logo is the way to the filters
+    assert '<a class="brand" href="/" title=' in top  # the logo is the way to the filters
 
 
 def test_my_collection_opens_the_statistics_with_the_ways_onward(owned):

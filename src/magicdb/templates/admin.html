@@ -12,6 +12,51 @@
 {% elif started == "yes" %}
 <div class="done" role="status"><p>{{ t("admin.started") }}</p></div>
 {% endif %}
+{% if install_failed %}
+<div class="error" role="alert"><p>{{ t("admin.version.install_failed", reason=install_failed) }}</p></div>
+{% endif %}
+
+<section class="chart" id="version">
+  <h2>{{ t("admin.version") }}</h2>
+  <dl class="facts">
+    <dt>{{ t("admin.version.current") }}</dt><dd>{{ version }}</dd>
+    {% if settings.update_check %}
+    <dt>{{ t("admin.version.latest") }}</dt><dd>{{ latest or "—" }}</dd>
+    <dt>{{ t("admin.version.checked") }}</dt><dd>{{ checked_at or t("admin.version.never") }}</dd>
+    {% endif %}
+  </dl>
+  {% if not settings.update_check %}
+  <p class="hint">{{ t("admin.version.check_off") }}</p>
+  {% else %}
+  {% if check_error %}
+  <p class="hint">{{ t("admin.version.failed", reason=check_error) }}</p>
+  {% elif release %}
+  <p role="status"><strong>{{ t("admin.version.available", version=release.version) }}</strong>
+    {% if release.page %}<a href="{{ release.page }}" rel="noopener noreferrer">{{ t("admin.version.notes") }}</a>{% endif %}</p>
+  {% if can_install %}
+  <form method="post" action="/admin/version/install">
+    <button type="submit">{{ t("admin.version.install", version=release.version) }}</button>
+  </form>
+  <p class="hint">{{ t("admin.version.install_hint") }}</p>
+  {% elif install_kind == "docker" %}
+  <p class="hint">{{ t("admin.version.how.docker") }}</p>
+  <pre class="commands">docker compose pull
+docker compose up -d</pre>
+  {% elif install_kind == "source" %}
+  <p class="hint">{{ t("admin.version.how.source") }}</p>
+  <pre class="commands">git pull
+uv sync</pre>
+  {% else %}
+  <p class="hint">{{ t("admin.version.how.manual") }}</p>
+  {% endif %}
+  {% elif latest %}
+  <p class="hint">{{ t("admin.version.up_to_date") }}</p>
+  {% endif %}
+  <form method="post" action="/admin/version/check">
+    <button type="submit">{{ t("admin.version.check") }}</button>
+  </form>
+  {% endif %}
+</section>
 
 <section class="chart">
   <h2>{{ t("admin.catalog") }}</h2>

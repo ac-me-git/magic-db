@@ -2,6 +2,7 @@ import json
 import shutil
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -56,3 +57,16 @@ def catalog(settings: Settings, built_catalog: Path) -> Settings:
     shutil.copy(built_catalog, settings.catalog_dir / built_catalog.name)
     db.migrate(settings)
     return settings
+
+
+@pytest.fixture(autouse=True)
+def no_release_check(monkeypatch: pytest.MonkeyPatch):
+    """No test asks GitHub for the latest release; those that test it supply the answer."""
+    from magicdb import selfupdate
+
+    def offline(*args: object, **kwargs: object):
+        raise httpx.ConnectError("offline in tests")
+
+    monkeypatch.setattr(selfupdate, "_get", offline)
+    monkeypatch.setattr(selfupdate, "_stream", offline)
+    monkeypatch.setattr(selfupdate, "state", selfupdate.State())

@@ -24,7 +24,7 @@ def load_script(name: str):
 
 def test_readme_documents_every_setting():
     in_code = set(re.findall(r'"(MAGICDB_[A-Z_]+)"', read("src/magicdb/config.py")))
-    assert len(in_code) == 10
+    assert len(in_code) == 12
     readme = read("README.md")
     table = readme.split("## Configuration")[1].split("\n## ")[0]
     assert {name for name in in_code if f"`{name}`" in table} == in_code

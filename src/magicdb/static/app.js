@@ -1,6 +1,7 @@
 // The only script magic-db writes itself. Everything works without it; it adds what
 // HTML alone cannot do for the search suggestions and the Search button's menu:
-// arrow keys, Escape, and closing when you click somewhere else.
+// arrow keys, Escape, closing when you click somewhere else, and waiting for the
+// program to come back after an update.
 
 (function () {
   "use strict";
@@ -57,4 +58,24 @@
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && menu && menu.open) menu.open = false;
   });
+
+  // After an update the program restarts: wait until it has gone away and come back.
+  var waiting = document.querySelector("[data-wait-restart]");
+  if (waiting && window.fetch) {
+    var wentAway = false;
+    var started = Date.now();
+    var poll = setInterval(function () {
+      fetch("/healthz", { cache: "no-store" }).then(
+        function (response) {
+          if (response.ok && (wentAway || Date.now() - started > 15000)) {
+            clearInterval(poll);
+            window.location.href = waiting.getAttribute("data-wait-restart");
+          }
+        },
+        function () {
+          wentAway = true;
+        }
+      );
+    }, 1000);
+  }
 })();

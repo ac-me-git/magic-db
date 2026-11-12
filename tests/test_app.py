@@ -14,7 +14,8 @@ def test_healthz(client):
 def test_home_page(client):
     response = client.get("/")
     assert response.status_code == 200
-    assert "magic-db" in response.text
+    assert ">AMTG</a>" in response.text
+    assert 'title="Another Magic Tracking Gizmo"' in response.text
     assert "Every Magic card" in response.text
     assert "Not approved/endorsed by Wizards" in response.text
     assert 'action="/search"' in response.text
