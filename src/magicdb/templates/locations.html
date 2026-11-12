@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% from "_forms.html" import location_select, problem with context %}
+{% block title %}{{ t("locations.title") }} · {{ t("app.name") }}{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ t("locations.title") }}</h1>
+<p class="hint">{{ t("locations.intro") }}</p>
+
+{{ problem(error) }}
+
+{% if locations or unassigned.entries %}
+<ul class="locations">
+  {% for place in locations %}
+  <li class="location" id="l{{ place.id }}">
+    <div class="location-head">
+      <a href="/collection?location={{ place.id }}"><strong>{{ place.name }}</strong></a>
+      <span class="tag">{{ t("kind." ~ place.kind) }}</span>
+      <span class="sub">{{ t("locations.holds", copies=place.copies | count, value=place.value | money) }}</span>
+      {% if place.notes %}<span class="sub">{{ place.notes }}</span>{% endif %}
+    </div>
+    <details>
+      <summary>{{ t("locations.manage") }}</summary>
+      <form method="post" action="/locations/{{ place.id }}">
+        <div class="fields">
+          <label>{{ t("locations.name") }}
+            <input type="text" name="name" value="{{ place.name }}" maxlength="80" required>
+          </label>
+          <label>{{ t("locations.kind") }}
+            <select name="kind">
+              {% for kind in options.kinds %}
+              <option value="{{ kind }}"{% if kind == place.kind %} selected{% endif %}>{{ t("kind." ~ kind) }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>{{ t("entry.notes") }}
+            <input type="text" name="notes" value="{{ place.notes or '' }}" maxlength="500">
+          </label>
+        </div>
+        <button type="submit" class="primary">{{ t("entry.save") }}</button>
+      </form>
+
+      <div class="inline-form">
+        {% if not loop.first %}
+        <form method="post" action="/locations/{{ place.id }}/shift">
+          <input type="hidden" name="offset" value="-1">
+          <button type="submit">↑ {{ t("locations.up") }}</button>
+        </form>
+        {% endif %}
+        {% if not loop.last %}
+        <form method="post" action="/locations/{{ place.id }}/shift">
+          <input type="hidden" name="offset" value="1">
+          <button type="submit">↓ {{ t("locations.down") }}</button>
+        </form>
+        {% endif %}
+      </div>
+
+      {% if place.entries %}
+      <form class="inline-form" method="post" action="/locations/{{ place.id }}/empty">
+        <label>{{ t("locations.empty_into") }}
+          {{ location_select(options, "", "destination", place.id) }}
+        </label>
+        <button type="submit">{{ t("locations.empty_submit") }}</button>
+      </form>
+      <p class="hint">{{ t("locations.delete_needs_empty") }}</p>
+      {% else %}
+      <form class="inline-form" method="post" action="/locations/{{ place.id }}/delete">
+        <button type="submit" class="danger">{{ t("locations.delete") }}</button>
+      </form>
+      {% endif %}
+    </details>
+  </li>
+  {% endfor %}
+  {% if unassigned.entries %}
+  <li class="location">
+    <div class="location-head">
+      <a href="/collection?location=none"><strong>{{ t("entry.unassigned") }}</strong></a>
+      <span class="sub">{{ t("locations.holds", copies=unassigned.copies | count, value=unassigned.value | money) }}</span>
+    </div>
+  </li>
+  {% endif %}
+</ul>
+{% else %}
+<div class="empty"><p>{{ t("locations.none") }}</p></div>
+{% endif %}
+
+<form class="panel" method="post" action="/locations">
+  <h2>{{ t("locations.new") }}</h2>
+  <div class="fields">
+    <label>{{ t("locations.name") }}
+      <input type="text" name="name" maxlength="80" required placeholder="{{ t('locations.name_example') }}">
+    </label>
+    <label>{{ t("locations.kind") }}
+      <select name="kind">
+        {% for kind in options.kinds %}
+        <option value="{{ kind }}">{{ t("kind." ~ kind) }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>{{ t("entry.notes") }}
+      <input type="text" name="notes" maxlength="500">
+    </label>
+  </div>
+  <div class="actions">
+    <button type="submit" class="primary">{{ t("locations.create") }}</button>
+  </div>
+</form>
+{% endblock %}

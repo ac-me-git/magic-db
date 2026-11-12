@@ -1,0 +1,20 @@
+{% if printings %}
+<div class="printing-pick">
+  <label>{{ t("add.printing", n=printings | length) }}
+    <select name="printing" hx-get="/add/preview" hx-trigger="change" hx-target="#preview">
+      {% for p in printings %}
+      <option value="{{ p.id }}"{% if p.id == selected %} selected{% endif %}>{{ p.set_code | upper }} · #{{ p.collector_number }} · {{ p.released_at[:4] }} · {{ p.set_name }}{% if p.is_digital %} ({{ t("card.digital") }}){% endif %}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <div id="preview">{% include "_add_preview.html" %}</div>
+</div>
+{% elif name and name.strip() %}
+<p class="hint">{{ t("add.no_match") }}
+  {% for suggestion in suggestions %}
+  <a href="/add?name={{ suggestion | urlencode }}">{{ suggestion }}</a>{% if not loop.last %}, {% endif %}
+  {% endfor %}
+</p>
+{% else %}
+<p class="hint">{{ t("add.hint") }}</p>
+{% endif %}

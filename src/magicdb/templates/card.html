@@ -13,6 +13,8 @@
 </section>
 {% endmacro %}
 
+{% from "_forms.html" import copy_fields, traits with context %}
+
 {% block content %}
 <article class="card-page">
   <div class="card-art">
@@ -65,6 +67,41 @@
     {% endif %}
   </div>
 </article>
+
+<section class="mine" id="mine">
+  <h2>{{ t("copies.title") }}</h2>
+  {% if copies %}
+  <div class="table-wrap">
+  <table class="card-list">
+    <tbody>
+      {% for entry in copies %}
+      <tr{% if entry.scryfall_id == card.id %} class="current"{% endif %}>
+        <td class="num">{{ entry.quantity }}</td>
+        <td class="nowrap"><a href="/card/{{ entry.scryfall_id }}"><span class="set-code">{{ entry.set_code }}</span> {{ entry.collector_number }}</a></td>
+        <td class="nowrap">{{ traits(entry) }}</td>
+        <td>{{ entry.location_name or t("entry.unassigned") }}</td>
+        <td class="num"><a href="/collection/{{ entry.id }}/edit?next={{ here | urlencode }}">{{ t("entry.edit") }}</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="hint">{{ t("copies.none") }}</p>
+  {% endif %}
+
+  <form class="panel" method="post" action="/add">
+    <h3>{{ t("copies.add_title", set=card.set_code | upper, number=card.collector_number) }}</h3>
+    <input type="hidden" name="printing" value="{{ card.id }}">
+    <input type="hidden" name="next" value="/card/{{ card.id }}#mine">
+    <div class="fields">
+      {{ copy_fields(sticky, options, 1, sticky.location) }}
+    </div>
+    <div class="actions">
+      <button type="submit" class="primary">{{ t("copies.add") }}</button>
+    </div>
+  </form>
+</section>
 
 <section class="printings">
   <h2>{{ t("card.printings", n=printings | length) }}</h2>

@@ -1,0 +1,52 @@
+{# Fields describing copies of a card. `values` has finish, condition, language. #}
+{% macro copy_fields(values, options, quantity=1, location="") %}
+<label>{{ t("entry.quantity") }}
+  <input type="number" name="quantity" value="{{ quantity }}" min="1" max="9999" inputmode="numeric" required>
+</label>
+<label>{{ t("entry.finish") }}
+  <select name="finish">
+    {% for value in options.finishes %}
+    <option value="{{ value }}"{% if value == values.finish %} selected{% endif %}>{{ t("finish." ~ value) }}</option>
+    {% endfor %}
+  </select>
+</label>
+<label>{{ t("entry.condition") }}
+  <select name="condition">
+    {% for value in options.conditions %}
+    <option value="{{ value }}"{% if value == values.condition %} selected{% endif %}>{{ value }} · {{ t("condition." ~ value) }}</option>
+    {% endfor %}
+  </select>
+</label>
+<label>{{ t("entry.language") }}
+  <select name="language">
+    {% for value in options.languages %}
+    <option value="{{ value }}"{% if value == values.language %} selected{% endif %}>{{ t("lang." ~ value) }}</option>
+    {% endfor %}
+  </select>
+</label>
+<label>{{ t("entry.location") }}
+  {{ location_select(options, location) }}
+</label>
+{% endmacro %}
+
+{% macro location_select(options, selected="", name="location", skip=none) %}
+<select name="{{ name }}">
+  <option value="">{{ t("entry.unassigned") }}</option>
+  {% for place in options.locations if place.id != skip %}
+  <option value="{{ place.id }}"{% if place.id | string == selected | string %} selected{% endif %}>{{ place.name }}</option>
+  {% endfor %}
+</select>
+{% endmacro %}
+
+{% macro problem(error) %}
+{% if error %}
+<div class="error" role="alert"><p>{{ t("error." ~ error.code, **error.params) }}</p></div>
+{% endif %}
+{% endmacro %}
+
+{# "Foil · EX · Italian", leaving out what is the default #}
+{% macro traits(entry) -%}
+{% if entry.finish != "nonfoil" %}<span class="tag">{{ t("finish." ~ entry.finish) }}</span> {% endif -%}
+<span title="{{ t('condition.' ~ entry.condition) }}">{{ entry.condition }}</span>
+{%- if entry.language != "en" %} · <span title="{{ t('lang.' ~ entry.language) }}">{{ entry.language | upper }}</span>{% endif %}
+{%- endmacro %}

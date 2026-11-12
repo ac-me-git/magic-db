@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from magicdb import db, search
 from magicdb.catalog.ingest import normalize
+from magicdb.collection import forms, service
 from magicdb.config import LANGS
 from magicdb.search import panel
 from magicdb.search.compiler import LIKE, ORDERS, _contains
@@ -22,6 +23,10 @@ Conn = Annotated[sqlite3.Connection, Depends(db.get_conn)]
 VIEWS = ("grid", "list")
 AUTOCOMPLETE_LIMIT = 15
 _ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+
+
+def is_card_id(value: str) -> bool:
+    return bool(_ID.fullmatch(value))
 
 
 def render(request: Request, template: str, status: int = 200, **context: object) -> HTMLResponse:
@@ -83,6 +88,11 @@ def search_page(
         result = search.run(conn, q, page_number, currency=request.app.state.settings.currency)
     except search.QueryError as exc:
         error = str(exc)
+    owned: dict[str, int] = {}
+    if result is not None:
+        # a card's badge counts every printing; a printing's badge counts only itself
+        key = "id" if result.unique == "prints" else "oracle_id"
+        owned = service.owned_counts(conn, [row[key] for row in result.rows], result.unique)
     partial = request.headers.get("HX-Request") == "true"
     return render(
         request,
@@ -91,6 +101,7 @@ def search_page(
         view=view,
         result=result,
         error=error,
+        owned=owned,
     )
 
 
@@ -118,6 +129,9 @@ def card_page(request: Request, conn: Conn, card_id: str) -> HTMLResponse:
         legal=[f for f in card["legal_in"].strip("|").split("|") if f],
         finishes=[f for f in card["finishes"].strip("|").split("|") if f],
         printings=printings,
+        copies=service.copies_of_card(conn, card["oracle_id"]),
+        sticky=forms.read_sticky(request),
+        options=forms.options(conn),
     )
 
 

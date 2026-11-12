@@ -1,0 +1,44 @@
+{% from "_forms.html" import copy_fields, location_select, problem with context %}
+<tr class="editing" id="e{{ entry.id }}">
+  <td colspan="7">
+    <p class="editing-title"><strong>{{ entry.name }}</strong>
+      <span class="set-code">{{ entry.set_code }}</span> {{ entry.collector_number }}</p>
+    {{ problem(error) }}
+
+    <form method="post" action="/collection/{{ entry.id }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="fields">
+        {{ copy_fields(entry, options, entry.quantity, entry.location_id or "") }}
+        <label>{{ t("entry.notes") }}
+          <input type="text" name="notes" value="{{ entry.notes or '' }}" maxlength="500">
+        </label>
+        <label>{{ t("entry.purchase_price") }}
+          <input type="text" name="purchase_price" value="{{ entry.purchase_price if entry.purchase_price is not none else '' }}" inputmode="decimal">
+        </label>
+      </div>
+      <div class="actions">
+        <button type="submit" class="primary">{{ t("entry.save") }}</button>
+        <a class="button" href="{{ next }}">{{ t("entry.cancel") }}</a>
+      </div>
+    </form>
+
+    <form class="inline-form" method="post" action="/collection/{{ entry.id }}/move">
+      <input type="hidden" name="next" value="{{ next }}">
+      <label>{{ t("entry.move") }}
+        <input type="number" name="quantity" value="{{ entry.quantity }}" min="1" max="{{ entry.quantity }}" inputmode="numeric" required>
+      </label>
+      <label>{{ t("entry.move_to") }}
+        {{ location_select(options, "", "location", entry.location_id) }}
+      </label>
+      <button type="submit">{{ t("entry.move_submit") }}</button>
+    </form>
+
+    <form class="inline-form" method="post" action="/collection/{{ entry.id }}/remove">
+      <input type="hidden" name="next" value="{{ next }}">
+      <label>{{ t("entry.remove") }}
+        <input type="number" name="quantity" value="{{ entry.quantity }}" min="1" max="{{ entry.quantity }}" inputmode="numeric" required>
+      </label>
+      <button type="submit" class="danger">{{ t("entry.remove_submit") }}</button>
+    </form>
+  </td>
+</tr>

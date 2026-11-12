@@ -4,6 +4,11 @@
    {%- if current %} aria-current="true"{% endif %}{% if rel %} rel="{{ rel }}"{% endif %}>{{ label }}</a>
 {%- endmacro %}
 
+{% macro badge(card) -%}
+{% set have = owned.get(card.id if result.unique == "prints" else card.oracle_id) %}
+{%- if have %}<span class="owned" title="{{ t('results.owned', n=have) }}">×{{ have }}</span>{% endif %}
+{%- endmacro %}
+
 {% if error %}
 <div class="error" role="alert">
   <strong>{{ t("results.error_title") }}</strong>
@@ -48,7 +53,7 @@
   <tbody>
     {% for card in result.rows %}
     <tr>
-      <td><a href="/card/{{ card.id }}">{{ card.name }}</a>
+      <td><a href="/card/{{ card.id }}">{{ card.name }}</a>{{ badge(card) }}
           <span class="narrow sub">{{ card.type_line }}</span></td>
       <td class="mana wide">{{ card.mana_cost | symbols }}</td>
       <td class="wide">{{ card.type_line }}</td>
@@ -66,6 +71,7 @@
   <li>
     <a href="/card/{{ card.id }}">
       <img src="/img/normal/{{ card.id }}/front" alt="" width="488" height="680" loading="lazy">
+      {{ badge(card) }}
       <span class="caption">{{ card.name }}</span>
       <span class="sub"><span class="set-code">{{ card.set_code }}</span> {{ card.collector_number }}</span>
     </a>

@@ -75,7 +75,7 @@ Environment variables, all optional.
 | `MAGICDB_PASSWORD` | empty | if set, HTTP Basic auth on every route except `/healthz` |
 | `MAGICDB_UPDATE_HOUR` | `3` | local hour of the nightly catalog update |
 | `MAGICDB_BACKUP_HOUR` | `4` | local hour of the nightly backup |
-| `MAGICDB_LANG` | `en` | UI language: `en` or `it` |
+| `MAGICDB_LANG` | `en` | UI language (`en` or `it`) for visitors whose browser asks for neither |
 | `MAGICDB_CURRENCY` | `eur` | `eur` or `usd`, for values and price sorting |
 
 Data directory:
@@ -271,7 +271,13 @@ Rules:
   exists, increase its quantity; otherwise insert.
 - **Edit**: if changing a row makes it collide with another, merge them.
 - **Move** *n* copies to another location: decrease the source (delete it at 0), add to
-  the destination with the merge rule. One transaction.
+  the destination with the merge rule. One transaction. A whole row with nothing to
+  merge into only changes its `location_id`: it keeps its id and its "added on" date.
+  Moving to where the copies already are does nothing.
+- When rows merge, notes are joined with `; ` (without repeating a note already there)
+  and a purchase price given with the new copies replaces the old one.
+- Problems the user can cause raise `CollectionError(code, **params)`; pages show
+  `t("error." + code)`. All collection SQL lives in `collection/service.py`.
 - A location with entries cannot be deleted; the UI offers "move everything to…" first.
 - The finish must be one of the printing's `finishes`; otherwise warn but allow.
 - Languages offered: `en it fr de es pt ja ko ru zhs zht ph`.
@@ -431,6 +437,17 @@ HTMX is used for partial updates (results paging, inline edits, quick add). Ever
 must also work as a plain full-page load. Usable on a phone: the quick-add page is the
 one most used while sorting physical cards.
 
+**Collection pages.** Every change is a `POST` followed by a redirect to a `next` path
+on this site (`safe_next`), so a reload never repeats it. Quick add keeps finish,
+condition, language, location and set of the last card in the `magicdb_add` cookie; the
+printing preselected for the next card is one from that set when the card has one, else
+the catalog's preferred printing. Pressing Enter before a printing is chosen shows the
+choices instead of adding. After an add the page confirms what was added and offers
+"Undo". HTMX only loads fragments (name suggestions, printings, preview, the edit form
+inside a table row); all of it also works as plain page loads. Search results show a
+badge with the copies owned: of every printing in card mode, of that printing in print
+mode. The card page lists every copy of the card and adds the printing shown.
+
 **Images.** `/img/small|normal/{id}/{front|back}` serves the file from
 `data/images/`; on a miss it downloads from the URL stored in the catalog, saves it,
 then serves it with a long cache header. If the download fails, return a placeholder
@@ -448,12 +465,19 @@ disk cache as card images, in `data/symbols/`; the repository contains none of t
 `/symbology`. The response carries a `Content-Security-Policy` that forbids scripts.
 
 **Security.** Optional Basic auth (§3). All state-changing routes are `POST` and reject
-requests whose `Origin` header, when present, does not match the `Host`. The app is
+requests whose `Origin` header, when present, does not match the `Host` (or the
+`X-Forwarded-Host` set by a reverse proxy) — a middleware in `app.py`. The app is
 meant to sit behind a reverse proxy / access gateway when exposed to the internet; the
 README says so.
 
 **i18n.** All UI strings come from `i18n/en.json` and `i18n/it.json` through a `t()`
-template function. Card data is always English.
+template function. Card data is always English. The language is chosen **per visitor**:
+the choice made with the selector in the footer (`/lang/{code}?next=…`, stored in the
+`magicdb_lang` cookie for a year), else the first supported language of the browser's
+`Accept-Language`, else `MAGICDB_LANG`. Numbers and prices follow the language. Every
+page gets `t`, `lang`, `languages` and `here` from a template context processor
+(`templating.py`), so routes never deal with language. Messages of `QueryError` are
+English only.
 
 ## 8. Import, export, backup
 
