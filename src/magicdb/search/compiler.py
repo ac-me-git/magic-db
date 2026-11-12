@@ -300,6 +300,14 @@ def language(ctx: Context, op: str, value: str) -> Sql:
     return _owned("e.language = ?"), [value.lower()]
 
 
+def deck(ctx: Context, op: str, value: str) -> Sql:
+    sql = (
+        "p.oracle_id IN (SELECT dc.oracle_id FROM deck_cards dc "
+        f"JOIN decks d ON d.id = dc.deck_id WHERE d.name {LIKE})"
+    )
+    return sql, [_contains(value)]
+
+
 def unique(ctx: Context, op: str, value: str) -> None:
     ctx.unique = _choice("unique", value, ("cards", "prints"))
 
@@ -408,6 +416,7 @@ FILTERS: tuple[FilterDef, ...] = (
     _def("cond", "cond", TEXT, condition, "I own it in this condition", "cond:nm"),
     _def("finish", "finish", TEXT, finish, "I own it in this finish", "finish:foil"),
     _def("lang", "lang", TEXT, language, "I own it in this language", "lang:it"),
+    _def("deck", "deck", TEXT, deck, "In a deck whose name contains", 'deck:"dragons"'),
     _directive("unique", unique, "Show cards (default) or every printing", "unique:prints"),
     _directive("order", order, "Sort by: " + ", ".join(ORDERS), "order:price"),
     _directive("dir", direction, "Sort direction: asc or desc", "dir:desc"),

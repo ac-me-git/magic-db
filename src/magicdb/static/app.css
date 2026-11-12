@@ -9,8 +9,9 @@
   --error-bg: #fbe9e7;
   --error-border: #c0392b;
   --row: #f0eee9;
-  --lock-bg: #fdf0c8;
-  --lock-text: #5c4400;
+  --switch-on: #c8881a;
+  --switch-off: #c9c5bb;
+  --switch-off-icon: #8a857a;
   color-scheme: light dark;
 }
 
@@ -26,8 +27,9 @@
     --error-bg: #3a1f1b;
     --error-border: #e57368;
     --row: #2a2825;
-    --lock-bg: #4a3a0c;
-    --lock-text: #f6e2a0;
+    --switch-on: #e0a030;
+    --switch-off: #4a4740;
+    --switch-off-icon: #7d786e;
   }
 }
 
@@ -127,14 +129,25 @@ button.primary,
 
 .site-nav {
   display: flex;
-  gap: 1rem;
-  margin-left: auto;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  order: 2;
+  flex-basis: 100%;
 }
 
 @media (min-width: 48rem) {
   .search-box {
     order: 0;
     flex-basis: 16rem;
+  }
+
+  .site-nav {
+    order: 0;
+    flex-basis: auto;
+  }
+
+  .lock-switch {
+    margin-left: 0;
   }
 }
 
@@ -976,32 +989,47 @@ button:disabled {
   color: var(--accent);
 }
 
-/* --- safety lock --------------------------------------------------------------- */
+/* --- safety lock: a switch in the header, top right ---------------------------- */
 
-.lock-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem 0.75rem;
-  padding: 0.3rem 1rem;
-  font-size: 0.85rem;
-  border-bottom: 1px solid var(--border);
+.lock-switch {
+  order: 1;
+  margin-left: auto;
+  line-height: 0;
 }
 
-.lock-bar button {
-  padding: 0.15rem 0.6rem;
-  font-size: 0.85rem;
+.lock-switch button {
+  position: relative;
+  width: 3.25rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 0;
+  border-radius: 1rem;
+  background: var(--switch-off);
+  transition: background 0.2s;
 }
 
-.lock-bar.is-locked {
-  background: var(--lock-bg);
-  color: var(--lock-text);
-  font-weight: 600;
+.lock-switch .knob {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--switch-off-icon);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 35%);
+  transition: left 0.2s;
 }
 
-.lock-bar.is-unlocked {
-  color: var(--muted);
+.lock-switch.is-locked button {
+  background: var(--switch-on);
+}
+
+.lock-switch.is-locked .knob {
+  left: 1.55rem;
+  color: var(--switch-on);
 }
 
 .locked-notice {
@@ -1010,4 +1038,154 @@ button:disabled {
 
 .locked-notice p {
   margin: 0 0 0.5rem;
+}
+/* --- decks --------------------------------------------------------------------- */
+
+.group-row th {
+  padding-top: 0.9rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-bottom-color: var(--accent);
+}
+
+.deck-list .sub {
+  white-space: normal;
+}
+
+.status-ok {
+  color: var(--muted);
+}
+
+.is-missing td:first-child {
+  box-shadow: inset 3px 0 0 var(--error-border);
+}
+
+.is-contested td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.row-edit summary {
+  cursor: pointer;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.row-edit .inline-form {
+  justify-content: flex-end;
+  text-align: left;
+}
+
+.tile-bar {
+  display: block;
+  width: 100%;
+  margin-top: 0.3rem;
+}
+
+.fold {
+  margin-top: 0.75rem;
+}
+
+.fold > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.panel + .panel,
+.panel + .fold {
+  margin-top: 0.75rem;
+}
+
+textarea {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--bg);
+  color: var(--text);
+  font: 0.95rem/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+/* a round gauge: a ring filled clockwise up to --p percent */
+.dial {
+  --size: 3.4rem;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) calc(var(--p) * 1%), var(--row) 0);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dial::before {
+  content: "";
+  position: absolute;
+  inset: 16%;
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.dial > span {
+  position: relative;
+}
+
+.dial.complete {
+  background: #3f9b5b;
+}
+
+.dial.big {
+  --size: 4.6rem;
+  font-size: 1.05rem;
+}
+
+.dial.big::before {
+  background: var(--bg);
+}
+
+.deck-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deck-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.deck-tile-text {
+  min-width: 0;
+}
+
+.deck-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.deck-tile .sub {
+  white-space: normal;
+}
+
+.deck-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.5rem 0;
+}
+
+.deck-head .page-title,
+.deck-head .hint {
+  margin: 0;
 }

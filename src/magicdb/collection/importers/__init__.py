@@ -50,6 +50,7 @@ class Parsed:
     header: list[str]
     rows: list[Row]
     locations: list[dict] = field(default_factory=list)  # JSON dumps only
+    decks: list[dict] = field(default_factory=list)  # JSON dumps only
 
 
 @dataclass(frozen=True)
@@ -101,7 +102,8 @@ def _parse_json(text: str) -> Parsed:
     kinds = {str(loc.get("name") or "").lower(): loc.get("kind") for loc in locations}
     for row in rows:
         row.location_kind = str(kinds.get(row.location.lower()) or "")
-    return Parsed("native", "cardmarket", list(CSV_COLUMNS), rows, locations)
+    decks = [deck for deck in dump.get("decks") or [] if isinstance(deck, dict)]
+    return Parsed("native", "cardmarket", list(CSV_COLUMNS), rows, locations, decks)
 
 
 _NATIVE_ORDER = (

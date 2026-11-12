@@ -350,6 +350,7 @@ parameter** — never interpolate user text into SQL. An unknown key or a bad va
 | `cond:` | owned in this condition | |
 | `finish:` | owned in this finish | |
 | `lang:` | owned in this language | |
+| `deck:` | in a deck whose name contains | card level |
 | `unique:` | `cards` (default) or `prints` | directive |
 | `order:` | `name mv released rarity price set` | directive, default `name` |
 | `dir:` | `asc` / `desc` | directive |
@@ -469,8 +470,11 @@ table (migration 0002) so that it survives a restart, and mirrored in
   is not a plain read (`GET`, `HEAD`, `OPTIONS`) with status 423 and a page that offers
   to unlock, except `POST /lock` itself and `POST /admin/…`. It denies by default, so a
   page added later that changes the collection is locked without anyone remembering.
-- A slim bar under the header of every page shows the state and has the button to
-  switch it (`POST /lock` with `state=on|off` and `next`). While locked the pages do
+- A switch in the header of every page, top right, shows the state and changes it
+  (`POST /lock` with `state=on|off` and `next`): a sliding toggle with a padlock on its
+  knob, closed and amber when locked, open and grey when unlocked. It is a form button
+  with `role="switch"`, so it works without JavaScript and reads properly to a screen
+  reader. The lock covers the decks as well as the collection. While locked the pages do
   not show the forms and links that would be refused; they show a notice with "Unlock"
   instead, which comes back to the same page.
 - The switch is a deliberate click, not a password: it guards against accidents, not
@@ -715,6 +719,61 @@ Every milestone in `PLAN.md` lists the tests that must exist.
 
 ## 13. Out of scope for v1
 
-Deck builder (a deck is just a location), price history, semantic / natural-language
+Price history, semantic / natural-language
 search, card scanning by camera, multiple users, non-English card names and images,
 trade lists and wishlists.
+
+## 14. Decks
+
+Lists of cards to build, kept apart from the collection (`decks/`). Added at the
+owner's request after milestone 8; a physical deck box is still a *location* (§5),
+a deck here is a *list*.
+
+```sql
+-- migration 0003
+CREATE TABLE decks (
+  id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  format TEXT, notes TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE deck_cards (
+  id INTEGER PRIMARY KEY,
+  deck_id INTEGER NOT NULL REFERENCES decks(id) ON DELETE CASCADE,
+  oracle_id TEXT NOT NULL, name TEXT NOT NULL,
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  board TEXT NOT NULL DEFAULT 'main' CHECK (board IN ('main','side')),
+  UNIQUE (deck_id, oracle_id, board)
+);
+```
+
+Rules:
+
+- A deck names **cards, not printings** (`oracle_id`). What is owned of a card is every
+  copy in the collection: any printing, finish, condition and location.
+- A deck **never changes the collection**, and writes no `history`.
+- Cards are added one at a time by exact name (with the same suggestions as quick add)
+  or from a card's page, or by **pasting a deck list** (`decks/text.py`): `4 Lightning
+  Bolt`, `4x Lightning Bolt`, a bare name for one copy; a trailing `(SET) number`,
+  `[SET]`, `*F*` and `#tags` are dropped; `Fire / Ice` is read as `Fire // Ice`. A line
+  saying `Sideboard` starts the sideboard and `SB:` puts one line there; `Deck`,
+  `Commander`, `Companion` go back to the main deck; `Maybeboard`, `Tokens` and Arena's
+  `About` block are skipped; type groups like `Creatures (12)`, comments (`//`, `#`)
+  and blank lines are ignored. Blank lines never start the sideboard. Lines that are
+  not cards are reported with a "did you mean" and handed back in the box to correct;
+  the rest is added. Tokens and other extras are not deck cards.
+- **Completion** of a deck = copies it can count on ÷ copies it asks for, both boards
+  together, rounded down (100 % means complete). A card in both boards counts its
+  copies in the main board first.
+- For a card in two or more decks, the copies owned are compared with what **all decks
+  together** ask for. A row is *missing* when there are not enough copies for this deck;
+  *contested* when there are enough for this deck alone but not for all of them;
+  otherwise it is fine. "Missing" wins over "contested".
+- `/decks` shows each deck as a tile with a round gauge of its completion, and one list
+  of the cards that several decks want and the collection cannot give to all, with the
+  copies owned, the copies wanted and which decks want how many. `/decks/{id}` lists
+  the deck by board and card type with the state of every row, the estimated cost of
+  what is missing (cheapest paper printing of each card), a download as text and a link
+  to see the cards as images (`deck:"name"`). A card's page lists the decks it is in.
+- The JSON export carries the decks, and importing it recreates the ones whose name is
+  not already there. The CSV export does not.
+- Deck names cannot contain a double quote (it becomes an apostrophe), so that
+  `deck:"name"` can always be written.

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "_forms.html" import problem, dial with context %}
+{% block title %}{{ t("decks.title") }} · {{ t("app.name") }}{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ t("decks.title") }}</h1>
+<p class="hint">{{ t("decks.intro") }}</p>
+
+{{ problem(error) }}
+
+{% if decks %}
+<ul class="deck-tiles">
+  {% for deck in decks %}
+  <li class="deck-tile">
+    {{ dial(deck) }}
+    <div class="deck-tile-text">
+      <a class="deck-name" href="/decks/{{ deck.id }}">{{ deck.name }}</a>
+      {% if deck.format %}<span class="tag">{{ deck.format }}</span>{% endif %}
+      <span class="sub">{{ t("decks.tile", cards=deck.copies | count, missing=deck.missing | count) }}{% if deck.contested %} · {{ t("decks.contested_n", n=deck.contested) }}{% endif %}</span>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+<p class="hint">{{ t("decks.legend") }}</p>
+{% else %}
+<div class="empty"><p>{{ t("decks.none") }}</p></div>
+{% endif %}
+
+{% if shortages %}
+<section>
+  <h2 class="section-title">{{ t("decks.shortages", n=shortages | length) }}</h2>
+  <p class="hint">{{ t("decks.shortages_hint") }}</p>
+  <div class="table-wrap">
+  <table class="card-list">
+    <thead>
+      <tr>
+        <th>{{ t("card.name") }}</th>
+        <th class="num">{{ t("decks.owned") }}</th>
+        <th class="num">{{ t("decks.wanted") }}</th>
+        <th>{{ t("decks.wanted_by") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for card in shortages %}
+      <tr>
+        <td><a href="{{ search_url('!"' ~ card.name ~ '"') }}">{{ card.name }}</a></td>
+        <td class="num">{{ card.owned }}</td>
+        <td class="num">{{ card.wanted }}</td>
+        <td>{% for deck_id, name, copies in card.decks %}<a href="/decks/{{ deck_id }}">{{ name }}</a> ×{{ copies }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+
+{% if locked %}{% include "_locked_notice.html" %}{% else %}
+<form class="panel" method="post" action="/decks">
+  <h2>{{ t("decks.new") }}</h2>
+  <div class="fields">
+    <label>{{ t("locations.name") }}
+      <input type="text" name="name" maxlength="80" required placeholder="{{ t('decks.name_example') }}">
+    </label>
+    <label>{{ t("decks.format") }}
+      <input type="text" name="format" maxlength="40" placeholder="Commander">
+    </label>
+    <label>{{ t("entry.notes") }}
+      <input type="text" name="notes" maxlength="500">
+    </label>
+  </div>
+  <div class="actions">
+    <button type="submit" class="primary">{{ t("locations.create") }}</button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

@@ -21,16 +21,25 @@
     <nav class="site-nav">
       <a href="/">{{ t("nav.filters") }}</a>
       <a href="/collection">{{ t("nav.collection") }}</a>
+      <a href="/decks">{{ t("nav.decks") }}</a>
       <a href="/add">{{ t("nav.add") }}</a>
-      <a href="/syntax">{{ t("nav.syntax") }}</a>
     </nav>
+    <form class="lock-switch {{ 'is-locked' if locked else 'is-unlocked' }}" method="post" action="/lock">
+      <input type="hidden" name="next" value="{{ here }}">
+      <input type="hidden" name="state" value="{{ 'off' if locked else 'on' }}">
+      <button type="submit" role="switch" aria-checked="{{ 'true' if locked else 'false' }}"
+              aria-label="{{ t('lock.locked') if locked else t('lock.unlocked') }}"
+              title="{{ t('lock.unlock') if locked else t('lock.lock') }}">
+        <span class="knob">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            {% if locked %}<path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+            {% else %}<path d="M8 11V8a4 4 0 0 1 7.6-1.8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>{% endif %}
+            <rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/>
+          </svg>
+        </span>
+      </button>
+    </form>
   </header>
-  <form class="lock-bar {{ 'is-locked' if locked else 'is-unlocked' }}" method="post" action="/lock">
-    <input type="hidden" name="next" value="{{ here }}">
-    <input type="hidden" name="state" value="{{ 'off' if locked else 'on' }}">
-    <span>{{ t("lock.locked") if locked else t("lock.unlocked") }}</span>
-    <button type="submit">{{ t("lock.unlock") if locked else t("lock.lock") }}</button>
-  </form>
   <main>    {% block content %}{% endblock %}
   </main>
   <footer class="site-footer">
@@ -41,7 +50,7 @@
       {% if not loop.last %}·{% endif %}
       {% endfor %}
     </p>
-    <p><a href="/admin">{{ t("nav.admin") }}</a></p>
+    <p><a href="/syntax">{{ t("nav.syntax") }}</a> · <a href="/admin">{{ t("nav.admin") }}</a></p>
     <p>{{ t("footer.data") }}</p>
     <p>{{ t("footer.legal") }}</p>
   </footer>

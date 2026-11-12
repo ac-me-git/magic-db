@@ -53,9 +53,9 @@ def snapshot(settings):
 def test_a_new_collection_is_unlocked(client, catalog):
     assert lock.load(catalog) is False
     page = client.get("/").text
-    assert 'class="lock-bar is-unlocked"' in page
+    assert 'class="lock-switch is-unlocked"' in page
     assert "Collection unlocked: changes allowed" in page
-    assert 'name="state" value="on"' in page and ">Lock</button>" in page
+    assert 'name="state" value="on"' in page and 'title="Lock"' in page
 
 
 def test_locking_and_unlocking(client, catalog):
@@ -63,8 +63,8 @@ def test_locking_and_unlocking(client, catalog):
     assert (response.status_code, response.headers["location"]) == (303, "/collection?sort=name")
     assert lock.load(catalog) is True
     page = client.get("/collection?sort=name").text
-    assert 'class="lock-bar is-locked"' in page and "Collection locked: read only" in page
-    assert 'name="state" value="off"' in page and ">Unlock</button>" in page
+    assert 'class="lock-switch is-locked"' in page and "Collection locked: read only" in page
+    assert 'name="state" value="off"' in page and 'title="Unlock"' in page
     assert 'name="next" value="/collection?sort=name"' in page  # comes back to this page
 
     assert set_lock(client, "off").headers["location"] == "/collection"
@@ -239,7 +239,7 @@ def test_pages_hide_their_forms_while_locked(stocked, bolt):
     assert "Binder" in stocked.get("/locations").text  # still listed
     for path in ("/add", "/locations", "/import", "/collection/1/edit"):
         page = stocked.get(path).text
-        assert "so nothing can change it by accident" in page, path
+        assert "so nothing can change them by accident" in page, path
     assert "Edit</a>" not in stocked.get(f"/card/{bolt}").text
     assert ">3</td>" in stocked.get(f"/card/{bolt}").text  # my copies are still shown
 

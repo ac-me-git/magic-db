@@ -18,6 +18,7 @@ from magicdb.catalog import publish
 from magicdb.collection import routes as collection_routes
 from magicdb.collection import transfer
 from magicdb.config import Settings, load_settings
+from magicdb.decks import routes as deck_routes
 from magicdb.templating import build_templates
 
 _PKG = Path(__file__).parent
@@ -118,6 +119,7 @@ def create_app(
     app.include_router(lock.router)
     app.include_router(collection_routes.router)
     app.include_router(transfer.router)
+    app.include_router(deck_routes.router)
     app.include_router(images.router)
     app.include_router(symbols.router)
     app.add_exception_handler(404, web.not_found)

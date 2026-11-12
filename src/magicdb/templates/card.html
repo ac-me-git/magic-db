@@ -105,6 +105,40 @@
   {% endif %}
 </section>
 
+<section class="mine" id="decks">
+  <h2>{{ t("card.decks") }}</h2>
+  {% if in_decks %}
+  <ul class="plain">
+    {% for deck in in_decks %}
+    <li><a href="/decks/{{ deck.id }}">{{ deck.name }}</a> ×{{ deck.copies }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="hint">{{ t("card.decks.none") }}</p>
+  {% endif %}
+  {% if not locked and all_decks %}
+  <form class="inline-form" method="post" action="/deck-cards">
+    <input type="hidden" name="printing" value="{{ card.id }}">
+    <input type="hidden" name="next" value="/card/{{ card.id }}#decks">
+    <label>{{ t("card.decks.add") }}
+      <select name="deck">
+        {% for deck in all_decks %}<option value="{{ deck.id }}">{{ deck.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>{{ t("entry.quantity") }}
+      <input type="number" name="quantity" value="1" min="1" max="999" inputmode="numeric" required>
+    </label>
+    <label>{{ t("deck.board") }}
+      <select name="board">
+        <option value="main">{{ t("deck.board.main") }}</option>
+        <option value="side">{{ t("deck.board.side") }}</option>
+      </select>
+    </label>
+    <button type="submit">{{ t("deck.add_submit") }}</button>
+  </form>
+  {% endif %}
+</section>
+
 <section class="printings">
   <h2>{{ t("card.printings", n=printings | length) }}</h2>
   <div class="table-wrap">

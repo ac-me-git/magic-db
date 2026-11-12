@@ -7,6 +7,7 @@ import json
 import sqlite3
 
 from magicdb import db
+from magicdb.decks import service as decks
 
 FORMAT_VERSION = 1
 CSV_COLUMNS = (
@@ -78,6 +79,7 @@ def export_json(conn: sqlite3.Connection) -> str:
         "exported_at": db.utcnow(),
         "schema_version": conn.execute("PRAGMA user_version").fetchone()[0],
         "locations": [dict(row) for row in locations],
+        "decks": decks.dump(conn),
         "entries": [
             {
                 "name": e["name"],

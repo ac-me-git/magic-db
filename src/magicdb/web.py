@@ -14,6 +14,7 @@ from magicdb.catalog import ingest
 from magicdb.catalog.ingest import normalize
 from magicdb.collection import forms, service
 from magicdb.config import LANGS
+from magicdb.decks import service as decks
 from magicdb.search import panel
 from magicdb.search.compiler import LIKE, ORDERS, _contains
 from magicdb.templating import LANG_COOKIE, ONE_YEAR, safe_next
@@ -28,6 +29,10 @@ _ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 
 def is_card_id(value: str) -> bool:
     return bool(_ID.fullmatch(value))
+
+
+def url_with(path: str, **params: object) -> str:
+    return f"{path}?{urlencode(params)}"
 
 
 def render(request: Request, template: str, status: int = 200, **context: object) -> HTMLResponse:
@@ -133,6 +138,10 @@ def card_page(request: Request, conn: Conn, card_id: str) -> HTMLResponse:
         finishes=[f for f in card["finishes"].strip("|").split("|") if f],
         printings=printings,
         copies=service.copies_of_card(conn, card["oracle_id"]),
+        in_decks=decks.decks_with_card(conn, card["oracle_id"]),
+        all_decks=conn.execute(
+            "SELECT id, name FROM decks ORDER BY name COLLATE NOCASE"
+        ).fetchall(),
         sticky=forms.read_sticky(request),
         options=forms.options(conn),
     )

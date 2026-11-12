@@ -25,6 +25,7 @@ from magicdb.collection.importers import Defaults, FileProblem, Parsed
 from magicdb.collection.importers.profiles import Row
 from magicdb.collection.service import CollectionError
 from magicdb.config import Settings
+from magicdb.decks import service as decks
 from magicdb.templating import resolve_language
 
 router = APIRouter()
@@ -222,6 +223,7 @@ def confirm(
             locations=parsed.locations,
             source=f"{parsed.profile}: {filename}"[:200],
         )
+        decks.restore(conn, parsed.decks)
     except CollectionError as error:
         return preview_page(request, conn, token, parsed, filename, chosen, error)
     counts = importers.summary(parsed)

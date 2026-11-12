@@ -50,3 +50,8 @@
 <span title="{{ t('condition.' ~ entry.condition) }}">{{ entry.condition }}</span>
 {%- if entry.language != "en" %} · <span title="{{ t('lang.' ~ entry.language) }}">{{ entry.language | upper }}</span>{% endif %}
 {%- endmacro %}
+
+{# A round gauge of how complete a deck is. #}
+{% macro dial(deck, size="") -%}
+<span class="dial{% if deck.complete %} complete{% endif %}{% if size %} {{ size }}{% endif %}" style="--p: {{ deck.percent }}" role="img" aria-label="{{ t('decks.complete') }}: {{ deck.percent }}%"><span>{% if deck.copies %}{{ deck.percent }}%{% else %}—{% endif %}</span></span>
+{%- endmacro %}

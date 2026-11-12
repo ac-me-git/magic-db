@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% from "_forms.html" import problem, dial with context %}
+{% block title %}{{ deck.name }} · {{ t("decks.title") }}{% endblock %}
+{% block content %}
+<p class="links"><a href="/decks">← {{ t("decks.title") }}</a></p>
+<div class="deck-head">
+  {{ dial(deck, "big") }}
+  <div>
+    <h1 class="page-title">{{ deck.name }} {% if deck.format %}<span class="tag">{{ deck.format }}</span>{% endif %}</h1>
+    {% if deck.notes %}<p class="hint">{{ deck.notes }}</p>{% endif %}
+  </div>
+</div>
+
+{{ problem(error) }}
+{% if error and suggestions %}
+<p class="hint">{{ t("results.did_you_mean") }}
+  {% for name in suggestions[:6] %}{{ name }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+{% endif %}
+
+{% if added %}
+<div class="done" role="status"><p>{{ t("deck.added", name=added) }}</p></div>
+{% endif %}
+
+{% if report %}
+<div class="done" role="status">
+  <p>{{ t("deck.import_done", copies=report.copies | count, cards=report.cards | count) }}</p>
+</div>
+{% if report.unknown %}
+<div class="error" role="alert">
+  <p><strong>{{ t("deck.import_unknown", n=report.unknown | length) }}</strong></p>
+  <ul class="plain">
+    {% for line in report.unknown %}
+    <li>{{ t("import.line") }} {{ line.number }}: <code>{{ line.text }}</code>
+        {% if line.suggestions %} — {{ t("results.did_you_mean") }} {{ line.suggestions | join(", ") }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endif %}
+
+{% if deck.copies %}
+<dl class="tiles">
+  <div><dt>{{ t("decks.cards") }}</dt><dd>{{ deck.copies | count }}</dd></div>
+
+  <div><dt>{{ t("decks.missing") }}</dt><dd>{{ deck.missing | count }}</dd></div>
+  <div><dt>{{ t("deck.missing_cost") }}</dt><dd>{{ missing_cost | money if deck.missing else "—" }}</dd></div>
+</dl>
+{% if unpriced %}<p class="hint">{{ t("deck.unpriced", n=unpriced | count) }}</p>{% endif %}
+{% if deck.contested %}<p class="hint">{{ t("deck.contested_note", n=deck.contested | count) }}</p>{% endif %}
+<p class="links">
+  <a href="{{ search_url('deck:"' ~ deck.name ~ '"') }}">{{ t("deck.view_cards") }}</a> ·
+  <a href="/decks/{{ deck.id }}/export.txt">{{ t("deck.export") }}</a>
+</p>
+{% else %}
+<div class="empty"><p>{{ t("deck.empty") }}</p></div>
+{% endif %}
+
+{% for board, rows in boards if rows %}
+<h2 class="section-title">{{ t("deck.board." ~ board) }} ({{ rows | sum(attribute="quantity") }})</h2>
+<div class="table-wrap">
+<table class="card-list deck-list">
+  <thead>
+    <tr>
+      <th class="num">{{ t("entry.qty") }}</th>
+      <th>{{ t("card.name") }}</th>
+      <th class="wide">{{ t("card.cost") }}</th>
+      <th class="num">{{ t("decks.owned") }}</th>
+      <th>{{ t("deck.state") }}</th>
+      {% if not locked %}<th></th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% set shown = namespace(group="") %}
+    {% for row in rows %}
+    {% if row.group != shown.group %}
+    {% set shown.group = row.group %}
+    <tr class="group-row"><th colspan="{{ 5 if locked else 6 }}">{{ row.group }}</th></tr>
+    {% endif %}
+    <tr class="{{ 'is-missing' if row.missing else ('is-contested' if row.contested else '') }}">
+      <td class="num">{{ row.quantity }}</td>
+      <td>{% if row.printing %}<a href="/card/{{ row.printing }}">{{ row.name }}</a>{% else %}{{ row.name }}{% endif %}
+          {% if row.others %}<span class="sub">{{ t("deck.also_in") }}
+            {% for deck_id, name, copies in row.others %}<a href="/decks/{{ deck_id }}">{{ name }}</a> ×{{ copies }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</td>
+      <td class="mana wide">{{ row.mana_cost | symbols }}</td>
+      <td class="num">{{ row.owned }}</td>
+      <td>{% if row.missing %}<span class="tag status-error">{{ t("deck.state.missing", n=row.missing) }}</span>
+          {% elif row.contested %}<span class="tag status-running">{{ t("deck.state.contested", owned=row.owned, wanted=row.wanted) }}</span>
+          {% else %}<span class="tag status-ok">{{ t("deck.state.ok") }}</span>{% endif %}</td>
+      {% if not locked %}
+      <td class="num">
+        <details class="row-edit">
+          <summary>{{ t("entry.edit") }}</summary>
+          <form class="inline-form" method="post" action="/decks/{{ deck.id }}/cards/{{ row.id }}">
+            <label>{{ t("entry.quantity") }}
+              <input type="number" name="quantity" value="{{ row.quantity }}" min="1" max="999" inputmode="numeric" required>
+            </label>
+            <label>{{ t("deck.board") }}
+              <select name="board">
+                <option value="main"{% if row.board == "main" %} selected{% endif %}>{{ t("deck.board.main") }}</option>
+                <option value="side"{% if row.board == "side" %} selected{% endif %}>{{ t("deck.board.side") }}</option>
+              </select>
+            </label>
+            <button type="submit">{{ t("entry.save") }}</button>
+          </form>
+          <form class="inline-form" method="post" action="/decks/{{ deck.id }}/cards/{{ row.id }}/remove">
+            <button type="submit" class="danger">{{ t("deck.remove") }}</button>
+          </form>
+        </details>
+      </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endfor %}
+
+{% if locked %}{% include "_locked_notice.html" %}{% else %}
+<form class="panel" method="post" action="/decks/{{ deck.id }}/cards">
+  <h2>{{ t("deck.add_title") }}</h2>
+  <div class="fields">
+    <label>{{ t("add.name") }}
+      <input type="text" name="name" value="{{ typed if error else '' }}" list="names" required
+             autocomplete="off" autocapitalize="off" spellcheck="false"
+             hx-get="/add/names" hx-trigger="input changed delay:200ms" hx-target="#names">
+    </label>
+    <label>{{ t("entry.quantity") }}
+      <input type="number" name="quantity" value="1" min="1" max="999" inputmode="numeric" required>
+    </label>
+    <label>{{ t("deck.board") }}
+      <select name="board">
+        <option value="main">{{ t("deck.board.main") }}</option>
+        <option value="side">{{ t("deck.board.side") }}</option>
+      </select>
+    </label>
+  </div>
+  <datalist id="names"></datalist>
+  <div class="actions">
+    <button type="submit" class="primary">{{ t("deck.add_submit") }}</button>
+  </div>
+</form>
+
+<details class="panel fold"{% if report and report.unknown %} open{% endif %}>
+  <summary>{{ t("deck.import_title") }}</summary>
+  <form method="post" action="/decks/{{ deck.id }}/import">
+    <p class="hint">{{ t("deck.import_hint") }}</p>
+    <textarea name="text" rows="10" required placeholder="4 Lightning Bolt&#10;2 Counterspell&#10;&#10;Sideboard&#10;2 Pyroblast">{% if report %}{% for line in report.unknown %}{{ line.text }}
+{% endfor %}{% endif %}</textarea>
+    <div class="actions">
+      <button type="submit" class="primary">{{ t("deck.import_submit") }}</button>
+    </div>
+  </form>
+</details>
+
+<details class="panel fold">
+  <summary>{{ t("deck.settings") }}</summary>
+  <form method="post" action="/decks/{{ deck.id }}">
+    <div class="fields">
+      <label>{{ t("locations.name") }}
+        <input type="text" name="name" value="{{ deck.name }}" maxlength="80" required>
+      </label>
+      <label>{{ t("decks.format") }}
+        <input type="text" name="format" value="{{ deck.format or '' }}" maxlength="40">
+      </label>
+      <label>{{ t("entry.notes") }}
+        <input type="text" name="notes" value="{{ deck.notes or '' }}" maxlength="500">
+      </label>
+    </div>
+    <div class="actions"><button type="submit" class="primary">{{ t("entry.save") }}</button></div>
+  </form>
+  <form class="inline-form" method="post" action="/decks/{{ deck.id }}/delete">
+    <button type="submit" class="danger">{{ t("deck.delete") }}</button>
+    <span class="hint">{{ t("deck.delete_hint") }}</span>
+  </form>
+</details>
+{% endif %}
+{% endblock %}
