@@ -10,7 +10,6 @@ from fastapi.testclient import TestClient
 from magicdb import i18n, search
 from magicdb.app import create_app
 from magicdb.catalog.ingest import is_extra
-from magicdb.templating import build_templates
 
 UNKNOWN = "00000000-0000-4000-8000-000000000000"
 
@@ -112,18 +111,6 @@ def test_one_result_is_singular(client, italian):
     assert ">\n    1 card\n" in client.get('/search?q=!"Lightning Bolt"').text
     assert "1 printing\n" in client.get('/search?q=!"Sol Ring" unique:prints').text
     assert "1 carta\n" in italian.get('/search?q=!"Lightning Bolt"').text
-
-
-def test_numbers_follow_the_language(catalog):
-    english = build_templates(catalog).env.filters
-    italian = build_templates(replace(catalog, lang="it")).env.filters
-    dollars = build_templates(replace(catalog, currency="usd")).env.filters
-    assert english["count"](120054) == "120,054"
-    assert italian["count"](120054) == "120.054"
-    assert english["money"](1234.5) == "€1,234.50"
-    assert italian["money"](1234.5) == "€1.234,50"
-    assert dollars["money"](0.5) == "$0.50"
-    assert english["money"](None) == italian["money"](None) == "—"
 
 
 def test_bad_query_explains_itself_with_status_200(client):

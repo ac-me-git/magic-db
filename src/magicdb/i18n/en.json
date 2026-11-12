@@ -10,6 +10,9 @@
   "footer.legal": "magic-db is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.",
   "footer.data": "Card data by Scryfall.",
 
+  "language.en": "English",
+  "language.it": "Italiano",
+
   "search.placeholder": "Card name, or t:dragon c:r mv<=4",
   "search.button": "Search",
   "nav.filters": "Filters",

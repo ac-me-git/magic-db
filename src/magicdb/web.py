@@ -11,8 +11,10 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from magicdb import db, search
 from magicdb.catalog.ingest import normalize
+from magicdb.config import LANGS
 from magicdb.search import panel
 from magicdb.search.compiler import LIKE, ORDERS, _contains
+from magicdb.templating import LANG_COOKIE, ONE_YEAR, safe_next
 
 router = APIRouter()
 Conn = Annotated[sqlite3.Connection, Depends(db.get_conn)]
@@ -117,6 +119,15 @@ def card_page(request: Request, conn: Conn, card_id: str) -> HTMLResponse:
         finishes=[f for f in card["finishes"].strip("|").split("|") if f],
         printings=printings,
     )
+
+
+@router.get("/lang/{code}")
+def set_language(code: str, next: str = "/") -> RedirectResponse:
+    """Remember the visitor's interface language and send them back where they were."""
+    response = RedirectResponse(safe_next(next), status_code=303)
+    if code in LANGS:
+        response.set_cookie(LANG_COOKIE, code, max_age=ONE_YEAR, samesite="lax", path="/")
+    return response
 
 
 @router.get("/syntax", response_class=HTMLResponse)

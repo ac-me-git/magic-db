@@ -10,6 +10,9 @@
   "footer.legal": "magic-db è un Contenuto dei Fan non ufficiale, consentito dalle Linee Guida sui Contenuti dei Fan. Non è approvato né sostenuto da Wizards. Parte dei materiali utilizzati è proprietà di Wizards of the Coast. ©Wizards of the Coast LLC.",
   "footer.data": "Dati delle carte forniti da Scryfall.",
 
+  "language.en": "English",
+  "language.it": "Italiano",
+
   "search.placeholder": "Nome della carta, oppure t:dragon c:r mv<=4",
   "search.button": "Cerca",
   "nav.filters": "Filtri",

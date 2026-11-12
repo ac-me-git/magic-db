@@ -611,3 +611,8 @@ code {
 .example {
   white-space: nowrap;
 }
+
+.languages {
+  font-size: 0.9rem;
+}
+
