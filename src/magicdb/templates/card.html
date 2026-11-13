@@ -13,7 +13,7 @@
 </section>
 {% endmacro %}
 
-{% from "_forms.html" import copy_fields, traits with context %}
+{% from "_forms.html" import copy_fields, problem, traits with context %}
 
 {% block content %}
 <article class="card-page">
@@ -93,6 +93,7 @@
   {% if not locked %}
   <form class="panel" method="post" action="/add">
     <h3>{{ t("copies.add_title", set=card.set_code | upper, number=card.collector_number) }}</h3>
+    {{ problem(error) }}
     <input type="hidden" name="printing" value="{{ card.id }}">
     <input type="hidden" name="next" value="/card/{{ card.id }}#mine">
     <div class="fields">

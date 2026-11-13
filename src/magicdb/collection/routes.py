@@ -1,4 +1,4 @@
-"""Collection pages: quick add, the collection, locations (SPEC §7).
+"""Collection pages: adding copies, the collection, locations (SPEC §7).
 
 Routes stay thin: read the form, call ``service``, render or redirect. Every change is
 a POST followed by a redirect, so reloading a page never repeats it.
@@ -15,13 +15,10 @@ from markupsafe import escape
 from magicdb import db, stats, web
 from magicdb.collection import forms, service
 from magicdb.collection.service import CollectionError
-from magicdb.search.compiler import exact_name
 from magicdb.templating import safe_next, search_url
 
 router = APIRouter()
 Field = Annotated[str, Form()]
-
-MAX_PRINTINGS = 300
 
 
 def redirect(target: str) -> RedirectResponse:
@@ -37,91 +34,13 @@ def as_id(value: str) -> int:
     return int(value) if value.isascii() and value.isdigit() and len(value) < 10 else -1
 
 
-# --- quick add ------------------------------------------------------------------------
-
-
-def printings_named(conn: sqlite3.Connection, name: str) -> list[sqlite3.Row]:
-    """Every printing of the card with exactly this name; paper before digital."""
-    if not name.strip() or not db.has_catalog(conn):
-        return []
-    where, params = exact_name(name.strip())
-    return conn.execute(
-        f"SELECT p.id, p.name, p.set_code, p.set_name, p.collector_number, p.released_at, "
-        f"p.is_digital, p.pref FROM cat.printings p WHERE {where} "
-        f"ORDER BY p.is_digital, p.released_at DESC, p.set_code, p.collector_sort, p.id LIMIT ?",
-        (*params, MAX_PRINTINGS),
-    ).fetchall()
-
-
-def pick(printings: list[sqlite3.Row], wanted: str, sticky_set: str) -> str:
-    """Which printing to preselect: the one asked for, else one from the set used last,
-    else the catalog's preferred one."""
-    if not printings:
-        return ""
-    ids = [p["id"] for p in printings]
-    if wanted in ids:
-        return wanted
-    for p in printings:
-        if sticky_set and p["set_code"] == sticky_set:
-            return p["id"]
-    return max(printings, key=lambda p: p["pref"])["id"]
-
-
-def add_context(
-    request: Request, conn: sqlite3.Connection, name: str, printing: str = ""
-) -> dict[str, object]:
-    sticky = forms.read_sticky(request)
-    printings = printings_named(conn, name)
-    suggestions = [] if printings or not name.strip() else web.autocomplete(conn, name)
-    return {
-        "name": name,
-        "printings": printings,
-        "selected": pick(printings, printing, sticky["set"]),
-        "suggestions": suggestions,
-        "sticky": sticky,
-        "options": forms.options(conn),
-    }
-
-
-@router.get("/add", response_class=HTMLResponse)
-def add_page(
-    request: Request,
-    conn: web.Conn,
-    name: str = "",
-    printing: str = "",
-    added: str = "",
-    n: str = "",
-    warn: str = "",
-) -> HTMLResponse:
-    if not db.has_catalog(conn):
-        return web.no_catalog(request)
-    last = service.get_entry(conn, as_id(added)) if added else None
-    return web.render(
-        request,
-        "add.html",
-        **add_context(request, conn, name, printing),
-        last=last,
-        n=n if n.isascii() and n.isdigit() else "1",
-        warn=warn == "finish",
-        error=None,
-    )
+# --- adding copies --------------------------------------------------------------------
 
 
 @router.get("/add/names", response_class=HTMLResponse)
 def add_names(conn: web.Conn, name: str = "") -> str:
-    """Options for the name field's suggestions."""
+    """Options for a card-name field's suggestions (the deck page's add form)."""
     return "".join(f'<option value="{escape(n)}">' for n in web.autocomplete(conn, name))
-
-
-@router.get("/add/printings", response_class=HTMLResponse)
-def add_printings(request: Request, conn: web.Conn, name: str = "") -> HTMLResponse:
-    return web.render(request, "_add_printings.html", **add_context(request, conn, name))
-
-
-@router.get("/add/preview", response_class=HTMLResponse)
-def add_preview(request: Request, printing: str = "") -> HTMLResponse:
-    selected = printing if web.is_card_id(printing) else ""
-    return web.render(request, "_add_preview.html", selected=selected)
 
 
 @router.post("/add")
@@ -129,7 +48,6 @@ def add(
     request: Request,
     conn: web.Conn,
     printing: Field = "",
-    name: Field = "",
     quantity: Field = "1",
     finish: Field = "nonfoil",
     condition: Field = "NM",
@@ -137,19 +55,10 @@ def add(
     location: Field = "",
     next: Field = "",
 ) -> Response:
-    if not printing:  # Enter pressed before choosing a printing: show the choices
-        return web.render(
-            request,
-            "add.html",
-            **add_context(request, conn, name),
-            last=None,
-            n="1",
-            warn=False,
-            error=None,
-        )
+    """The card page's add form: copies of a printing that is in the catalog."""
     try:
         place = forms.location_id(location)
-        added = service.add_entry(
+        service.add_entry(
             conn,
             printing,
             quantity,
@@ -159,28 +68,10 @@ def add(
             location_id=place,
         )
     except CollectionError as error:
-        return web.render(
-            request,
-            "add.html",
-            400,
-            **add_context(request, conn, name, printing),
-            last=None,
-            n="1",
-            warn=False,
-            error=error,
-        )
-    entry = service.get_entry(conn, added.entry_id)
-    done = {"added": added.entry_id, "n": int(quantity)}
-    if added.unusual_finish:
-        done["warn"] = "finish"
-    response = redirect(safe_next(next, "") or "/add?" + urlencode(done))
+        return web.card_view(request, conn, printing, error)
+    response = redirect(safe_next(next, f"/card/{printing}#mine"))
     forms.write_sticky(
-        response,
-        finish=finish,
-        condition=condition,
-        language=language,
-        location=place,
-        set=entry["set_code"],
+        response, finish=finish, condition=condition, language=language, location=place
     )
     return response
 
@@ -212,7 +103,8 @@ def fast_start(conn: web.Conn) -> Response:
 def fast_settings(
     request: Request, condition: str = "", language: str = "", location: str = "", next: str = ""
 ) -> Response:
-    """Remember what fast input gives to new copies (the same memory quick add uses)."""
+    """Remember what fast input gives to new copies (the same memory the card page's add
+    form uses)."""
     sticky = forms.read_sticky(request)
     response = redirect(safe_next(next, "/fast"))
     forms.write_sticky(
@@ -221,7 +113,6 @@ def fast_settings(
         condition=condition if condition in service.CONDITIONS else sticky["condition"],
         language=language if language in service.LANGUAGES else sticky["language"],
         location=location if location.isascii() and location.isdigit() else "",
-        set=sticky["set"],
     )
     return response
 

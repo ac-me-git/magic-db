@@ -1,9 +1,8 @@
-"""Collection pages: quick add, collection, locations, badges, Origin check (SPEC §7)."""
+"""Collection pages: adding copies, collection, locations, badges, Origin check (SPEC §7)."""
 
 import re
 from contextlib import closing
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from fastapi.testclient import TestClient
@@ -55,66 +54,23 @@ def selected(html, field):
     return match.group(1) if match else ""
 
 
-# --- quick add ------------------------------------------------------------------------
+# --- adding copies --------------------------------------------------------------------
 
 
 def test_navigation_links(client):
     home = client.get("/").text
     menu = home.split('class="site-nav"')[1].split("</nav>")[0]
     assert 'href="/stats"' in menu and 'href="/decks"' in menu and menu.count("<a ") == 2
-    assert 'href="/add"' in client.get("/admin").text  # where "Add cards" lives now
 
 
-def test_add_page_starts_empty_with_defaults(client):
-    page = client.get("/add")
-    assert page.status_code == 200
-    assert 'name="name"' in page.text and "autofocus" in page.text
-    assert "Type a card name" in page.text
-    assert 'name="printing"' not in page.text
-    assert [selected(page.text, f) for f in ("finish", "condition", "language", "location")] == [
-        "nonfoil",
-        "NM",
-        "en",
-        "",
-    ]
-
-
-def test_add_page_lists_printings_of_an_exact_name(client, ids):
-    page = client.get("/add?name=lightning bolt").text
-    assert "Printing (6)" in page
-    assert page.count("<option value=") >= 6
-    assert selected(page, "printing") == ids("Lightning Bolt", "2x2")  # the preferred one
-    assert f'src="/img/normal/{ids("Lightning Bolt", "2x2")}/front"' in page
-    asked = client.get(f"/add?name=Lightning Bolt&printing={ids('Lightning Bolt', 'lea')}").text
-    assert selected(asked, "printing") == ids("Lightning Bolt", "lea")
-    face = client.get("/add?name=Delver of Secrets").text  # one face's name is enough
-    assert "Printing (1)" in face
-
-
-def test_add_page_suggests_when_the_name_is_not_exact(client):
-    page = client.get("/add?name=lightnin").text
-    assert "No card has exactly this name" in page
-    assert '<a href="/add?name=Lightning%20Bolt">Lightning Bolt</a>' in page
-    assert 'name="printing"' not in page
-    assert "Did you mean" in client.get("/add?name=zzzzzz").text
-
-
-def test_add_fragments_for_htmx(client, ids):
+def test_name_suggestions_for_htmx(client):
     names = client.get("/add/names?name=light").text
     assert '<option value="Lightning Bolt">' in names and "<html" not in names
     assert client.get("/add/names?name=l").text == ""
     assert client.get("/add/names", params={"name": '"><script>'}).text == ""
 
-    printings = client.get("/add/printings?name=Lightning Bolt").text
-    assert "<html" not in printings and 'name="printing"' in printings
-    assert "Type a card name" in client.get("/add/printings?name=").text
 
-    preview = client.get(f"/add/preview?printing={ids('Sol Ring', 'c21')}").text
-    assert f'src="/img/normal/{ids("Sol Ring", "c21")}/front"' in preview
-    assert client.get("/add/preview?printing=../../etc").text.strip() == ""
-
-
-def test_quick_add_then_fields_stick(client, catalog, ids, places):
+def test_add_then_fields_stick(client, catalog, ids, places):
     bolt = ids("Lightning Bolt", "m10")
     response = add(
         client,
@@ -125,27 +81,22 @@ def test_quick_add_then_fields_stick(client, catalog, ids, places):
         language="it",
         location=places["Binder 1"],
     )
-    assert response.status_code == 303
-    target = urlsplit(response.headers["location"])
-    assert target.path == "/add" and parse_qs(target.query) == {"added": ["1"], "n": ["2"]}
+    assert (response.status_code, response.headers["location"]) == (303, f"/card/{bolt}#mine")
     assert f"{forms.STICKY_COOKIE}=" in response.headers["set-cookie"]
     assert rows(catalog) == [("Lightning Bolt", "m10", 2, "foil", "EX", "it", "Binder 1")]
 
-    page = client.get(response.headers["location"]).text
-    assert "Added 2 × Lightning Bolt (M10) to Binder 1. You now have 2 there." in page
-    assert 'action="/collection/1/remove"' in page  # undo
-    # ready for the next card: empty name, quantity 1, everything else as it was
-    assert 'name="name" value=""' in page and 'name="quantity" value="1"' in page
-    assert [selected(page, f) for f in ("finish", "condition", "language", "location")] == [
+    # every card page's add form is ready for the next copies: quantity 1, the rest as it was
+    page = client.get(f"/card/{ids('Sol Ring', 'c21')}").text
+    form = page.split('action="/add"')[1].split("</form>")[0]
+    assert 'name="quantity" value="1"' in form
+    assert [selected(form, f) for f in ("finish", "condition", "language", "location")] == [
         "foil",
         "EX",
         "it",
         places["Binder 1"],
     ]
-    # and the next card defaults to the same set when it has a printing there
-    assert selected(client.get("/add?name=Lightning Bolt").text, "printing") == bolt
 
-    again = add(
+    add(
         client,
         bolt,
         quantity="2",
@@ -154,23 +105,7 @@ def test_quick_add_then_fields_stick(client, catalog, ids, places):
         language="it",
         location=places["Binder 1"],
     )
-    assert "You now have 4 there." in client.get(again.headers["location"]).text
     assert rows(catalog) == [("Lightning Bolt", "m10", 4, "foil", "EX", "it", "Binder 1")]
-
-
-def test_undo_removes_what_was_just_added(client, catalog, ids):
-    bolt = ids("Lightning Bolt", "m10")
-    add(client, bolt, quantity="3")
-    add(client, bolt, quantity="2")
-    undo = client.post("/collection/1/remove", data={"quantity": "2", "next": "/add"})
-    assert (undo.status_code, undo.headers["location"]) == (303, "/add")
-    assert rows(catalog)[0][2] == 3
-
-
-def test_enter_without_a_printing_shows_the_choices(client, catalog):
-    page = client.post("/add", data={"name": "Lightning Bolt", "quantity": "1"})
-    assert page.status_code == 200 and "Printing (6)" in page.text
-    assert rows(catalog) == []
 
 
 @pytest.mark.parametrize(
@@ -186,30 +121,35 @@ def test_enter_without_a_printing_shows_the_choices(client, catalog):
     ],
 )
 def test_add_explains_bad_input_and_adds_nothing(client, catalog, ids, data, message):
-    page = add(client, ids("Lightning Bolt", "m10"), name="Lightning Bolt", **data)
-    assert page.status_code == 400 and message in page.text
-    assert 'value="Lightning Bolt"' in page.text  # the form is still filled in
+    bolt = ids("Lightning Bolt", "m10")
+    page = add(client, bolt, **data)
+    assert page.status_code == 400
+    form = page.text.split('action="/add"')[1].split("</form>")[0]  # the card page's form
+    assert message in form and f'name="printing" value="{bolt}"' in form
     assert rows(catalog) == []
 
 
-def test_add_unknown_card(client, catalog):
-    for printing in (UNKNOWN, "nonsense"):
-        page = add(client, printing)
-        assert page.status_code == 400 and "not in the catalog" in page.text
+def test_only_printings_from_the_catalog_can_be_added(client, catalog):
+    for printing in ("", UNKNOWN, "nonsense", "../../etc"):
+        assert add(client, printing).status_code == 404, printing
+        assert add(client, printing, quantity="0").status_code == 404, printing
     assert rows(catalog) == []
 
 
-def test_unusual_finish_is_added_with_a_note(client, catalog, ids):
+def test_there_is_no_add_cards_page(client):
+    for path in ("/add", "/add?name=Lightning%20Bolt", "/add/printings", "/add/preview"):
+        assert client.get(path).status_code in (404, 405), path
+
+
+def test_unusual_finish_is_still_added(client, catalog, ids):
     response = add(client, ids("Lightning Bolt", "lea"), finish="foil")
-    assert "warn=finish" in response.headers["location"]
-    assert "not known to exist in that finish" in client.get(response.headers["location"]).text
+    assert response.status_code == 303
     assert rows(catalog)[0][3] == "foil"
 
 
-def test_add_page_needs_the_catalog(settings):
+def test_adding_needs_the_catalog(settings):
     client = TestClient(create_app(settings))
-    assert client.get("/add").status_code == 503
-    assert client.post("/add", data={"printing": UNKNOWN}).status_code == 400
+    assert client.post("/add", data={"printing": UNKNOWN}).status_code == 503
 
 
 # --- card page ------------------------------------------------------------------------
@@ -237,8 +177,9 @@ def test_card_page_add_form_and_my_copies(client, catalog, ids, places):
 
 
 def test_redirect_after_add_stays_on_this_site(client, ids):
-    response = add(client, ids("Sol Ring", "c21"), next="https://evil.example/")
-    assert response.headers["location"].startswith("/add?")
+    sol = ids("Sol Ring", "c21")
+    response = add(client, sol, next="https://evil.example/")
+    assert response.headers["location"] == f"/card/{sol}#mine"
 
 
 # --- badges in search results ---------------------------------------------------------
@@ -529,12 +470,10 @@ def test_every_choice_has_a_label():
 
 def test_italian_collection_pages(client, ids):
     client.get("/lang/it")
-    assert "Aggiungi carte" in client.get("/add").text
     assert "La tua collezione è vuota" in client.get("/collection").text
     page = add(client, ids("Sol Ring", "c21"), quantity="0")
     assert "La quantità deve essere un numero intero" in page.text
+    assert "Aggiungi questa stampa (C21 #" in page.text
     done = add(client, ids("Sol Ring", "c21"), quantity="2")
-    assert (
-        "Aggiunte 2 × Sol Ring (C21) in Senza posizione."
-        in client.get(done.headers["location"]).text
-    )
+    mine = client.get(done.headers["location"]).text.split('id="mine"')[1]
+    assert "Senza posizione" in mine and "Non possiedi questa carta." not in mine

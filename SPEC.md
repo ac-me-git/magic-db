@@ -429,7 +429,7 @@ edit the text in the search box.
 | `/filter?…` | the filter panel's form target: redirects to `/search?q=…` |
 | `/search?q=&page=&view=grid\|list` | results |
 | `/card/{scryfall_id}` | large image (flip for back face), full text, legalities, prices, all printings, my copies of this card, add form |
-| `/add` | **quick add**: name autocomplete → pick printing → Enter. Location, finish, condition and language stay as they were for the next card |
+| `POST /add` | the card page's add form: copies of one printing in the catalog. Finish, condition, language and location stay as they were for the next add. There is no add page |
 | `/collection` | my entries: filter by location / text, sort, inline edit of quantity / finish / condition / location, move, remove |
 | `/locations` | create, rename, reorder, delete; card count and value per location |
 | `/stats` | see §9 |
@@ -440,17 +440,18 @@ edit the text in the search box.
 | `/img/{size}/{scryfall_id}/{face}` | image cache proxy |
 | `/api/autocomplete?q=` | up to 15 card names, prefix matches first |
 
-HTMX is used for partial updates (results paging, inline edits, quick add). Every page
-must also work as a plain full-page load. Usable on a phone: the quick-add page is the
-one most used while sorting physical cards.
+HTMX is used for partial updates (results paging, inline edits, fast input). Every page
+must also work as a plain full-page load. Usable on a phone: fast input and the card
+page are the ones most used while sorting physical cards.
 
 **Collection pages.** Every change is a `POST` followed by a redirect to a `next` path
-on this site (`safe_next`), so a reload never repeats it. Quick add keeps finish,
-condition, language, location and set of the last card in the `magicdb_add` cookie; the
-printing preselected for the next card is one from that set when the card has one, else
-the catalog's preferred printing. Pressing Enter before a printing is chosen shows the
-choices instead of adding. After an add the page confirms what was added and offers
-"Undo". HTMX only loads fragments (name suggestions, printings, preview, the edit form
+on this site (`safe_next`), so a reload never repeats it. Copies enter the collection
+from a card's page, from fast input or by importing a file, and only as printings the
+catalog has: a card Scryfall does not list cannot be added. The card page's add form
+(`POST /add`) goes back to `/card/{id}#mine`; a refused add shows the card page again,
+status 400, with the reason above the form, and a printing the catalog does not have
+gets 404. The form keeps finish, condition, language and location of the last add in
+the `magicdb_add` cookie. HTMX only loads fragments (name suggestions, the edit form
 inside a table row); all of it also works as plain page loads. Search results show a
 badge with the copies owned: of every printing in card mode, of that printing in print
 mode. The card page lists every copy of the card and adds the printing shown.
@@ -501,11 +502,12 @@ number or by name with the column headings, and tick boxes.
   adds one copy with those traits; unticking takes one back. A cell holds the box and
   nothing else: fast input records at most one copy per finish, and `action=add` does
   nothing when the box is already ticked (a double click must not add a hidden second
-  copy). More copies, and etched, go through quick add. A finish the printing was
+  copy). More copies, and etched, go through the card's page. A finish the printing was
   never made in has a disabled box (unless such a copy is recorded: it can be unticked).
-- Condition, language and location are the ones quick add remembers (same cookie);
-  the selectors above the table change them (`GET /fast/settings`, a cookie only, so
-  allowed while locked). A remembered location that no longer exists counts as none.
+- Condition, language and location are the ones the card page's add form remembers
+  (same cookie); the selectors above the table change them (`GET /fast/settings`, a
+  cookie only, so allowed while locked). A remembered location that no longer exists
+  counts as none.
 - The badge beside the name still counts every copy of the printing, wherever it is.
 - `POST /fast/toggle` (`printing`, `finish`, `action=add|remove`, `next`): with HTMX
   it answers with the clicked box and, out of band, the badge beside the name — never
@@ -521,8 +523,8 @@ number or by name with the column headings, and tick boxes.
 **Header.** On every page: the logo (the way to the home page and its filter panel),
 the search box, and two links — "My collection", which opens the statistics, and "My
 decks". The statistics page is the collection's landing page and links to the card
-list, quick add, locations, import and export; quick add is also linked from the
-administration page. Syntax and Administration are in the footer.
+list, fast input, locations, import and export; the administration page links to
+them too. Syntax and Administration are in the footer.
 
 - **Where to search.** The Search button is a split button. Pressing it (or Enter)
   searches where the last search did; its menu chooses "all cards" or "my collection"
@@ -842,7 +844,7 @@ Rules:
 - A deck names **cards, not printings** (`oracle_id`). What is owned of a card is every
   copy in the collection: any printing, finish, condition and location.
 - A deck **never changes the collection**, and writes no `history`.
-- Cards are added one at a time by exact name (with the same suggestions as quick add)
+- Cards are added one at a time by exact name (with suggestions from the catalog)
   or from a card's page, or by **pasting a deck list** (`decks/text.py`): `4 Lightning
   Bolt`, `4x Lightning Bolt`, a bare name for one copy; a trailing `(SET) number`,
   `[SET]`, `*F*` and `#tags` are dropped; `Fire / Ice` is read as `Fire // Ice`. A line

@@ -80,7 +80,7 @@ uv run magicdb
 |---|---|
 | **The logo** (home) | The filter panel: build a search by picking colours, types, sets… |
 | **The search box** | On every page. Suggests card names as you type; the arrow on the Search button chooses between all cards and your collection |
-| **My collection** | Statistics, and from there: the card list, quick add, fast input, locations, import, export |
+| **My collection** | Statistics, and from there: the card list, fast input, locations, import, export |
 | **My decks** | Deck lists and how complete each one is |
 | **Syntax** (footer) | Every search filter, with examples you can click |
 | **Administration** (footer) | Whether a newer version is out (and, on Windows, install it); catalog and backup status, run them now, download a backup |
@@ -91,7 +91,7 @@ In the list view, click a column's heading to sort by it; click again to reverse
 input* view, and every card gets two big boxes, non-foil and foil. Tick a box and that
 copy is in your collection — in the location, condition and language chosen above the
 list. Untick it to take it back. Fast input records one copy per finish; for more
-copies of the same card, use *Add cards*.
+copies of the same card, use the form on the card's page.
 
 The switch with the padlock, top right, locks the collection and the decks: while it is
 on you can look at everything but change nothing.

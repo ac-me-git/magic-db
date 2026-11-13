@@ -2,8 +2,11 @@
 
 ## Unreleased
 
+- The *Add cards* page is gone. Copies are added from a card's page (the form under
+  *My copies*), with fast input, or by importing a file. As before, only printings in
+  the Scryfall catalog can be added.
 - Fast input is just the two boxes now: the **+** and the copy count beside a ticked box
-  are gone. It records one copy per finish; for more copies use *Add cards*.
+  are gone. It records one copy per finish; for more copies use the card's page.
 - Fast input: quick clicks on both boxes of a card no longer leave the row showing a box
   that is out of date.
 - Import from TopDecked keeps the acquired date also for rows that write it as

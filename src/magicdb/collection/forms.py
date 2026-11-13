@@ -11,7 +11,7 @@ from magicdb.collection.service import CollectionError
 
 STICKY_COOKIE = "magicdb_add"
 ONE_YEAR = 365 * 24 * 60 * 60
-DEFAULTS = {"finish": "nonfoil", "condition": "NM", "language": "en", "location": "", "set": ""}
+DEFAULTS = {"finish": "nonfoil", "condition": "NM", "language": "en", "location": ""}
 _ALLOWED = {
     "finish": service.FINISHES,
     "condition": service.CONDITIONS,
@@ -20,7 +20,7 @@ _ALLOWED = {
 
 
 def read_sticky(request: Request) -> dict[str, str]:
-    """Finish, condition, language, location and set of the last card added here."""
+    """Finish, condition, language and location of the last copies added."""
     sticky = dict(DEFAULTS)
     stored = parse_qs(request.cookies.get(STICKY_COOKIE, ""))
     for key in DEFAULTS:
@@ -28,8 +28,8 @@ def read_sticky(request: Request) -> dict[str, str]:
         if key in _ALLOWED:
             if value in _ALLOWED[key]:
                 sticky[key] = value
-        elif value.isascii() and value.isalnum() and len(value) <= 10:
-            sticky[key] = value  # a location id or a set code
+        elif value.isascii() and value.isdigit() and len(value) < 10:
+            sticky[key] = value  # a location id
     return sticky
 
 

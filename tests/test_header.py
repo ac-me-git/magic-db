@@ -60,14 +60,13 @@ def test_my_collection_opens_the_statistics_with_the_ways_onward(owned):
     page = owned.get("/stats").text
     assert '<h1 class="page-title">My collection</h1>' in page and "Statistics" in page
     hub = page.split('<p class="links">')[1].split("</p>")[0]
-    assert links(hub) == ["/collection", "/add", "/fast", "/locations", "/import", "/export"]
+    assert links(hub) == ["/collection", "/fast", "/locations", "/import", "/export"]
     assert "<dd>6</dd>" in page  # and the numbers are there
 
 
-def test_add_cards_is_reachable_from_administration_and_collection(client):
-    assert 'href="/add"' in client.get("/admin").text
-    assert 'href="/add"' in client.get("/collection").text
-    assert client.get("/add").status_code == 200
+def test_no_page_links_to_add_cards_any_more(owned):
+    for path in ("/admin", "/collection", "/stats"):
+        assert 'href="/add"' not in owned.get(path).text, path
 
 
 # --- 2: where to search ---------------------------------------------------------------

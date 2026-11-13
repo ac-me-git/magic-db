@@ -99,7 +99,6 @@ def test_the_bar_is_on_every_page(stocked, bolt):
         f"/card/{bolt}",
         "/collection",
         "/locations",
-        "/add",
         "/import",
         "/export",
         "/stats",
@@ -220,7 +219,6 @@ def test_backups_and_catalog_updates_work_while_locked(stocked, catalog, monkeyp
 
 def test_pages_hide_their_forms_while_locked(stocked, bolt):
     open_pages = {
-        "/add": 'action="/add"',
         "/collection": "/collection/1/edit",
         f"/card/{bolt}": 'name="printing"',
         "/locations": 'action="/locations"',
@@ -234,10 +232,10 @@ def test_pages_hide_their_forms_while_locked(stocked, bolt):
     for path, control in open_pages.items():
         page = stocked.get(path).text
         assert control not in page, path
-        assert "Lightning Bolt" in page or path in ("/add", "/locations", "/import"), path
+        assert "Lightning Bolt" in page or path in ("/locations", "/import"), path
     assert 'action="/locations/1' not in stocked.get("/locations").text  # no rename, no delete
     assert "Binder" in stocked.get("/locations").text  # still listed
-    for path in ("/add", "/locations", "/import", "/collection/1/edit"):
+    for path in ("/locations", "/import", "/collection/1/edit"):
         page = stocked.get(path).text
         assert "so nothing can change them by accident" in page, path
     assert "Edit</a>" not in stocked.get(f"/card/{bolt}").text
@@ -246,12 +244,12 @@ def test_pages_hide_their_forms_while_locked(stocked, bolt):
 
 def test_unlocking_from_a_notice_comes_back_to_that_page(stocked):
     set_lock(stocked, "on")
-    page = stocked.get("/add?name=Lightning Bolt").text
+    page = stocked.get("/collection/1/edit?next=%2Fcollection").text
     notice = page.split('class="notice locked-notice"')[1].split("</form>")[0]
-    assert 'name="next" value="/add?name=Lightning%20Bolt"' in notice
-    back = set_lock(stocked, "off", "/add?name=Lightning%20Bolt").headers["location"]
-    assert back == "/add?name=Lightning%20Bolt"
-    assert "Printing (6)" in stocked.get(back).text  # the form is there again, name kept
+    assert 'name="next" value="/collection/1/edit?next=%2Fcollection"' in notice
+    back = set_lock(stocked, "off", "/collection/1/edit?next=%2Fcollection").headers["location"]
+    assert back == "/collection/1/edit?next=%2Fcollection"
+    assert 'action="/collection/1"' in stocked.get(back).text  # the form is there again
 
 
 # --- the lock itself is not open to other sites, and respects the password ------------

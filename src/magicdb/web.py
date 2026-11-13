@@ -182,6 +182,16 @@ def highlight(name: str, typed: str) -> Markup:
 
 @router.get("/card/{card_id}", response_class=HTMLResponse)
 def card_page(request: Request, conn: Conn, card_id: str) -> HTMLResponse:
+    return card_view(request, conn, card_id)
+
+
+def card_view(
+    request: Request,
+    conn: sqlite3.Connection,
+    card_id: str,
+    error: service.CollectionError | None = None,
+) -> HTMLResponse:
+    """The card page; with ``error``, answered 400 with the problem above its add form."""
     if not db.has_catalog(conn):
         return no_catalog(request)
     card = None
@@ -199,6 +209,7 @@ def card_page(request: Request, conn: Conn, card_id: str) -> HTMLResponse:
     return render(
         request,
         "card.html",
+        400 if error else 200,
         card=card,
         faces=json.loads(card["faces_json"]) if card["faces_json"] else [],
         legal=[f for f in card["legal_in"].strip("|").split("|") if f],
@@ -211,6 +222,7 @@ def card_page(request: Request, conn: Conn, card_id: str) -> HTMLResponse:
         ).fetchall(),
         sticky=forms.read_sticky(request),
         options=forms.options(conn),
+        error=error,
     )
 
 

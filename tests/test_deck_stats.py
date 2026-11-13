@@ -196,13 +196,9 @@ def test_deck_statistics_in_italian(client):
         assert expected in body, expected
 
 
-def test_collection_statistics_still_use_the_shared_charts(client):
-    client.post("/add", data={"printing": _bolt(client), "quantity": "3"})
+def test_collection_statistics_still_use_the_shared_charts(client, fixture_cards):
+    bolt = next(c["id"] for c in fixture_cards if c["name"] == "Lightning Bolt")
+    client.post("/add", data={"printing": bolt, "quantity": "3"})
     body = client.get("/stats").text
     assert "By colour" in body and 'class="bar color-r" style="width: 100.0%"' in body
     assert body.count('<section class="chart">') >= 8
-
-
-def _bolt(client):
-    page = client.get("/add?name=Lightning Bolt").text
-    return page.split('<option value="')[1].split('"')[0]
