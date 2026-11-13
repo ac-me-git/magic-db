@@ -11,6 +11,8 @@
   that is out of date.
 - Import from TopDecked keeps the acquired date also for rows that write it as
   `Sat May 03 2025 17:21:51 GMT+0200 (…)`; those cards used to get the day of the import.
+- A *Buy me a coffee* link in the footer of every page, on the website and in the README;
+  on GitHub it is the repository's Sponsor button (`.github/FUNDING.yml`).
 
 ## 1.2.0 — 2026-11-13
 
