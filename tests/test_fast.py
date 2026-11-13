@@ -47,14 +47,27 @@ def toggle(client, card, finish="nonfoil", action="add", **extra):
     return client.post("/fast/toggle", data=data, headers=HTMX)
 
 
-def box(html, finish):
-    """The big box of one finish in a row: (is ticked, is disabled, next action)."""
-    form = next(
-        part for part in html.split("<form")[1:] if f'name="finish" value="{finish}"' in part
+def box(html, finish=None):
+    """A big box: (is ticked, is disabled, next action). With `finish`, the box of that
+    finish in a row of the page; without, the only box in a click's answer."""
+    if finish is not None:
+        html = next(
+            part for part in html.split("<form")[1:] if f'name="finish" value="{finish}"' in part
+        )
+    found = re.search(
+        r'<span class="fast-box">\s*<input type="hidden" name="action" value="(\w+)">'
+        r'\s*(<button type="submit" class="bigcheck.*?>)',
+        html,
+        re.S,
     )
-    button = re.search(r'name="action" value="(\w+)"\s+class="bigcheck.*?>', form, re.S)
-    tag = button.group(0)
-    return ('aria-checked="true"' in tag, " disabled" in tag, button.group(1))
+    tag = found.group(2)
+    return ('aria-checked="true"' in tag, " disabled" in tag, found.group(1))
+
+
+def page_row(client, card):
+    """The row of a printing on the fast input page of its set."""
+    page = client.get(f"/search?q=set:{card['set']}&view=input").text
+    return next(r for r in page.split("<tr>") if card["id"] in r)
 
 
 # --- the view -------------------------------------------------------------------------
@@ -139,28 +152,47 @@ def test_fast_is_linked_from_the_collection_and_administration(client):
 
 
 def test_ticking_adds_a_copy_and_unticking_takes_it_back(client, catalog, both):
-    row = toggle(client, both)
-    assert row.status_code == 200 and row.text.lstrip().startswith("{#") is False
-    assert row.text.count("<tr>") == 1 and "<html" not in row.text  # just the row
-    assert box(row.text, "nonfoil") == (True, False, "remove")
-    assert box(row.text, "foil") == (False, False, "add")
+    answer = toggle(client, both)
+    assert answer.status_code == 200
+    assert box(answer.text) == (True, False, "remove")
     assert entries(catalog) == [(both["id"], 1, "nonfoil", "NM", "en", None)]
 
-    row = toggle(client, both, "foil")
-    assert box(row.text, "foil") == (True, False, "remove")
-    assert "×2</span>" in row.text  # the badge counts every copy of the printing
+    answer = toggle(client, both, "foil")
+    assert box(answer.text) == (True, False, "remove")
+    assert "×2</span>" in answer.text  # the badge counts every copy of the printing
     assert [e[1:3] for e in entries(catalog)] == [(1, "nonfoil"), (1, "foil")]
 
-    row = toggle(client, both, "nonfoil", "remove")
-    assert box(row.text, "nonfoil") == (False, False, "add")
+    answer = toggle(client, both, "nonfoil", "remove")
+    assert box(answer.text) == (False, False, "add")
     assert entries(catalog) == [(both["id"], 1, "foil", "NM", "en", None)]
 
     toggle(client, both, "nonfoil", "remove")  # nothing to take back: nothing happens
     assert len(entries(catalog)) == 1
 
 
+def test_a_click_redraws_only_its_box_and_the_badge(client, both):
+    """The rest of the row stays, so a click on the other box that is still waiting in
+    the row's queue is not lost, and an answer cannot draw the other box out of date."""
+    answer = toggle(client, both, "foil").text
+    assert "<tr" not in answer and "<form" not in answer and "<html" not in answer
+    assert answer.count('class="bigcheck') == 1 and 'name="finish"' not in answer
+    badge = f'<span id="owned-{both["id"]}" hx-swap-oob="true"><span class="owned"'
+    assert badge in answer and "×1</span>" in answer
+    assert 'hx-swap-oob="true"></span>' in toggle(client, both, "foil", "remove").text
+
+
+def test_clicks_in_a_row_wait_for_each_other(client, both):
+    row = page_row(client, both)
+    assert row.count('hx-sync="closest tr:queue all"') == 2
+    assert row.count('hx-target="find .fast-box" hx-swap="outerHTML"') == 2
+    assert f'<span id="owned-{both["id"]}"></span>' in row  # there for the badge to fill
+    # the action lives inside the redrawn box: a queued click sends what the box shows then
+    assert box(row, "foil") == (False, False, "add")
+
+
 def test_a_cell_is_the_box_and_nothing_else(client, both):
-    row = toggle(client, both, "foil").text
+    toggle(client, both, "foil")
+    row = page_row(client, both)
     for finish in ("nonfoil", "foil"):
         form = next(p for p in row.split("<form")[1:] if f'value="{finish}"' in p)
         assert form.count("<button") == 1 and "×" not in form.split("</form>")[0]
@@ -168,27 +200,26 @@ def test_a_cell_is_the_box_and_nothing_else(client, both):
 
 def test_a_box_never_adds_a_second_copy(client, catalog, both):
     toggle(client, both, "foil")
-    row = toggle(client, both, "foil").text  # a double click, or a second tab
-    assert box(row, "foil") == (True, False, "remove")
+    answer = toggle(client, both, "foil").text  # a second tab, or no JavaScript
+    assert box(answer) == (True, False, "remove")
     assert entries(catalog) == [(both["id"], 1, "foil", "NM", "en", None)]
 
 
 def test_copies_added_elsewhere_are_taken_back_one_at_a_time(client, catalog, both):
     with closing(db.connect(catalog)) as conn:
         service.add_entry(conn, both["id"], 2, finish="foil")
-    row = toggle(client, both, "foil", "remove").text
-    assert box(row, "foil") == (True, False, "remove") and "×1</span>" in row
+    answer = toggle(client, both, "foil", "remove").text
+    assert box(answer) == (True, False, "remove") and "×1</span>" in answer
     assert entries(catalog)[0][1] == 1
     toggle(client, both, "foil")  # still ticked: nothing is added
     assert entries(catalog)[0][1] == 1
-    row = toggle(client, both, "foil", "remove").text
-    assert box(row, "foil") == (False, False, "add") and entries(catalog) == []
+    answer = toggle(client, both, "foil", "remove").text
+    assert box(answer) == (False, False, "add") and entries(catalog) == []
 
 
 def test_the_page_shows_what_was_ticked(client, both):
     toggle(client, both, "foil")
-    page = client.get(f"/search?q=set:{both['set']}&view=input").text
-    row = next(r for r in page.split("<tr>") if both["id"] in r)
+    row = page_row(client, both)
     assert box(row, "foil") == (True, False, "remove")
     assert box(row, "nonfoil") == (False, False, "add")
 
@@ -204,9 +235,9 @@ def test_without_javascript_the_page_is_reloaded(client, catalog, both):
 
 
 def test_the_row_keeps_the_way_back(client, both):
-    here = "/search?q=set%3Axyz&view=input"
-    row = toggle(client, both, next=here).text
-    assert row.count('name="next" value="/search?q=set%3Axyz&amp;view=input"') >= 2
+    here = f"/search?q=set%3A{both['set']}&view=input"
+    row = next(r for r in client.get(here).text.split("<tr>") if both["id"] in r)
+    assert row.count(f'name="next" value="/search?q=set%3A{both["set"]}&amp;view=input"') == 2
 
 
 # --- where new copies go --------------------------------------------------------------

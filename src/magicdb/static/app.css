@@ -1401,7 +1401,8 @@ textarea {
   }
 }
 
-.fast-cell form {
+.fast-cell form,
+.fast-box {
   display: flex;
   justify-content: center;
   margin: 0;

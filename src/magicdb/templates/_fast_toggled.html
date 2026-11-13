@@ -1,0 +1,4 @@
+{# The answer to a fast input click with HTMX: the clicked box, and the badge out of band. #}
+{% from "_fast_box.html" import fast_box, fast_badge with context %}
+{{ fast_box(card, finish, fast_counts.get((card.id, finish), 0)) }}
+{{ fast_badge(card, owned.get(card.id), oob=true) }}

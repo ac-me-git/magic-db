@@ -508,7 +508,10 @@ number or by name with the column headings, and tick boxes.
   allowed while locked). A remembered location that no longer exists counts as none.
 - The badge beside the name still counts every copy of the printing, wherever it is.
 - `POST /fast/toggle` (`printing`, `finish`, `action=add|remove`, `next`): with HTMX
-  it answers with the row again; without, it redirects to `next`. Every change goes
+  it answers with the clicked box and, out of band, the badge beside the name — never
+  the whole row; without, it redirects to `next`. Clicks in one row are queued
+  (`hx-sync`), and `action` is a hidden field inside the redrawn box, so a queued click
+  sends what its box shows by the time it goes out. Every change goes
   through the collection service, so it is merged, logged and undoable like any other.
 - While the safety lock is on the boxes are shown disabled, with the usual notice.
 - `/fast` opens the view on the newest released main set (expansion, core, masters,

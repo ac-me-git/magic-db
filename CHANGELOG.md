@@ -3,8 +3,9 @@
 ## Unreleased
 
 - Fast input is just the two boxes now: the **+** and the copy count beside a ticked box
-  are gone. It records one copy per finish; for more copies use *Add cards*. A double
-  click no longer adds a second copy.
+  are gone. It records one copy per finish; for more copies use *Add cards*.
+- Fast input: quick clicks on both boxes of a card no longer leave the row showing a box
+  that is out of date.
 
 ## 1.2.0 — 2026-11-13
 

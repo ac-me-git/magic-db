@@ -1,0 +1,20 @@
+{# Fast input pieces that a click redraws: the box of one finish, and the badge beside the name.
+   The action is a hidden field inside the box, not the button's value, so a click that
+   waited in the row's queue sends what the box shows by then. #}
+{% macro fast_box(card, finish, have) -%}
+{%- set printed = ("|" ~ finish ~ "|") in card.finishes -%}
+<span class="fast-box">
+  <input type="hidden" name="action" value="{{ 'remove' if have else 'add' }}">
+  <button type="submit" class="bigcheck{% if have %} is-on{% endif %}" role="checkbox"
+          aria-checked="{{ 'true' if have else 'false' }}"
+          aria-label="{{ card.name }} — {{ t('finish.' ~ finish) }}"
+          {%- if not printed and not have %} title="{{ t('fast.not_printed') }}"{% endif %}
+          {%- if locked or (not printed and not have) %} disabled{% endif %}><span aria-hidden="true">✓</span></button>
+</span>
+{%- endmacro %}
+
+{% macro fast_badge(card, total, oob=false) -%}
+<span id="owned-{{ card.id }}"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {%- if total %}<span class="owned" title="{{ t('results.owned', n=total) }}">×{{ total }}</span>{% endif -%}
+</span>
+{%- endmacro %}

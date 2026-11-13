@@ -236,8 +236,8 @@ def fast_toggle(
     next: Field = "",
 ) -> Response:
     """Tick a box (one copy, if there is none yet) or untick it (take one back), and show
-    the row again. A box never adds a second copy: a double click or a second tab must
-    not record one the row would not show."""
+    the box and the badge again. A box never adds a second copy: a second tab must not
+    record one the row would not show."""
     card = None
     if web.is_card_id(printing) and db.has_catalog(conn):
         card = conn.execute("SELECT * FROM cat.printings WHERE id = ?", (printing,)).fetchone()
@@ -252,16 +252,15 @@ def fast_toggle(
                 pass  # e.g. the location went away meanwhile: the row shows what is there
     else:
         service.take_one(conn, printing, finish=finish, **key)
-    back = safe_next(next, "/fast")
     if request.headers.get("HX-Request") != "true":
-        return redirect(back)
+        return redirect(safe_next(next, "/fast"))
     return web.render(
         request,
-        "_fast_row.html",
+        "_fast_toggled.html",
         card=card,
+        finish=finish,
         fast_counts=service.copies_like(conn, [printing], **key),
         owned=service.owned_counts(conn, [printing], "prints"),
-        back=back,
     )
 
 
