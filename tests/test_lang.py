@@ -129,3 +129,10 @@ def test_footer_links_to_the_coffee_page_in_both_languages(client):
     assert link in english and "Buy me a coffee" in english
     italian = client.get("/", headers={"Accept-Language": "it"}).text
     assert link in italian and "Offrimi un caffè" in italian
+
+
+def test_footer_breaks_the_legal_notice_before_the_copyright_line(client):
+    english = client.get("/").text
+    assert "Not approved/endorsed by Wizards.<br>Portions of the materials" in english
+    italian = client.get("/", headers={"Accept-Language": "it"}).text
+    assert "né sostenuto da Wizards.<br>Parte dei materiali" in italian
