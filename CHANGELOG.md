@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 — unreleased
+## 1.1.0 — 2026-11-13
 
 - The program is now called **AMTG** — Another Magic Tracking Gizmo — in the header and
   page titles. The repository, the program file, the Docker image and the settings keep
