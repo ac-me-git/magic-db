@@ -5,13 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AMTG — Another Magic Tracking Gizmo</title>
 <meta name="description" content="A self-hosted app to browse every Magic: The Gathering card and manage your collection and decks.">
+<link rel="alternate" hreflang="en" href="https://amtg.fans/">
+<link rel="alternate" hreflang="it" href="https://amtg.fans/it/">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="top"><div class="wrap">
 <a class="brand" href="index.html"><span class="mark">A</span>AMTG</a>
-<nav><a href="index.html" aria-current=page>Home</a><a href="install.html">Install</a><a href="guides/index.html">Guides</a><a href="https://github.com/ac-me-git/magic-db">GitHub</a></nav>
+<nav><a href="index.html" aria-current=page>Home</a><a href="install.html">Install</a><a href="guides/index.html">Guides</a><a href="https://github.com/ac-me-git/magic-db">GitHub</a><a class="lang" href="it/index.html" lang="it" hreflang="it">Italiano</a></nav>
 </div></header>
 <main class="wrap">
 
@@ -25,7 +27,7 @@
 </p>
 <p class="small">Free and open source. No account, no subscription, no telemetry.</p>
 </section>
-<section><div class="grid"><div class=card><h3>Every card, every night</h3><p>All cards ever printed, plus previewed ones, refreshed nightly from Scryfall.</p></div><div class=card><h3>Search that speaks Magic</h3><p>Type <code>t:dragon c:r mv&lt;=4</code> or use the filter panel, which writes the query for you.</p></div><div class=card><h3>Your collection, located</h3><p>Quantity, finish, condition, language, and where the card physically is: binder, box, deck.</p></div><div class=card><h3>Decks that know what you own</h3><p>Paste a list and see completeness, missing cards, and cards several decks fight over.</p></div><div class=card><h3>Statistics</h3><p>By colour, rarity, type and year; value; set completion.</p></div><div class=card><h3>Your data stays yours</h3><p>One SQLite file, exported to CSV or JSON any time, backed up every night.</p></div><div class=card><h3>A safety lock</h3><p>Browse on your phone without changing anything by accident.</p></div><div class=card><h3>English and Italian</h3><p>Switch language at the bottom of any page.</p></div></div></section>
+<section><div class="grid"><div class=card><h3>Every card, every night</h3><p>All cards ever printed, plus previewed ones, refreshed nightly from Scryfall.</p></div><div class=card><h3>Search that speaks Magic</h3><p>Type <code>t:dragon c:r mv&lt;=4</code> or use the filter panel, which writes the query for you.</p></div><div class=card><h3>Your collection, located</h3><p>Quantity, finish, condition, language, and where the card physically is: binder, box, deck.</p></div><div class=card><h3>A new set in minutes</h3><p>Fast input puts two boxes, non-foil and foil, beside every card of a search: tick one and that copy is in your collection.</p></div><div class=card><h3>Decks that know what you own</h3><p>Paste a list and see completeness, missing cards, and cards several decks fight over.</p></div><div class=card><h3>Statistics</h3><p>By colour, rarity, type and year; value; set completion.</p></div><div class=card><h3>Your data stays yours</h3><p>One SQLite file, exported to CSV or JSON any time, backed up every night.</p></div><div class=card><h3>A safety lock</h3><p>Browse on your phone without changing anything by accident.</p></div><div class=card><h3>English and Italian</h3><p>Switch language at the bottom of any page.</p></div></div></section>
 <section>
 <h2>See it at work</h2>
 <div class="shots">
@@ -54,5 +56,6 @@
 <p>AMTG is an unofficial fan project, not affiliated with Wizards of the Coast. AMTG is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. &copy;Wizards of the Coast LLC.</p>
 <p>Card data and images are provided by <a href="https://scryfall.com">Scryfall</a> and downloaded by each installation. The card images in the screenshots belong to Wizards of the Coast. Code released under the <a href="https://github.com/ac-me-git/magic-db/blob/main/LICENSE">MIT licence</a>. No cookies, no analytics.</p>
 </div></footer>
+<script src="gallery.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Importa ed esporta — AMTG</title>
+<meta name="description" content="Importa una collezione da CSV, TopDecked, Moxfield o ManaBox, ed esportala.">
+<link rel="alternate" hreflang="en" href="https://amtg.fans/guides/import-export.html">
+<link rel="alternate" hreflang="it" href="https://amtg.fans/it/guides/import-export.html">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="brand" href="../index.html"><span class="mark">A</span>AMTG</a>
+<nav><a href="../index.html">Home</a><a href="../install.html">Installazione</a><a href="../guides/index.html" aria-current=page>Guide</a><a href="https://github.com/ac-me-git/magic-db">GitHub</a><a class="lang" href="../../guides/import-export.html" lang="en" hreflang="en">English</a></nav>
+</div></header>
+<main class="wrap">
+
+<h1>Importa ed esporta</h1>
+<p class="lead">Si trovano entrambi nella pagina <strong>La mia collezione</strong>.</p>
+<h2>Esporta</h2>
+<div class="tw"><table><thead><tr><th>Formato</th><th>Cosa contiene</th><th>A cosa serve</th></tr></thead><tbody><tr><td><strong>CSV</strong></td><td>Una riga per ogni voce della collezione: nome della carta, set, numero di collezione, ID Scryfall, quantità, finitura, condizione, lingua, posizione, note, prezzo pagato, data di aggiunta</td><td>Fogli di calcolo, altri programmi, una copia leggibile senza AMTG</td></tr><tr><td><strong>JSON</strong></td><td>Tutto: ogni voce, ogni posizione (anche quelle vuote, con note e ordine) e ogni mazzo</td><td>Una copia completa da ripristinare più avanti, o da portare in un'altra installazione</td></tr></tbody></table></div>
+<p>Un singolo mazzo si può anche scaricare come lista di testo dalla sua pagina.</p>
+<h2>Importa</h2>
+<p>L'importazione avviene in due passi. Prima AMTG legge il file e mostra quello che ha capito &mdash; <strong>non viene scritto niente</strong>. Poi, se confermi, salva un backup e importa.</p>
+<p>Nella pagina di anteprima scegli:</p>
+<ul>
+<li>la <strong>posizione</strong> per le righe che non ne indicano una (una esistente, oppure una nuova);</li>
+<li>la <strong>condizione</strong> e la <strong>lingua</strong> per le righe che non le indicano;</li>
+<li>se <strong>aggiungere</strong> a quello che hai già, oppure <strong>sostituirlo</strong>.</li>
+</ul>
+<p>Le righe che non si possono importare vengono elencate con il motivo, e si possono scaricare come CSV da correggere e importare di nuovo. Non fermano mai le altre righe. Importare due volte lo stesso file aggiunge le carte due volte. La collezione deve essere sbloccata.</p>
+<h3>Formati riconosciuti</h3>
+<div class="tw"><table><thead><tr><th>Origine</th><th>Note</th></tr></thead><tbody><tr><td><strong>AMTG</strong></td><td>I file CSV e JSON prodotti da Esporta</td></tr><tr><td><strong>TopDecked</strong></td><td>L'esportazione CSV di un raccoglitore. Il nome del raccoglitore è nel nome del file e viene proposto come posizione. Il file non indica condizione né lingua: le scegli tu per tutte le righe</td></tr><tr><td><strong>Moxfield</strong></td><td>Esportazione della collezione (CSV)</td></tr><tr><td><strong>ManaBox</strong></td><td>Esportazione della collezione (CSV); i nomi dei raccoglitori diventano posizioni</td></tr><tr><td><strong>Un CSV qualsiasi</strong></td><td>Con almeno una colonna <code>Name</code> e, facoltative, <code>Set code</code>, <code>Collector number</code>, <code>Scryfall ID</code>, <code>Quantity</code>, <code>Finish</code>, <code>Condition</code>, <code>Language</code>, <code>Location</code>, <code>Location kind</code>, <code>Notes</code>, <code>Purchase price</code>, <code>Added</code></td></tr></tbody></table></div>
+<p>I formati Moxfield e ManaBox seguono i nomi delle colonne documentati da quei programmi e non sono ancora stati provati su file veri. Se uno dei tuoi non viene letto correttamente, per favore <a href="https://github.com/ac-me-git/magic-db/issues">apri una segnalazione</a> con qualche riga del file.</p>
+<h3>Come una riga trova la sua carta</h3>
+<p>In quest'ordine, fermandosi al primo che funziona:</p>
+<ol>
+<li>l'ID Scryfall;</li>
+<li>codice del set e numero di collezione;</li>
+<li>nome della carta e codice del set;</li>
+<li>nome della carta e nome del set;</li>
+<li>il solo nome della carta &mdash; soltanto se la carta ha un'unica stampa.</li>
+</ol>
+<p>Un nome che corrisponde a più stampe, senza niente che le distingua, è <strong>ambiguo</strong> e non viene importato. Se il set è noto ma ha più versioni della carta (showcase, senza bordo) e il file non indica il numero, viene presa quella normale e la riga è contata come <em>scelta a stima</em>.</p>
+<h3>Condizioni</h3>
+<p>AMTG usa la scala di Cardmarket: <code>MT</code> Mint, <code>NM</code> Near Mint, <code>EX</code> Excellent, <code>GD</code> Good, <code>LP</code> Light Played, <code>PL</code> Played, <code>PO</code> Poor. I file dei programmi che usano la scala americana vengono tradotti:</p>
+<div class="tw"><table><thead><tr><th>Scala americana</th><th>diventa</th></tr></thead><tbody><tr><td>Mint</td><td><code>MT</code></td></tr><tr><td>Near Mint</td><td><code>NM</code></td></tr><tr><td>Lightly Played</td><td><code>EX</code></td></tr><tr><td>Moderately Played</td><td><code>GD</code></td></tr><tr><td>Heavily Played</td><td><code>PL</code></td></tr><tr><td>Damaged</td><td><code>PO</code></td></tr></tbody></table></div>
+<p><code>LP</code> ha un significato diverso nelle due scale, ed è per questo che la traduzione dipende da dove arriva il file. Una condizione sconosciuta fa fallire la riga; non viene mai indovinata.</p>
+<h3>Dettagli dei file</h3>
+<p>Vengono letti UTF-8 (con o senza BOM) e Windows-1252; i campi possono essere separati da virgole, punti e virgola o tabulazioni; file fino a 20&nbsp;MB.</p>
+
+</main>
+<footer><div class="wrap">
+<p>AMTG è un progetto amatoriale non ufficiale, non affiliato a Wizards of the Coast. AMTG è un Contenuto dei Fan non ufficiale, consentito dalle Linee Guida sui Contenuti dei Fan. Non è approvato né sostenuto da Wizards. Parte dei materiali utilizzati è proprietà di Wizards of the Coast. &copy;Wizards of the Coast LLC.</p>
+<p>I dati e le immagini delle carte sono forniti da <a href="https://scryfall.com">Scryfall</a> e scaricati da ogni installazione. Le immagini delle carte negli screenshot appartengono a Wizards of the Coast. Codice rilasciato con <a href="https://github.com/ac-me-git/magic-db/blob/main/LICENSE">licenza MIT</a>. Niente cookie, niente statistiche di accesso.</p>
+</div></footer>
+</body>
+</html>

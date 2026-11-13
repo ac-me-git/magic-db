@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installazione — AMTG</title>
+<meta name="description" content="Installa AMTG su Windows, con Docker o dal sorgente, e configuralo.">
+<link rel="alternate" hreflang="en" href="https://amtg.fans/install.html">
+<link rel="alternate" hreflang="it" href="https://amtg.fans/it/install.html">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="brand" href="index.html"><span class="mark">A</span>AMTG</a>
+<nav><a href="index.html">Home</a><a href="install.html" aria-current=page>Installazione</a><a href="guides/index.html">Guide</a><a href="https://github.com/ac-me-git/magic-db">GitHub</a><a class="lang" href="../install.html" lang="en" hreflang="en">English</a></nav>
+</div></header>
+<main class="wrap">
+
+<h1>Installazione</h1>
+<p class="lead">Scegli il modo che preferisci. Tutti e tre danno la stessa app.</p>
+<nav class="toc"><a href="#windows">Windows</a><a href="#docker">Docker</a><a href="#source">Dal sorgente</a><a href="#config">Configurazione</a><a href="#outside">Fuori casa</a></nav>
+
+<h2 id="windows">Windows</h2>
+<ol>
+<li>Scarica <code>magic-db.exe</code> dall'<a href="https://github.com/ac-me-git/magic-db/releases/latest">ultima versione</a> e mettilo in una cartella tutta sua, per esempio <code>C:\magic-db</code>.</li>
+<li>Fai doppio clic. Windows può mostrare un riquadro blu <em>«PC protetto da Windows»</em>, perché il programma non è firmato: scegli <strong>Ulteriori informazioni</strong>, poi <strong>Esegui comunque</strong>.</li>
+<li>Il browser si apre su <code>http://127.0.0.1:8080</code>. Il primo avvio scarica il catalogo delle carte (circa 80&nbsp;MB) e lo prepara: qualche minuto, con l'avanzamento mostrato nella pagina.</li>
+</ol>
+<p>Tutto quello che AMTG scrive finisce in una cartella <code>data</code> accanto al programma. Per fermarlo, chiudi la sua finestra.</p>
+<p><strong>Aggiornare:</strong> apri <strong>Amministrazione</strong>. Quando esce una versione più recente lo dice, e un solo pulsante la scarica, la controlla, la sostituisce e riavvia. La cartella <code>data</code> resta com'è.</p>
+<p><strong>Usarla dal telefono:</strong> avviala in ascolto sulla rete di casa, per esempio da un file <code>start.bat</code>:</p>
+<pre><code>set MAGICDB_HOST=0.0.0.0
+magic-db.exe</code></pre>
+<p>Poi apri <code>http://&lt;indirizzo del PC&gt;:8080</code> sul telefono.</p>
+
+<h2 id="docker">Docker</h2>
+<pre><code>curl -O https://raw.githubusercontent.com/ac-me-git/magic-db/main/compose.yaml
+docker compose up -d</code></pre>
+<p>Apri <code>http://localhost:8080</code>. I dati stanno nel volume <code>magic-db-data</code>. Imposta <code>TZ</code> in <code>compose.yaml</code> sul tuo fuso orario, così i lavori notturni girano quando da te è notte.</p>
+<p><strong>Aggiornare:</strong> <code>docker compose pull</code>, poi <code>docker compose up -d</code>.</p>
+
+<h2 id="source">Dal sorgente</h2>
+<p>Serve <a href="https://docs.astral.sh/uv/">uv</a> (oppure Python 3.12+ con pip).</p>
+<pre><code>git clone https://github.com/ac-me-git/magic-db.git
+cd magic-db
+uv sync
+uv run magicdb</code></pre>
+
+<h2 id="config">Configurazione</h2>
+<p>È tutto facoltativo e si imposta con variabili d'ambiente.</p>
+<div class="tw"><table><thead><tr><th>Variabile</th><th>Predefinito</th><th>Significato</th></tr></thead><tbody><tr><td><code>MAGICDB_DATA_DIR</code></td><td><code>./data</code> (Docker: <code>/data</code>)</td><td>Dove stanno il catalogo, la collezione, le immagini in cache e i backup</td></tr><tr><td><code>MAGICDB_BACKUP_DIR</code></td><td><code>&lt;data&gt;/backups</code></td><td>Dove vengono scritti i backup. Indica una cartella che sia a sua volta salvata o sincronizzata altrove</td></tr><tr><td><code>MAGICDB_HOST</code></td><td><code>127.0.0.1</code> (Docker: <code>0.0.0.0</code>)</td><td>Indirizzo su cui ascoltare. <code>0.0.0.0</code> la rende raggiungibile dagli altri dispositivi</td></tr><tr><td><code>MAGICDB_PORT</code></td><td><code>8080</code></td><td>Porta su cui ascoltare</td></tr><tr><td><code>MAGICDB_PASSWORD</code></td><td>nessuno</td><td>Se impostata, ogni pagina la chiede (HTTP Basic: un nome utente qualsiasi, questa password)</td></tr><tr><td><code>MAGICDB_UPDATE_HOUR</code></td><td><code>3</code></td><td>Ora dell'aggiornamento notturno del catalogo, 0–23, ora locale</td></tr><tr><td><code>MAGICDB_BACKUP_HOUR</code></td><td><code>4</code></td><td>Ora del backup notturno, 0–23, ora locale</td></tr><tr><td><code>MAGICDB_LANG</code></td><td><code>en</code></td><td>Lingua predefinita dell'interfaccia (<code>en</code> oppure <code>it</code>)</td></tr><tr><td><code>MAGICDB_CURRENCY</code></td><td><code>eur</code></td><td><code>eur</code> oppure <code>usd</code>, per prezzi e valori</td></tr><tr><td><code>MAGICDB_SCHEDULER</code></td><td><code>on</code></td><td><code>off</code> ferma l'aggiornamento e il backup automatici notturni</td></tr><tr><td><code>MAGICDB_UPDATE_CHECK</code></td><td><code>on</code></td><td><code>off</code> impedisce alla pagina Amministrazione di chiedere a GitHub se c'è una versione più recente</td></tr></tbody></table></div>
+
+<h2 id="outside">Raggiungerla da fuori casa</h2>
+<p>AMTG è pensata per una sola famiglia. <strong>Non metterla su internet così com'è.</strong> Mettile davanti qualcosa che decida chi entra: una VPN come Tailscale o WireGuard, oppure un gateway di accesso come Cloudflare Access. Come minimo, imposta <code>MAGICDB_PASSWORD</code> e servila in HTTPS attraverso un reverse proxy.</p>
+<p>Dietro un reverse proxy, passa all'app il nome host pubblico (<code>Host</code> oppure <code>X-Forwarded-Host</code>): AMTG rifiuta le modifiche che non arrivano dalle sue pagine, e riconosce le sue pagine da quel nome. Il blocco di sicurezza non è un controllo degli accessi: ferma gli incidenti, non le persone.</p>
+
+<h2>Limiti</h2>
+<ul>
+<li>Nomi, testi e immagini delle carte sono in inglese. Una copia in un'altra lingua viene registrata sulla stampa inglese, con la lingua come attributo.</li>
+<li>I prezzi sono gli ultimi di Scryfall (Cardmarket per l'euro, TCGplayer per il dollaro); non c'è uno storico dei prezzi.</li>
+<li>Una collezione per installazione; nessun account utente.</li>
+<li>Una scatola porta-mazzo fisica è una <em>posizione</em>; un mazzo è una <em>lista</em>. Mettere una carta nella lista di un mazzo non la sposta.</li>
+</ul>
+
+</main>
+<footer><div class="wrap">
+<p>AMTG è un progetto amatoriale non ufficiale, non affiliato a Wizards of the Coast. AMTG è un Contenuto dei Fan non ufficiale, consentito dalle Linee Guida sui Contenuti dei Fan. Non è approvato né sostenuto da Wizards. Parte dei materiali utilizzati è proprietà di Wizards of the Coast. &copy;Wizards of the Coast LLC.</p>
+<p>I dati e le immagini delle carte sono forniti da <a href="https://scryfall.com">Scryfall</a> e scaricati da ogni installazione. Le immagini delle carte negli screenshot appartengono a Wizards of the Coast. Codice rilasciato con <a href="https://github.com/ac-me-git/magic-db/blob/main/LICENSE">licenza MIT</a>. Niente cookie, niente statistiche di accesso.</p>
+</div></footer>
+</body>
+</html>

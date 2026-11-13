@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mazzi — AMTG</title>
+<meta name="description" content="Costruisci i mazzi in AMTG e confrontali con la tua collezione.">
+<link rel="alternate" hreflang="en" href="https://amtg.fans/guides/decks.html">
+<link rel="alternate" hreflang="it" href="https://amtg.fans/it/guides/decks.html">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="brand" href="../index.html"><span class="mark">A</span>AMTG</a>
+<nav><a href="../index.html">Home</a><a href="../install.html">Installazione</a><a href="../guides/index.html" aria-current=page>Guide</a><a href="https://github.com/ac-me-git/magic-db">GitHub</a><a class="lang" href="../../guides/decks.html" lang="en" hreflang="en">English</a></nav>
+</div></header>
+<main class="wrap">
+
+<h1>Mazzi</h1>
+<p class="lead">In AMTG un mazzo è una <strong>lista di carte che vuoi giocare insieme</strong>. È separato dalla collezione: aggiungere una carta a un mazzo non la aggiunge alla collezione e non la sposta da nessuna parte. Quello che il mazzo ti dà è un confronto con ciò che possiedi.</p>
+<p>(Se vuoi registrare che certe carte stanno fisicamente in una scatola porta-mazzo, quella è una <em>posizione</em> della collezione, non un mazzo.)</p>
+<h2>Creare un mazzo</h2>
+<p>Nella pagina <strong>Mazzi</strong>, dagli un nome e, se vuoi, un formato e una nota. Poi aggiungi le carte in uno di questi modi:</p>
+<ul>
+<li><strong>Una alla volta</strong>, nella pagina del mazzo: scrivi il nome della carta (compaiono i suggerimenti), la quantità, e se va nel mazzo principale o nella sideboard.</li>
+<li><strong>Dalla pagina di una carta</strong>: «Aggiungi al mazzo».</li>
+<li><strong>Incollando una lista</strong>, nella pagina del mazzo.</li>
+</ul>
+<h3>Liste dei mazzi</h3>
+<p>Una carta per riga, come le esporta la maggior parte dei siti e dei programmi:</p>
+<pre><code>4 Lightning Bolt
+4x Counterspell
+1 Sol Ring (C21) 263
+Brainstorm
+
+Sideboard
+2 Pyroblast
+SB: 1 Red Elemental Blast</code></pre>
+<ul>
+<li>Il numero è la quantità; una riga con il solo nome vale una copia.</li>
+<li>Codici dei set, numeri di collezione e indicazioni foil (<code>(C21) 263</code>, <code>[C21]</code>, <code>*F*</code>) vengono ignorati: un mazzo nomina carte, non stampe.</li>
+<li><code>Sideboard</code> da solo su una riga fa cominciare la sideboard. <code>SB:</code> davanti a una riga ci mette solo quella riga. Una riga vuota <strong>non</strong> fa cominciare la sideboard.</li>
+<li><code>Deck</code>, <code>Commander</code> e <code>Companion</code> riportano al mazzo principale. Una sezione <code>Maybeboard</code> viene saltata.</li>
+<li>Titoli come <code>Creatures (12)</code>, commenti (<code>//</code>, <code>#</code>) e righe vuote vengono ignorati.</li>
+</ul>
+<p>Le righe che non sono nomi di carte ti vengono mostrate con un suggerimento e rimesse nella casella per correggerle; tutto il resto viene aggiunto.</p>
+<h2>Cosa ti dice il mazzo</h2>
+<ul>
+<li><strong>Completamento</strong>: l'indicatore rotondo mostra quante carte del mazzo possiedi, in percentuale. Vale qualsiasi stampa, ovunque si trovi. 100&nbsp;% significa che hai tutte le copie.</li>
+<li><strong>Mancanti</strong>: carte che non possiedi in numero sufficiente per questo mazzo.</li>
+<li><strong>Contese</strong>: carte che bastano per questo mazzo da solo, ma non per tutti i mazzi che le richiedono. Se due mazzi vogliono ciascuno 4 Lightning Bolt e ne possiedi 6, tutti e due i mazzi sono completi presi da soli e la carta è contesa.</li>
+<li><strong>Per comprare le mancanti</strong>: una stima, fatta con la stampa più economica di ogni carta mancante.</li>
+</ul>
+<p>La pagina Mazzi ha anche un elenco unico di tutte le carte contese: quante ne possiedi, quante ne richiedono in tutto i tuoi mazzi, e quali mazzi.</p>
+<h2>Statistiche</h2>
+<p>Ogni mazzo ha una seconda scheda, <strong>Statistiche</strong>, che riguarda il mazzo principale:</p>
+<ul>
+<li>quante terre e quante altre carte, e il valore di mana medio di queste ultime;</li>
+<li>le carte per tipo (una creatura artefatto conta per entrambi);</li>
+<li>la curva di mana e i colori, terre escluse;</li>
+<li>i simboli di mana colorato nei costi, che dicono quanto di ogni colore il mazzo chiede davvero. Un simbolo ibrido conta per entrambi i suoi colori.</li>
+</ul>
+<h2>Altre cose</h2>
+<ul>
+<li>«Vedi le carte come immagini» cerca <code>deck:"nome"</code>; combinalo con qualsiasi altro filtro, per esempio <code>deck:dragons have:no</code> per quello che ti serve ancora.</li>
+<li>«Scarica come testo» restituisce la lista nel formato qui sopra.</li>
+<li>La pagina di una carta mostra in quali dei tuoi mazzi si trova.</li>
+<li>I mazzi sono compresi nell'esportazione JSON e nel backup notturno.</li>
+<li>Finché il blocco di sicurezza è attivo, i mazzi si possono guardare ma non modificare.</li>
+</ul>
+
+</main>
+<footer><div class="wrap">
+<p>AMTG è un progetto amatoriale non ufficiale, non affiliato a Wizards of the Coast. AMTG è un Contenuto dei Fan non ufficiale, consentito dalle Linee Guida sui Contenuti dei Fan. Non è approvato né sostenuto da Wizards. Parte dei materiali utilizzati è proprietà di Wizards of the Coast. &copy;Wizards of the Coast LLC.</p>
+<p>I dati e le immagini delle carte sono forniti da <a href="https://scryfall.com">Scryfall</a> e scaricati da ogni installazione. Le immagini delle carte negli screenshot appartengono a Wizards of the Coast. Codice rilasciato con <a href="https://github.com/ac-me-git/magic-db/blob/main/LICENSE">licenza MIT</a>. Niente cookie, niente statistiche di accesso.</p>
+</div></footer>
+</body>
+</html>
