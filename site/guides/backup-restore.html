@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backup and restore — AMTG</title>
+<meta name="description" content="How AMTG backs up your collection and how to restore or move it.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="brand" href="../index.html"><span class="mark">A</span>AMTG</a>
+<nav><a href="../index.html">Home</a><a href="../install.html">Install</a><a href="../guides/index.html" aria-current=page>Guides</a><a href="https://github.com/ac-me-git/magic-db">GitHub</a></nav>
+</div></header>
+<main class="wrap">
+
+<h1>Backup and restore</h1>
+<h2>What is backed up</h2>
+<p>Your collection, locations, decks and settings are one SQLite file: <code>collection.db</code>, in the data folder. That file is the only thing worth backing up. The card catalog and the cached images are downloaded again whenever they are missing.</p>
+<h2>Automatic backups</h2>
+<p>Every night at <code>MAGICDB_BACKUP_HOUR</code> (4:00 by default) AMTG writes, in the backup folder:</p>
+<ul>
+<li><code>collection-YYYYMMDD-HHMMSS.db</code> &mdash; a complete copy of the database, checked before it counts as a backup;</li>
+<li><code>collection-YYYYMMDD-HHMMSS.csv</code> &mdash; the collection as a spreadsheet, readable without AMTG.</li>
+</ul>
+<p>If the computer was off at that hour, the backup runs when it is on again. An empty collection is not backed up.</p>
+<p>Old backups are removed automatically. What is kept:</p>
+<ul>
+<li>every backup of the last 7 days;</li>
+<li>the newest of each week, for the last 4 weeks;</li>
+<li>the newest of each month, for the last 12 months.</li>
+</ul>
+<p>AMTG also saves a copy before anything risky, kept for 30 days: <code>pre-import-…db</code> before every import, and <code>pre-migration-…db</code> before upgrading the database to a newer version of the app. You can make a backup at any moment, and download any of them, from the <strong>Administration</strong> page.</p>
+<h2>Where backups go</h2>
+<p>By default, in <code>backups</code> inside the data folder &mdash; on the same disk as the collection. That protects you from a mistake, not from a broken disk or a stolen computer. Set <code>MAGICDB_BACKUP_DIR</code> to a folder that is synced or backed up somewhere else (a cloud folder, a NAS):</p>
+<pre><code># Docker: mount a host folder and point the variable at it (see compose.yaml)
+MAGICDB_BACKUP_DIR=/backups</code></pre>
+<pre><code>rem Windows
+set MAGICDB_BACKUP_DIR=D:\OneDrive\magic-db-backups
+magic-db.exe</code></pre>
+<h2>Restoring</h2>
+<p>Restoring replaces the whole collection with the one in the backup. It is done by hand, on purpose.</p>
+<ol>
+<li><strong>Stop AMTG</strong> (close its window, or <code>docker compose stop</code>).</li>
+<li>In the data folder, delete <code>collection.db-wal</code> and <code>collection.db-shm</code> if they are there. They belong to the database you are replacing.</li>
+<li>Copy the backup you want over <code>collection.db</code>:
+<pre><code>copy /Y backups\collection-20261112-040000.db collection.db</code></pre>
+<pre><code>cp backups/collection-20261112-040000.db collection.db</code></pre></li>
+<li><strong>Start AMTG</strong> again.</li>
+</ol>
+<p>With Docker and the default volume:</p>
+<pre><code>docker compose stop
+docker compose run --rm --entrypoint sh magic-db -c \
+  "rm -f /data/collection.db-wal /data/collection.db-shm &amp;&amp; \
+   cp /data/backups/collection-20261112-040000.db /data/collection.db"
+docker compose start</code></pre>
+<p>If you only have a CSV or JSON export, start with an empty collection and bring it back with <strong>Import</strong> &mdash; see <a href="import-export.html">Import and export</a>. The JSON export also restores empty locations and decks; the CSV does not.</p>
+<h2>Moving to another computer</h2>
+<p>Stop AMTG, copy <code>collection.db</code> (and the <code>backups</code> folder if you want the history) into the data folder of the new installation, and start it there. The catalog is downloaded again by itself.</p>
+
+</main>
+<footer><div class="wrap">
+<p>AMTG is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. &copy;Wizards of the Coast LLC.</p>
+<p>Card data and images are provided by <a href="https://scryfall.com">Scryfall</a> and downloaded by each installation; this site shows none of them. Code released under the <a href="https://github.com/ac-me-git/magic-db/blob/main/LICENSE">MIT licence</a>. No cookies, no analytics.</p>
+</div></footer>
+</body>
+</html>

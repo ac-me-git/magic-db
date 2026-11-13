@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search syntax — AMTG</title>
+<meta name="description" content="Every AMTG search filter with examples.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="brand" href="../index.html"><span class="mark">A</span>AMTG</a>
+<nav><a href="../index.html">Home</a><a href="../install.html">Install</a><a href="../guides/index.html" aria-current=page>Guides</a><a href="https://github.com/ac-me-git/magic-db">GitHub</a></nav>
+</div></header>
+<main class="wrap">
+
+<h1>Search syntax</h1>
+<p class="lead">Type words to search card names, and add filters to narrow the results. The same page is inside the app, under <strong>Syntax</strong>, with every example clickable. The filter panel on the home page writes these queries for you.</p>
+<h2>The basics</h2>
+<div class="tw"><table><thead><tr><th>You type</th><th>You get</th></tr></thead><tbody><tr><td><code>lightning bolt</code></td><td>Cards whose name contains both words</td></tr><tr><td><code>"serra angel"</code></td><td>Quotes keep words together</td></tr><tr><td><code>!"Lightning Bolt"</code></td><td>An exclamation mark asks for the exact name</td></tr><tr><td><code>t:dragon c:r</code></td><td>Filters are written <code>key:value</code>, and all of them must match</td></tr><tr><td><code>t:elf or t:goblin</code></td><td>Either one or the other</td></tr><tr><td><code>(t:elf or t:goblin) mv&lt;=2</code></td><td>Parentheses group, as in arithmetic</td></tr><tr><td><code>c:r -t:creature</code></td><td>A minus sign excludes</td></tr></tbody></table></div>
+<p>Number filters accept <code>:</code> <code>=</code> <code>!=</code> <code>&lt;</code> <code>&lt;=</code> <code>&gt;</code> <code>&gt;=</code>, as in <code>mv&lt;=3</code> or <code>pow&gt;=5</code>. Upper and lower case do not matter.</p>
+<h2>Colours</h2>
+<p>Write any combination of <code>w</code> <code>u</code> <code>b</code> <code>r</code> <code>g</code>, a colour's name, <code>c</code> for colourless or <code>m</code> for multicolour.</p>
+<div class="tw"><table><thead><tr><th>You type</th><th>You get</th></tr></thead><tbody><tr><td><code>c:rg</code></td><td>Cards that are at least red and green</td></tr><tr><td><code>c=rg</code></td><td>Exactly red and green</td></tr><tr><td><code>c&lt;=rg</code></td><td>Red, green, both, or colourless</td></tr><tr><td><code>c:c</code></td><td>Colourless cards</td></tr><tr><td><code>c:m</code></td><td>Cards of two or more colours</td></tr><tr><td><code>id:wub</code></td><td>Cards that fit in a white-blue-black Commander deck</td></tr></tbody></table></div>
+<h2>One result per card, or per printing</h2>
+<p>A search normally shows each card once, with the printing that matches best. Add <code>unique:prints</code> to see every printing. Tokens and other extras are hidden unless you ask for a set, a collector number, or add <code>include:extras</code>.</p>
+<h2>All filters</h2>
+<div class="tw"><table><thead><tr><th>Filter</th><th>Meaning</th><th>Example</th></tr></thead><tbody><tr><td><code>name</code> </td><td>Card name contains (= for the exact name)</td><td><code>name:bolt</code></td></tr><tr><td><code>o</code> <code>oracle</code> </td><td>Rules text contains</td><td><code>o:"draw a card"</code></td></tr><tr><td><code>t</code> <code>type</code> </td><td>Type line contains</td><td><code>t:legendary t:dragon</code></td></tr><tr><td><code>kw</code> <code>keyword</code> </td><td>Has a keyword ability</td><td><code>kw:flying</code></td></tr><tr><td><code>c</code> <code>color</code> <code>colour</code> </td><td>Colours</td><td><code>c:rg c=w</code></td></tr><tr><td><code>id</code> <code>identity</code> </td><td>Colour identity (fits in a deck of these colours)</td><td><code>id:wub</code></td></tr><tr><td><code>mv</code> <code>cmc</code> </td><td>Mana value</td><td><code>mv&lt;=3</code></td></tr><tr><td><code>m</code> <code>mana</code> </td><td>Mana cost contains</td><td><code>m:2rr m:{G}{G}</code></td></tr><tr><td><code>pow</code> <code>power</code> </td><td>Power</td><td><code>pow&gt;=5</code></td></tr><tr><td><code>tou</code> <code>toughness</code> </td><td>Toughness</td><td><code>tou&lt;2</code></td></tr><tr><td><code>loy</code> <code>loyalty</code> </td><td>Loyalty</td><td><code>loy=3</code></td></tr><tr><td><code>r</code> <code>rarity</code> </td><td>Rarity</td><td><code>r:mythic r&gt;=rare</code></td></tr><tr><td><code>s</code> <code>e</code> <code>set</code> <code>edition</code> </td><td>Set code</td><td><code>set:mh3</code></td></tr><tr><td><code>cn</code> <code>number</code> </td><td>Collector number</td><td><code>cn:161</code></td></tr><tr><td><code>st</code> </td><td>Set type</td><td><code>st:expansion</code></td></tr><tr><td><code>f</code> <code>format</code> <code>legal</code> </td><td>Legal in a format</td><td><code>f:modern</code></td></tr><tr><td><code>a</code> <code>artist</code> </td><td>Artist name contains</td><td><code>a:"rebecca guay"</code></td></tr><tr><td><code>ft</code> <code>flavor</code> </td><td>Flavour text contains</td><td><code>ft:urza</code></td></tr><tr><td><code>year</code> </td><td>Year of the printing</td><td><code>year&gt;=2020</code></td></tr><tr><td><code>date</code> </td><td>Release date of the printing</td><td><code>date&gt;=2024-01-01</code></td></tr><tr><td><code>eur</code> </td><td>Price in euro</td><td><code>eur&lt;5</code></td></tr><tr><td><code>usd</code> </td><td>Price in US dollars</td><td><code>usd&gt;=20</code></td></tr><tr><td><code>is</code> </td><td>One of: foil, nonfoil, etched, reprint, promo, digital, extra, dfc</td><td><code>is:foil</code></td></tr><tr><td><code>have</code> </td><td>I own any printing of this card (yes / no)</td><td><code>have:yes</code></td></tr><tr><td><code>haveprint</code> </td><td>I own this exact printing (yes / no)</td><td><code>set:arn haveprint:no</code></td></tr><tr><td><code>qty</code> </td><td>Copies I own of this printing</td><td><code>qty&gt;=4</code></td></tr><tr><td><code>loc</code> <code>location</code> </td><td>I keep it in a location named like</td><td><code>loc:"blue box"</code></td></tr><tr><td><code>cond</code> </td><td>I own it in this condition</td><td><code>cond:nm</code></td></tr><tr><td><code>finish</code> </td><td>I own it in this finish</td><td><code>finish:foil</code></td></tr><tr><td><code>lang</code> </td><td>I own it in this language</td><td><code>lang:it</code></td></tr><tr><td><code>deck</code> </td><td>In a deck whose name contains</td><td><code>deck:"dragons"</code></td></tr><tr><td><code>unique</code> </td><td>Show cards (default) or every printing</td><td><code>unique:prints</code></td></tr><tr><td><code>order</code> </td><td>Sort by: name, mv, released, rarity, price, set, type</td><td><code>order:price</code></td></tr><tr><td><code>dir</code> </td><td>Sort direction: asc or desc</td><td><code>dir:desc</code></td></tr><tr><td><code>include</code> </td><td>Also show tokens and other extras</td><td><code>include:extras</code></td></tr></tbody></table></div>
+<h2>Your collection in a search</h2>
+<p><code>have:</code> is about the card, whatever the printing; <code>haveprint:</code>, <code>qty</code>, <code>loc:</code>, <code>cond:</code>, <code>finish:</code> and <code>lang:</code> are about the exact printing shown. So <code>set:mh3 haveprint:no unique:prints</code> lists the printings of a set you are missing, and <code>have:yes t:dragon</code> every dragon you own in any printing.</p>
+<h2>Limits</h2>
+<p>A search can be at most 2,000 characters and 100 terms long.</p>
+
+</main>
+<footer><div class="wrap">
+<p>AMTG is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. &copy;Wizards of the Coast LLC.</p>
+<p>Card data and images are provided by <a href="https://scryfall.com">Scryfall</a> and downloaded by each installation; this site shows none of them. Code released under the <a href="https://github.com/ac-me-git/magic-db/blob/main/LICENSE">MIT licence</a>. No cookies, no analytics.</p>
+</div></footer>
+</body>
+</html>

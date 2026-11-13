@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install — AMTG</title>
+<meta name="description" content="Install AMTG on Windows, with Docker, or from source, and configure it.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="brand" href="index.html"><span class="mark">A</span>AMTG</a>
+<nav><a href="index.html">Home</a><a href="install.html" aria-current=page>Install</a><a href="guides/index.html">Guides</a><a href="https://github.com/ac-me-git/magic-db">GitHub</a></nav>
+</div></header>
+<main class="wrap">
+
+<h1>Install</h1>
+<p class="lead">Pick the way that suits you. All three give the same app.</p>
+<nav class="toc"><a href="#windows">Windows</a><a href="#docker">Docker</a><a href="#source">From source</a><a href="#config">Configuration</a><a href="#outside">Outside your home</a></nav>
+
+<h2 id="windows">Windows</h2>
+<ol>
+<li>Download <code>magic-db.exe</code> from the <a href="https://github.com/ac-me-git/magic-db/releases/latest">latest release</a> and put it in a folder of its own, for example <code>C:\magic-db</code>.</li>
+<li>Double-click it. Windows may show a blue <em>“Windows protected your PC”</em> box, because the program is not signed: choose <strong>More info</strong>, then <strong>Run anyway</strong>.</li>
+<li>Your browser opens on <code>http://127.0.0.1:8080</code>. The first start downloads the card catalog (about 80&nbsp;MB) and builds it: a few minutes, with progress shown on the page.</li>
+</ol>
+<p>Everything AMTG writes goes in a <code>data</code> folder next to the program. To stop it, close its window.</p>
+<p><strong>Updating:</strong> open <strong>Administration</strong>. When a newer version is out it says so, and one button downloads it, checks it, swaps it in and restarts. Your <code>data</code> folder is kept.</p>
+<p><strong>Reaching it from your phone:</strong> start it listening on your network, for example from a <code>start.bat</code> file:</p>
+<pre><code>set MAGICDB_HOST=0.0.0.0
+magic-db.exe</code></pre>
+<p>Then open <code>http://&lt;the PC's address&gt;:8080</code> on the phone.</p>
+
+<h2 id="docker">Docker</h2>
+<pre><code>curl -O https://raw.githubusercontent.com/ac-me-git/magic-db/main/compose.yaml
+docker compose up -d</code></pre>
+<p>Open <code>http://localhost:8080</code>. Data lives in the <code>magic-db-data</code> volume. Set <code>TZ</code> in <code>compose.yaml</code> to your time zone, so the nightly jobs run at night for you.</p>
+<p><strong>Updating:</strong> <code>docker compose pull</code>, then <code>docker compose up -d</code>.</p>
+
+<h2 id="source">From source</h2>
+<p>You need <a href="https://docs.astral.sh/uv/">uv</a> (or Python 3.12+ with pip).</p>
+<pre><code>git clone https://github.com/ac-me-git/magic-db.git
+cd magic-db
+uv sync
+uv run magicdb</code></pre>
+
+<h2 id="config">Configuration</h2>
+<p>Everything is optional and set with environment variables.</p>
+<div class="tw"><table><thead><tr><th>Variable</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr><td><code>MAGICDB_DATA_DIR</code></td><td><code>./data</code> (Docker: <code>/data</code>)</td><td>Where the catalog, collection, cached images and backups are kept</td></tr><tr><td><code>MAGICDB_BACKUP_DIR</code></td><td><code>&lt;data&gt;/backups</code></td><td>Where backups are written. Point it at a folder that is itself backed up or synced</td></tr><tr><td><code>MAGICDB_HOST</code></td><td><code>127.0.0.1</code> (Docker: <code>0.0.0.0</code>)</td><td>Address to listen on. <code>0.0.0.0</code> makes it reachable from other devices</td></tr><tr><td><code>MAGICDB_PORT</code></td><td><code>8080</code></td><td>Port to listen on</td></tr><tr><td><code>MAGICDB_PASSWORD</code></td><td>none</td><td>If set, every page asks for it (HTTP Basic: any user name, this password)</td></tr><tr><td><code>MAGICDB_UPDATE_HOUR</code></td><td><code>3</code></td><td>Hour of the nightly catalog update, 0–23, local time</td></tr><tr><td><code>MAGICDB_BACKUP_HOUR</code></td><td><code>4</code></td><td>Hour of the nightly backup, 0–23, local time</td></tr><tr><td><code>MAGICDB_LANG</code></td><td><code>en</code></td><td>Default interface language (<code>en</code> or <code>it</code>)</td></tr><tr><td><code>MAGICDB_CURRENCY</code></td><td><code>eur</code></td><td><code>eur</code> or <code>usd</code>, for prices and values</td></tr><tr><td><code>MAGICDB_SCHEDULER</code></td><td><code>on</code></td><td><code>off</code> stops the automatic nightly update and backup</td></tr><tr><td><code>MAGICDB_UPDATE_CHECK</code></td><td><code>on</code></td><td><code>off</code> stops the Administration page from asking GitHub for a newer version</td></tr></tbody></table></div>
+
+<h2 id="outside">Reaching it from outside your home</h2>
+<p>AMTG is meant for one household. <strong>Do not put it on the open internet as it is.</strong> Put something in front of it that decides who gets in: a VPN such as Tailscale or WireGuard, or an access gateway such as Cloudflare Access. At the very least, set <code>MAGICDB_PASSWORD</code> and serve it over HTTPS through a reverse proxy.</p>
+<p>Behind a reverse proxy, pass the public host name to the app (<code>Host</code> or <code>X-Forwarded-Host</code>): AMTG refuses changes that do not come from its own pages, and recognises its own pages by that name. The safety lock is not access control; it stops accidents, not people.</p>
+
+<h2>Limits</h2>
+<ul>
+<li>Card names, text and images are in English. A copy in another language is recorded on the English printing, with its language as an attribute.</li>
+<li>Prices are the latest from Scryfall (Cardmarket for euro, TCGplayer for dollars); there is no price history.</li>
+<li>One collection per installation; no user accounts.</li>
+<li>A physical deck box is a <em>location</em>; a deck is a <em>list</em>. Putting a card in a deck list does not move it.</li>
+</ul>
+
+</main>
+<footer><div class="wrap">
+<p>AMTG is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. &copy;Wizards of the Coast LLC.</p>
+<p>Card data and images are provided by <a href="https://scryfall.com">Scryfall</a> and downloaded by each installation; this site shows none of them. Code released under the <a href="https://github.com/ac-me-git/magic-db/blob/main/LICENSE">MIT licence</a>. No cookies, no analytics.</p>
+</div></footer>
+</body>
+</html>

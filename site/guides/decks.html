@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decks — AMTG</title>
+<meta name="description" content="Build decks in AMTG and compare them with your collection.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="brand" href="../index.html"><span class="mark">A</span>AMTG</a>
+<nav><a href="../index.html">Home</a><a href="../install.html">Install</a><a href="../guides/index.html" aria-current=page>Guides</a><a href="https://github.com/ac-me-git/magic-db">GitHub</a></nav>
+</div></header>
+<main class="wrap">
+
+<h1>Decks</h1>
+<p class="lead">A deck in AMTG is a <strong>list of cards you want to play together</strong>. It is separate from your collection: adding a card to a deck does not add it to the collection, and does not move it anywhere. What the deck gives you is a comparison with what you own.</p>
+<p>(If you want to record that some cards physically sit in a deck box, that is a <em>location</em> of the collection, not a deck.)</p>
+<h2>Making a deck</h2>
+<p>On the <strong>Decks</strong> page, give it a name and, if you like, a format and a note. Then add cards in any of these ways:</p>
+<ul>
+<li><strong>One at a time</strong>, on the deck's page: type the card's name (suggestions appear), the quantity, and whether it goes in the main deck or the sideboard.</li>
+<li><strong>From a card's page</strong>: “Add to the deck”.</li>
+<li><strong>By pasting a list</strong>, on the deck's page.</li>
+</ul>
+<h3>Deck lists</h3>
+<p>One card per line, as most sites and programs export them:</p>
+<pre><code>4 Lightning Bolt
+4x Counterspell
+1 Sol Ring (C21) 263
+Brainstorm
+
+Sideboard
+2 Pyroblast
+SB: 1 Red Elemental Blast</code></pre>
+<ul>
+<li>The number is how many; a line with just a name is one copy.</li>
+<li>Set codes, collector numbers and foil marks (<code>(C21) 263</code>, <code>[C21]</code>, <code>*F*</code>) are ignored: a deck names cards, not printings.</li>
+<li><code>Sideboard</code> on a line by itself starts the sideboard. <code>SB:</code> in front of a line puts that one line there. A blank line does <strong>not</strong> start the sideboard.</li>
+<li><code>Deck</code>, <code>Commander</code> and <code>Companion</code> go back to the main deck. A <code>Maybeboard</code> section is skipped.</li>
+<li>Titles such as <code>Creatures (12)</code>, comments (<code>//</code>, <code>#</code>) and blank lines are ignored.</li>
+</ul>
+<p>Lines that are not card names are shown to you with a suggestion and put back in the box to correct; everything else is added.</p>
+<h2>What the deck tells you</h2>
+<ul>
+<li><strong>Completion</strong>: the round gauge shows how many of the deck's cards you own, as a percentage. Any printing counts, wherever it is. 100&nbsp;% means you have every copy.</li>
+<li><strong>Missing</strong>: cards you do not own enough copies of for this deck.</li>
+<li><strong>Contested</strong>: cards you own enough of for this deck alone, but not for all the decks that want them. If two decks each want 4 Lightning Bolt and you own 6, both decks are complete on their own and the card is contested.</li>
+<li><strong>To buy the missing</strong>: an estimate, using the cheapest printing of each missing card.</li>
+</ul>
+<p>The Decks page also has one list of every contested card: how many you own, how many your decks want in total, and which decks.</p>
+<h2>Statistics</h2>
+<p>Every deck has a second tab, <strong>Statistics</strong>, about its main deck:</p>
+<ul>
+<li>how many lands and how many other cards, and the average mana value of the latter;</li>
+<li>cards by type (an artifact creature counts as both);</li>
+<li>the mana curve and the colours, leaving lands out;</li>
+<li>the coloured mana symbols in the costs, which says how much of each colour the deck really asks for. A hybrid symbol counts for both its colours.</li>
+</ul>
+<h2>Other things</h2>
+<ul>
+<li>“See the cards as images” searches for <code>deck:"name"</code>; combine it with any other filter, for example <code>deck:dragons have:no</code> for what you still need.</li>
+<li>“Download as text” gives the list back in the format above.</li>
+<li>A card's page shows which of your decks it is in.</li>
+<li>Decks are included in the JSON export and in the nightly backup.</li>
+<li>While the safety lock is on, decks can be looked at but not changed.</li>
+</ul>
+
+</main>
+<footer><div class="wrap">
+<p>AMTG is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. &copy;Wizards of the Coast LLC.</p>
+<p>Card data and images are provided by <a href="https://scryfall.com">Scryfall</a> and downloaded by each installation; this site shows none of them. Code released under the <a href="https://github.com/ac-me-git/magic-db/blob/main/LICENSE">MIT licence</a>. No cookies, no analytics.</p>
+</div></footer>
+</body>
+</html>

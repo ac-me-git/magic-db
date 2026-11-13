@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Import and export — AMTG</title>
+<meta name="description" content="Import a collection from CSV, TopDecked, Moxfield or ManaBox, and export it.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="brand" href="../index.html"><span class="mark">A</span>AMTG</a>
+<nav><a href="../index.html">Home</a><a href="../install.html">Install</a><a href="../guides/index.html" aria-current=page>Guides</a><a href="https://github.com/ac-me-git/magic-db">GitHub</a></nav>
+</div></header>
+<main class="wrap">
+
+<h1>Import and export</h1>
+<p class="lead">Both are on the <strong>Collection</strong> page.</p>
+<h2>Export</h2>
+<div class="tw"><table><thead><tr><th>Format</th><th>What is in it</th><th>Use it for</th></tr></thead><tbody><tr><td><strong>CSV</strong></td><td>One row per entry of the collection: card name, set, collector number, Scryfall ID, quantity, finish, condition, language, location, notes, price paid, date added</td><td>Spreadsheets, other tools, a copy you can read without AMTG</td></tr><tr><td><strong>JSON</strong></td><td>Everything: every entry, every location (also the empty ones, with notes and order) and every deck</td><td>A complete copy to bring back later, or to move to another installation</td></tr></tbody></table></div>
+<p>A single deck can also be downloaded as a text list from its page.</p>
+<h2>Import</h2>
+<p>Importing is two steps. First AMTG reads the file and shows what it understood &mdash; <strong>nothing is written</strong>. Then, if you confirm, it saves a backup and imports.</p>
+<p>On the preview page you choose:</p>
+<ul>
+<li>the <strong>location</strong> for the rows that do not name one (an existing one, or a new one);</li>
+<li>the <strong>condition</strong> and <strong>language</strong> for the rows that do not give them;</li>
+<li>whether to <strong>add</strong> to what you already have, or to <strong>replace</strong> it.</li>
+</ul>
+<p>Rows that cannot be imported are listed with the reason, and can be downloaded as a CSV to fix and import again. They never stop the other rows. Importing the same file twice adds the cards twice. The collection must be unlocked.</p>
+<h3>Formats understood</h3>
+<div class="tw"><table><thead><tr><th>Source</th><th>Notes</th></tr></thead><tbody><tr><td><strong>AMTG</strong></td><td>The CSV and JSON files made by Export</td></tr><tr><td><strong>TopDecked</strong></td><td>The CSV export of a binder. The binder's name is in the file name and is offered as the location. The file gives no condition or language: you choose them for all rows</td></tr><tr><td><strong>Moxfield</strong></td><td>Collection export (CSV)</td></tr><tr><td><strong>ManaBox</strong></td><td>Collection export (CSV); binder names become locations</td></tr><tr><td><strong>Any CSV</strong></td><td>With at least a <code>Name</code> column, and optionally <code>Set code</code>, <code>Collector number</code>, <code>Scryfall ID</code>, <code>Quantity</code>, <code>Finish</code>, <code>Condition</code>, <code>Language</code>, <code>Location</code>, <code>Location kind</code>, <code>Notes</code>, <code>Purchase price</code>, <code>Added</code></td></tr></tbody></table></div>
+<p>The Moxfield and ManaBox formats follow those tools' documented column names and have not been tried on real files yet. If one of yours is not read correctly, please <a href="https://github.com/ac-me-git/magic-db/issues">open an issue</a> with a few rows of it.</p>
+<h3>How a row finds its card</h3>
+<p>In this order, stopping at the first that works:</p>
+<ol>
+<li>the Scryfall ID;</li>
+<li>set code and collector number;</li>
+<li>card name and set code;</li>
+<li>card name and set name;</li>
+<li>card name alone &mdash; only if the card has a single printing.</li>
+</ol>
+<p>A name that matches several printings with nothing to tell them apart is <strong>ambiguous</strong> and is not imported. If the set is known but has several versions of the card (showcase, borderless) and the file gives no number, the regular one is taken and the row is counted as <em>guessed</em>.</p>
+<h3>Conditions</h3>
+<p>AMTG uses the Cardmarket scale: <code>MT</code> Mint, <code>NM</code> Near Mint, <code>EX</code> Excellent, <code>GD</code> Good, <code>LP</code> Light Played, <code>PL</code> Played, <code>PO</code> Poor. Files from tools that use the US scale are translated:</p>
+<div class="tw"><table><thead><tr><th>US scale</th><th>becomes</th></tr></thead><tbody><tr><td>Mint</td><td><code>MT</code></td></tr><tr><td>Near Mint</td><td><code>NM</code></td></tr><tr><td>Lightly Played</td><td><code>EX</code></td></tr><tr><td>Moderately Played</td><td><code>GD</code></td></tr><tr><td>Heavily Played</td><td><code>PL</code></td></tr><tr><td>Damaged</td><td><code>PO</code></td></tr></tbody></table></div>
+<p><code>LP</code> means something different in the two scales, which is why the translation depends on where the file comes from. An unknown condition makes the row fail; it is never guessed.</p>
+<h3>File details</h3>
+<p>UTF-8 (with or without BOM) and Windows-1252 are read; fields can be separated by commas, semicolons or tabs; files up to 20&nbsp;MB.</p>
+
+</main>
+<footer><div class="wrap">
+<p>AMTG is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. &copy;Wizards of the Coast LLC.</p>
+<p>Card data and images are provided by <a href="https://scryfall.com">Scryfall</a> and downloaded by each installation; this site shows none of them. Code released under the <a href="https://github.com/ac-me-git/magic-db/blob/main/LICENSE">MIT licence</a>. No cookies, no analytics.</p>
+</div></footer>
+</body>
+</html>
