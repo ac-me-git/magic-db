@@ -159,15 +159,30 @@ def test_ticking_adds_a_copy_and_unticking_takes_it_back(client, catalog, both):
     assert len(entries(catalog)) == 1
 
 
-def test_plus_adds_more_copies(client, catalog, both):
-    row = toggle(client, both, "foil").text  # once ticked, + offers one more
-    assert 'class="more"' in row and '<span class="qty"></span>' in row
+def test_a_cell_is_the_box_and_nothing_else(client, both):
     row = toggle(client, both, "foil").text
-    assert '<span class="qty">×2</span>' in row and 'class="more"' in row
-    assert entries(catalog) == [(both["id"], 2, "foil", "NM", "en", None)]
-    row = toggle(client, both, "foil", "remove").text  # unticking takes one copy
-    assert box(row, "foil") == (True, False, "remove") and '<span class="qty"></span>' in row
+    for finish in ("nonfoil", "foil"):
+        form = next(p for p in row.split("<form")[1:] if f'value="{finish}"' in p)
+        assert form.count("<button") == 1 and "×" not in form.split("</form>")[0]
+
+
+def test_a_box_never_adds_a_second_copy(client, catalog, both):
+    toggle(client, both, "foil")
+    row = toggle(client, both, "foil").text  # a double click, or a second tab
+    assert box(row, "foil") == (True, False, "remove")
+    assert entries(catalog) == [(both["id"], 1, "foil", "NM", "en", None)]
+
+
+def test_copies_added_elsewhere_are_taken_back_one_at_a_time(client, catalog, both):
+    with closing(db.connect(catalog)) as conn:
+        service.add_entry(conn, both["id"], 2, finish="foil")
+    row = toggle(client, both, "foil", "remove").text
+    assert box(row, "foil") == (True, False, "remove") and "×1</span>" in row
     assert entries(catalog)[0][1] == 1
+    toggle(client, both, "foil")  # still ticked: nothing is added
+    assert entries(catalog)[0][1] == 1
+    row = toggle(client, both, "foil", "remove").text
+    assert box(row, "foil") == (False, False, "add") and entries(catalog) == []
 
 
 def test_the_page_shows_what_was_ticked(client, both):

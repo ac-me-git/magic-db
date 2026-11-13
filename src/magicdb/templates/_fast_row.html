@@ -1,4 +1,4 @@
-{# One printing in fast input: a big box per finish. Ticking adds a copy, unticking takes one back. #}
+{# One printing in fast input: a big box per finish, nothing else. Ticking adds a copy, unticking takes one back. #}
 <tr>
   <td class="nowrap"><span class="set-code">{{ card.set_code }}</span> {{ card.collector_number }}</td>
   <td><a href="/card/{{ card.id }}">{{ card.name }}</a>
@@ -18,11 +18,6 @@
               aria-label="{{ card.name }} — {{ t('finish.' ~ finish) }}"
               {%- if not printed and not have %} title="{{ t('fast.not_printed') }}"{% endif %}
               {%- if locked or (not printed and not have) %} disabled{% endif %}><span aria-hidden="true">✓</span></button>
-      {% if have %}
-      <span class="qty">{% if have > 1 %}×{{ have }}{% endif %}</span>
-      <button type="submit" name="action" value="add" class="more" title="{{ t('fast.more') }}"
-              aria-label="{{ card.name }} — {{ t('finish.' ~ finish) }}: {{ t('fast.more') }}"{% if locked %} disabled{% endif %}>+</button>
-      {% endif %}
     </form>
   </td>
   {% endfor %}

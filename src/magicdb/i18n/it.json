@@ -514,7 +514,6 @@
   "nav.fast": "Inserimento rapido",
   "fast.adding": "Le nuove copie vanno in",
   "fast.apply": "Applica",
-  "fast.hint": "Spunta una casella per aggiungere una copia di quella carta alla collezione; togli la spunta per toglierla. + ne aggiunge un'altra. Le caselle riguardano le copie nella posizione, condizione e lingua scelte qui sopra; il numero accanto al nome conta tutte le copie che hai di quella stampa.",
-  "fast.more": "un'altra copia",
+  "fast.hint": "Spunta una casella per aggiungere una copia di quella carta alla collezione; togli la spunta per toglierla. Qui una copia per finitura: per averne di più usa Aggiungi carte. Le caselle riguardano le copie nella posizione, condizione e lingua scelte qui sopra; il numero accanto al nome conta tutte le copie che hai di quella stampa.",
   "fast.not_printed": "Questa stampa non esiste con questa finitura"
 }

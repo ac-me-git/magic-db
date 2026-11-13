@@ -1386,26 +1386,19 @@ textarea {
 }
 
 .fast-cell {
-  width: 7.5rem;
-  min-width: 7.5rem; /* room for the count and +, so ticking does not move the columns */
-  text-align: left;
+  width: 5rem;
+  text-align: center;
 }
 
 @media (max-width: 600px) {
   .fast-cell {
     width: 3.4rem;
-    min-width: 3.4rem;
-  }
-
-  .fast-cell form {
-    flex-wrap: wrap;
   }
 }
 
 .fast-cell form {
   display: flex;
-  align-items: center;
-  gap: 0.35rem;
+  justify-content: center;
   margin: 0;
 }
 
@@ -1436,21 +1429,6 @@ textarea {
 
 .bigcheck.is-on:disabled {
   opacity: 0.6;
-}
-
-.fast-cell .qty {
-  min-width: 1.4rem;
-  font-weight: 600;
-}
-
-.fast-cell .more {
-  width: 1.9rem;
-  height: 1.9rem;
-  padding: 0;
-  flex: none;
-  font-size: 1.1rem;
-  line-height: 1;
-  border-radius: 50%;
 }
 
 @media (max-width: 600px) {

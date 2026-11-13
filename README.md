@@ -90,7 +90,8 @@ In the list view, click a column's heading to sort by it; click again to reverse
 **Fast input** is for entering a new set: search for it (`set:xyz`), choose the *Fast
 input* view, and every card gets two big boxes, non-foil and foil. Tick a box and that
 copy is in your collection — in the location, condition and language chosen above the
-list. Untick it to take it back; **+** adds another copy.
+list. Untick it to take it back. Fast input records one copy per finish; for more
+copies of the same card, use *Add cards*.
 
 The switch with the padlock, top right, locks the collection and the decks: while it is
 on you can look at everything but change nothing.

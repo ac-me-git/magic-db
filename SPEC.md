@@ -498,10 +498,11 @@ number or by name with the column headings, and tick boxes.
   non-foil and foil. No images.
 - A box is ticked when the collection has at least one copy of that printing in that
   finish *with the condition, language and location shown above the table*. Ticking
-  adds one copy with those traits; unticking takes one back. Beside a ticked box, the
-  count when above 1 and a small **+** that adds one more. A finish the printing was
+  adds one copy with those traits; unticking takes one back. A cell holds the box and
+  nothing else: fast input records at most one copy per finish, and `action=add` does
+  nothing when the box is already ticked (a double click must not add a hidden second
+  copy). More copies, and etched, go through quick add. A finish the printing was
   never made in has a disabled box (unless such a copy is recorded: it can be unticked).
-  Etched is not offered here; use quick add.
 - Condition, language and location are the ones quick add remembers (same cookie);
   the selectors above the table change them (`GET /fast/settings`, a cookie only, so
   allowed while locked). A remembered location that no longer exists counts as none.

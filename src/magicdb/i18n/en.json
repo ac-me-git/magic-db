@@ -479,7 +479,6 @@
   "nav.fast": "Fast input",
   "fast.adding": "New copies go to",
   "fast.apply": "Apply",
-  "fast.hint": "Tick a box to add one copy of that card to your collection; untick it to take the copy back. + adds one more. The boxes are about copies in the location, condition and language chosen above; the number beside the name counts every copy you own of that printing.",
-  "fast.more": "one more copy",
+  "fast.hint": "Tick a box to add one copy of that card to your collection; untick it to take the copy back. One copy per finish here: for more, use Add cards. The boxes are about copies in the location, condition and language chosen above; the number beside the name counts every copy you own of that printing.",
   "fast.not_printed": "This printing does not exist in this finish"
 }

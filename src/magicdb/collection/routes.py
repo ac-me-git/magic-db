@@ -235,7 +235,9 @@ def fast_toggle(
     action: Field = "add",
     next: Field = "",
 ) -> Response:
-    """Add one copy of a printing, or take one back, and show its row again."""
+    """Tick a box (one copy, if there is none yet) or untick it (take one back), and show
+    the row again. A box never adds a second copy: a double click or a second tab must
+    not record one the row would not show."""
     card = None
     if web.is_card_id(printing) and db.has_catalog(conn):
         card = conn.execute("SELECT * FROM cat.printings WHERE id = ?", (printing,)).fetchone()
@@ -243,10 +245,11 @@ def fast_toggle(
         return web.render(request, "not_found.html", 404)
     key = forms.copy_key(request, conn)
     if action == "add":
-        try:
-            service.add_entry(conn, printing, 1, finish=finish, **key)
-        except CollectionError:
-            pass  # e.g. already 9999 copies: the row shows what is there
+        if not service.copies_like(conn, [printing], **key).get((printing, finish)):
+            try:
+                service.add_entry(conn, printing, 1, finish=finish, **key)
+            except CollectionError:
+                pass  # e.g. the location went away meanwhile: the row shows what is there
     else:
         service.take_one(conn, printing, finish=finish, **key)
     back = safe_next(next, "/fast")

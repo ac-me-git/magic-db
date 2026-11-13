@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Fast input is just the two boxes now: the **+** and the copy count beside a ticked box
+  are gone. It records one copy per finish; for more copies use *Add cards*. A double
+  click no longer adds a second copy.
+
 ## 1.2.0 — 2026-11-13
 
 - **Fast input**: a third view of the search results with two big boxes, non-foil and
