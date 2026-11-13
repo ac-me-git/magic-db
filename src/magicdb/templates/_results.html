@@ -29,6 +29,7 @@
   <p class="views">
     {{ nav(t("results.view.grid"), result.page, "grid", current=(view == "grid")) }}
     {{ nav(t("results.view.list"), result.page, "list", current=(view == "list")) }}
+    {{ nav(t("results.view.input"), 1, "input", current=(view == "input")) }}
   </p>
 </div>
 
@@ -43,6 +44,54 @@
     {% endfor %}
   </p>
   {% endif %}
+</div>
+{% elif view == "input" %}
+{% if locked %}{% include "_locked_notice.html" %}{% endif %}
+<form class="filters fast-settings" method="get" action="/fast/settings"
+      hx-get="/fast/settings" hx-trigger="change" hx-target="#results" hx-swap="innerHTML">
+  <input type="hidden" name="next" value="{{ here }}">
+  <label>{{ t("fast.adding") }}
+    <select name="location">
+      <option value="">{{ t("entry.unassigned") }}</option>
+      {% for place in options.locations %}
+      <option value="{{ place.id }}"{% if place.id == fast_key.location_id %} selected{% endif %}>{{ place.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>{{ t("entry.condition") }}
+    <select name="condition">
+      {% for value in options.conditions %}
+      <option value="{{ value }}"{% if value == fast_key.condition %} selected{% endif %}>{{ value }} · {{ t("condition." ~ value) }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>{{ t("entry.language") }}
+    <select name="language">
+      {% for value in options.languages %}
+      <option value="{{ value }}"{% if value == fast_key.language %} selected{% endif %}>{{ t("lang." ~ value) }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <noscript><button type="submit">{{ t("fast.apply") }}</button></noscript>
+</form>
+<p class="hint">{{ t("fast.hint") }}</p>
+<div class="table-wrap">
+<table class="card-list fast-list">
+  <thead>
+    <tr>
+      <th>{{ sorter(t("card.set"), "set") }}</th>
+      <th>{{ sorter(t("card.name"), "name") }}</th>
+      <th class="fast-cell">{{ t("finish.nonfoil") }}</th>
+      <th class="fast-cell">{{ t("finish.foil") }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% set back = here %}
+    {% for card in result.rows %}
+    {% include "_fast_row.html" %}
+    {% endfor %}
+  </tbody>
+</table>
 </div>
 {% elif view == "list" %}
 <div class="table-wrap">

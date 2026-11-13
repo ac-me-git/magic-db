@@ -58,3 +58,20 @@ def options(conn: sqlite3.Connection) -> dict[str, object]:
             "SELECT id, name FROM locations ORDER BY sort_order, id"
         ).fetchall(),
     }
+
+
+def copy_key(request: Request, conn: sqlite3.Connection) -> dict[str, object]:
+    """Condition, language and location that fast input gives to the copies it adds:
+    the ones remembered from the last add. A location that no longer exists is none."""
+    sticky = read_sticky(request)
+    place = None
+    if sticky["location"].isdigit():
+        row = conn.execute(
+            "SELECT id FROM locations WHERE id = ?", (int(sticky["location"]),)
+        ).fetchone()
+        place = row["id"] if row else None
+    return {
+        "condition": sticky["condition"],
+        "language": sticky["language"],
+        "location_id": place,
+    }

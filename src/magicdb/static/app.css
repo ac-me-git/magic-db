@@ -1368,3 +1368,109 @@ textarea {
   background: var(--row);
   border-radius: 0.4rem;
 }
+
+/* Fast input: a big box per finish beside every card */
+.fast-settings {
+  align-items: end;
+}
+
+.fast-list thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg, Canvas);
+}
+
+.fast-list .sub {
+  display: block;
+}
+
+.fast-cell {
+  width: 7.5rem;
+  min-width: 7.5rem; /* room for the count and +, so ticking does not move the columns */
+  text-align: left;
+}
+
+@media (max-width: 600px) {
+  .fast-cell {
+    width: 3.4rem;
+    min-width: 3.4rem;
+  }
+
+  .fast-cell form {
+    flex-wrap: wrap;
+  }
+}
+
+.fast-cell form {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.bigcheck {
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  flex: none;
+  font-size: 1.7rem;
+  line-height: 1;
+  border: 2px solid var(--accent);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+}
+
+.bigcheck.is-on {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.bigcheck:disabled {
+  border-color: var(--border);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.bigcheck.is-on:disabled {
+  opacity: 0.6;
+}
+
+.fast-cell .qty {
+  min-width: 1.4rem;
+  font-weight: 600;
+}
+
+.fast-cell .more {
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  flex: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  border-radius: 50%;
+}
+
+@media (max-width: 600px) {
+  /* the boxes must be on screen without scrolling sideways: the name gives way */
+  .fast-list td:nth-child(2) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .fast-list .sub {
+    display: none;
+  }
+
+  .fast-list th,
+  .fast-list td {
+    padding-left: 0.3rem;
+    padding-right: 0.3rem;
+  }
+}
+
+.fast-list td {
+  vertical-align: middle;
+}

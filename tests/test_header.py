@@ -60,7 +60,7 @@ def test_my_collection_opens_the_statistics_with_the_ways_onward(owned):
     page = owned.get("/stats").text
     assert '<h1 class="page-title">My collection</h1>' in page and "Statistics" in page
     hub = page.split('<p class="links">')[1].split("</p>")[0]
-    assert links(hub) == ["/collection", "/add", "/locations", "/import", "/export"]
+    assert links(hub) == ["/collection", "/add", "/fast", "/locations", "/import", "/export"]
     assert "<dd>6</dd>" in page  # and the numbers are there
 
 

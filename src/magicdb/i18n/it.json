@@ -509,5 +509,12 @@
   "admin.version.how.manual": "Questa versione non si può installare da qui. Scaricala dalla pagina della release e sostituisci il programma.",
   "admin.version.install_failed": "L'aggiornamento non è stato installato: {reason} Non è stato cambiato nulla.",
   "admin.version.restarting": "La versione {version} è installata. Riavvio in corso…",
-  "admin.version.restarting_hint": "Questa pagina torna da sola all'Amministrazione quando il programma è di nuovo attivo. Se entro un minuto non succede, ricaricala."
+  "admin.version.restarting_hint": "Questa pagina torna da sola all'Amministrazione quando il programma è di nuovo attivo. Se entro un minuto non succede, ricaricala.",
+  "results.view.input": "Inserimento rapido",
+  "nav.fast": "Inserimento rapido",
+  "fast.adding": "Le nuove copie vanno in",
+  "fast.apply": "Applica",
+  "fast.hint": "Spunta una casella per aggiungere una copia di quella carta alla collezione; togli la spunta per toglierla. + ne aggiunge un'altra. Le caselle riguardano le copie nella posizione, condizione e lingua scelte qui sopra; il numero accanto al nome conta tutte le copie che hai di quella stampa.",
+  "fast.more": "un'altra copia",
+  "fast.not_printed": "Questa stampa non esiste con questa finitura"
 }

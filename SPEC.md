@@ -489,6 +489,31 @@ released one and when that was last asked.
 - The safety lock does not block these (`/admin/…` is exempt); the same-origin check
   and the optional password do apply.
 
+**Fast input** (`view=input`, a third view of the search results beside Images and
+List). For entering a new set quickly: search as usual (`set:xyz`), sort by collector
+number or by name with the column headings, and tick boxes.
+
+- Always one row per *printing* (as `unique:prints`), up to 500 rows per page so that a
+  whole set is one page. Columns: set and number, name, and one big box each for
+  non-foil and foil. No images.
+- A box is ticked when the collection has at least one copy of that printing in that
+  finish *with the condition, language and location shown above the table*. Ticking
+  adds one copy with those traits; unticking takes one back. Beside a ticked box, the
+  count when above 1 and a small **+** that adds one more. A finish the printing was
+  never made in has a disabled box (unless such a copy is recorded: it can be unticked).
+  Etched is not offered here; use quick add.
+- Condition, language and location are the ones quick add remembers (same cookie);
+  the selectors above the table change them (`GET /fast/settings`, a cookie only, so
+  allowed while locked). A remembered location that no longer exists counts as none.
+- The badge beside the name still counts every copy of the printing, wherever it is.
+- `POST /fast/toggle` (`printing`, `finish`, `action=add|remove`, `next`): with HTMX
+  it answers with the row again; without, it redirects to `next`. Every change goes
+  through the collection service, so it is merged, logged and undoable like any other.
+- While the safety lock is on the boxes are shown disabled, with the usual notice.
+- `/fast` opens the view on the newest released main set (expansion, core, masters,
+  draft innovation, commander) in collector-number order; linked from the collection
+  page and from Administration.
+
 **Header.** On every page: the logo (the way to the home page and its filter panel),
 the search box, and two links — "My collection", which opens the statistics, and "My
 decks". The statistics page is the collection's landing page and links to the card

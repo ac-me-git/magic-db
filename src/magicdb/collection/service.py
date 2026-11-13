@@ -690,3 +690,48 @@ def owned_counts(conn: sqlite3.Connection, ids: list[str], by: str) -> dict[str,
             ids,
         )
     )
+
+
+def copies_like(
+    conn: sqlite3.Connection,
+    ids: list[str],
+    *,
+    condition: str,
+    language: str,
+    location_id: int | None,
+) -> dict[tuple[str, str], int]:
+    """Copies of each printing, by (printing id, finish), that are in this condition,
+    language and place: what fast input would add to, or take from."""
+    if not ids:
+        return {}
+    marks = ", ".join("?" * len(ids))
+    rows = conn.execute(
+        f"SELECT scryfall_id, finish, SUM(quantity) FROM entries "
+        f"WHERE scryfall_id IN ({marks}) AND condition = ? AND language = ? "
+        f"AND COALESCE(location_id, 0) = COALESCE(?, 0) GROUP BY scryfall_id, finish",
+        [*ids, condition, language, location_id],
+    )
+    return {(row[0], row[1]): row[2] for row in rows}
+
+
+def take_one(
+    conn: sqlite3.Connection,
+    scryfall_id: str,
+    *,
+    finish: str,
+    condition: str,
+    language: str,
+    location_id: int | None,
+) -> bool:
+    """Remove one copy of this printing with exactly these traits; False if there is none."""
+    key = {
+        "finish": finish,
+        "condition": condition,
+        "language": language,
+        "location_id": location_id,
+    }
+    twin = _twin(conn, scryfall_id, key)
+    if twin is None:
+        return False
+    remove_entry(conn, twin["id"], 1)
+    return True

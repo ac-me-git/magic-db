@@ -474,5 +474,12 @@
   "admin.version.how.manual": "This version cannot be installed from here. Download it from the release page and replace the program.",
   "admin.version.install_failed": "The update was not installed: {reason} Nothing was changed.",
   "admin.version.restarting": "Version {version} is installed. Restarting…",
-  "admin.version.restarting_hint": "This page goes back to Administration by itself when the program is up again. If it does not within a minute, reload it."
+  "admin.version.restarting_hint": "This page goes back to Administration by itself when the program is up again. If it does not within a minute, reload it.",
+  "results.view.input": "Fast input",
+  "nav.fast": "Fast input",
+  "fast.adding": "New copies go to",
+  "fast.apply": "Apply",
+  "fast.hint": "Tick a box to add one copy of that card to your collection; untick it to take the copy back. + adds one more. The boxes are about copies in the location, condition and language chosen above; the number beside the name counts every copy you own of that printing.",
+  "fast.more": "one more copy",
+  "fast.not_printed": "This printing does not exist in this finish"
 }

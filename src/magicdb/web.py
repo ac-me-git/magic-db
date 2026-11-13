@@ -23,7 +23,8 @@ from magicdb.templating import LANG_COOKIE, ONE_YEAR, safe_next, scope_of, searc
 router = APIRouter()
 Conn = Annotated[sqlite3.Connection, Depends(db.get_conn)]
 
-VIEWS = ("grid", "list")
+VIEWS = ("grid", "list", "input")
+FAST_PER_PAGE = 500  # fast input: a whole set on one page
 AUTOCOMPLETE_LIMIT = 15
 SUGGEST_LIMIT = 8
 _SYNTAX = re.compile(r'[:=<>()"!]|\bor\b', re.IGNORECASE)
@@ -103,6 +104,8 @@ def search_page(
             page_number,
             currency=request.app.state.settings.currency,
             owned_only=scope == "collection",
+            prints=view == "input",
+            per_page=FAST_PER_PAGE if view == "input" else search.PER_PAGE,
         )
     except search.QueryError as exc:
         error = str(exc)
@@ -111,10 +114,19 @@ def search_page(
         # a card's badge counts every printing; a printing's badge counts only itself
         key = "id" if result.unique == "prints" else "oracle_id"
         owned = service.owned_counts(conn, [row[key] for row in result.rows], result.unique)
+    fast: dict[str, object] = {}
+    if result is not None and view == "input":
+        key = forms.copy_key(request, conn)
+        fast = {
+            "fast_counts": service.copies_like(conn, [row["id"] for row in result.rows], **key),
+            "fast_key": key,
+            "options": forms.options(conn),
+        }
     partial = request.headers.get("HX-Request") == "true"
     return render(
         request,
         "_results.html" if partial else "search.html",
+        **fast,
         q=q,
         view=view,
         result=result,

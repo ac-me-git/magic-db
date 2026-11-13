@@ -1,0 +1,29 @@
+{# One printing in fast input: a big box per finish. Ticking adds a copy, unticking takes one back. #}
+<tr>
+  <td class="nowrap"><span class="set-code">{{ card.set_code }}</span> {{ card.collector_number }}</td>
+  <td><a href="/card/{{ card.id }}">{{ card.name }}</a>
+      {%- set total = owned.get(card.id) %}{% if total %}<span class="owned" title="{{ t('results.owned', n=total) }}">×{{ total }}</span>{% endif %}
+      <span class="sub">{{ card.type_line }}</span></td>
+  {% for finish in ("nonfoil", "foil") %}
+  {% set have = fast_counts.get((card.id, finish), 0) %}
+  {% set printed = ("|" ~ finish ~ "|") in card.finishes %}
+  <td class="fast-cell">
+    <form method="post" action="/fast/toggle" hx-post="/fast/toggle" hx-target="closest tr" hx-swap="outerHTML">
+      <input type="hidden" name="printing" value="{{ card.id }}">
+      <input type="hidden" name="finish" value="{{ finish }}">
+      <input type="hidden" name="next" value="{{ back }}">
+      <button type="submit" name="action" value="{{ 'remove' if have else 'add' }}"
+              class="bigcheck{% if have %} is-on{% endif %}" role="checkbox"
+              aria-checked="{{ 'true' if have else 'false' }}"
+              aria-label="{{ card.name }} — {{ t('finish.' ~ finish) }}"
+              {%- if not printed and not have %} title="{{ t('fast.not_printed') }}"{% endif %}
+              {%- if locked or (not printed and not have) %} disabled{% endif %}><span aria-hidden="true">✓</span></button>
+      {% if have %}
+      <span class="qty">{% if have > 1 %}×{{ have }}{% endif %}</span>
+      <button type="submit" name="action" value="add" class="more" title="{{ t('fast.more') }}"
+              aria-label="{{ card.name }} — {{ t('finish.' ~ finish) }}: {{ t('fast.more') }}"{% if locked %} disabled{% endif %}>+</button>
+      {% endif %}
+    </form>
+  </td>
+  {% endfor %}
+</tr>

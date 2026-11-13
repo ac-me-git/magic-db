@@ -114,11 +114,14 @@ def run(
     currency: str = "eur",
     per_page: int = PER_PAGE,
     owned_only: bool = False,
+    prints: bool = False,
 ) -> Result:
     """Run a search and return one page of ``cat.printings`` rows.
 
     With ``owned_only`` the search is over the collection: only printings that are in
     it, so a card is shown in a printing you actually have.
+
+    With ``prints`` every printing is a row, whatever ``unique:`` the query asks for.
 
     Raises ``QueryError`` (message fit for the user) when the text cannot be understood.
     """
@@ -126,6 +129,8 @@ def run(
         raise CatalogUnavailable("the card catalog has not been downloaded yet")
     node = parse(query)
     where, params, ctx = compile_query(node, currency)
+    if prints:
+        ctx.unique = "prints"
     if owned_only:
         where = f"({where}) AND p.id IN (SELECT scryfall_id FROM entries)"
     page = max(1, page)

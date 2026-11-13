@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Fast input**: a third view of the search results with two big boxes, non-foil and
+  foil, beside every printing. Ticking a box adds that copy to the collection, in the
+  location, condition and language chosen above the list; unticking takes it back.
+  Made for entering a new set: `set:xyz`, sorted by number or by name.
+
+## Unreleased
+
 - New default colour theme: violet, in light and dark. The colour of the lock switch and
   of the colour bars is unchanged.
 

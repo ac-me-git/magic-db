@@ -16,7 +16,7 @@ from magicdb import db, stats, web
 from magicdb.collection import forms, service
 from magicdb.collection.service import CollectionError
 from magicdb.search.compiler import exact_name
-from magicdb.templating import safe_next
+from magicdb.templating import safe_next, search_url
 
 router = APIRouter()
 Field = Annotated[str, Form()]
@@ -183,6 +183,83 @@ def add(
         set=entry["set_code"],
     )
     return response
+
+
+# --- fast input -----------------------------------------------------------------------
+
+FAST_FINISHES = ("nonfoil", "foil")
+_MAIN_SETS = ("expansion", "core", "masters", "draft_innovation", "commander")
+
+
+@router.get("/fast")
+def fast_start(conn: web.Conn) -> Response:
+    """Open fast input on the newest set that is out, in collector-number order."""
+    code = None
+    if db.has_catalog(conn):
+        marks = ", ".join("?" * len(_MAIN_SETS))
+        row = conn.execute(
+            f"SELECT code FROM cat.sets WHERE catalog_count > 0 AND is_digital = 0 "
+            f"AND set_type IN ({marks}) AND released_at <= date('now') "
+            f"ORDER BY released_at DESC, code LIMIT 1",
+            _MAIN_SETS,
+        ).fetchone()
+        code = row["code"] if row else None
+    query = f"set:{code} order:set" if code else ""
+    return redirect(search_url(query, 1, "input"))
+
+
+@router.get("/fast/settings")
+def fast_settings(
+    request: Request, condition: str = "", language: str = "", location: str = "", next: str = ""
+) -> Response:
+    """Remember what fast input gives to new copies (the same memory quick add uses)."""
+    sticky = forms.read_sticky(request)
+    response = redirect(safe_next(next, "/fast"))
+    forms.write_sticky(
+        response,
+        finish=sticky["finish"],
+        condition=condition if condition in service.CONDITIONS else sticky["condition"],
+        language=language if language in service.LANGUAGES else sticky["language"],
+        location=location if location.isascii() and location.isdigit() else "",
+        set=sticky["set"],
+    )
+    return response
+
+
+@router.post("/fast/toggle")
+def fast_toggle(
+    request: Request,
+    conn: web.Conn,
+    printing: Field = "",
+    finish: Field = "nonfoil",
+    action: Field = "add",
+    next: Field = "",
+) -> Response:
+    """Add one copy of a printing, or take one back, and show its row again."""
+    card = None
+    if web.is_card_id(printing) and db.has_catalog(conn):
+        card = conn.execute("SELECT * FROM cat.printings WHERE id = ?", (printing,)).fetchone()
+    if card is None or finish not in FAST_FINISHES or action not in ("add", "remove"):
+        return web.render(request, "not_found.html", 404)
+    key = forms.copy_key(request, conn)
+    if action == "add":
+        try:
+            service.add_entry(conn, printing, 1, finish=finish, **key)
+        except CollectionError:
+            pass  # e.g. already 9999 copies: the row shows what is there
+    else:
+        service.take_one(conn, printing, finish=finish, **key)
+    back = safe_next(next, "/fast")
+    if request.headers.get("HX-Request") != "true":
+        return redirect(back)
+    return web.render(
+        request,
+        "_fast_row.html",
+        card=card,
+        fast_counts=service.copies_like(conn, [printing], **key),
+        owned=service.owned_counts(conn, [printing], "prints"),
+        back=back,
+    )
 
 
 # --- the collection -------------------------------------------------------------------
