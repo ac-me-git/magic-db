@@ -45,6 +45,9 @@ figcaption{color:var(--muted);font-size:.9rem;margin-top:6px}
 .toc{display:flex;flex-wrap:wrap;gap:6px 18px;margin:16px 0}
 li{margin:.3em 0}
 footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padding:20px 0 32px}
+footer .ico{vertical-align:-.2em;margin-right:.3em}
+.support{text-align:center}
+.support .btn{margin-top:4px}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 @media (max-width:520px){.hero h1{font-size:2rem}body{font-size:16px}}
 .shots a{display:block;cursor:zoom-in}

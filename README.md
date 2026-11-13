@@ -163,6 +163,11 @@ open the site can switch it off.
 See [CONTRIBUTING.md](CONTRIBUTING.md). What is being built and why is in
 [SPEC.md](SPEC.md); how it was built, milestone by milestone, in [PLAN.md](PLAN.md).
 
+## Support
+
+magic-db is free and will stay free. If it is useful to you, you can
+[buy me a coffee](https://buymeacoffee.com/amtg).
+
 ## Legal
 
 magic-db is unofficial Fan Content permitted under the Fan Content Policy.

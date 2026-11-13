@@ -172,6 +172,11 @@ main {
   margin: 0.25rem auto;
 }
 
+.site-footer .coffee svg {
+  margin-right: 0.3em;
+  vertical-align: -0.2em;
+}
+
 /* --- home and messages --------------------------------------------------------- */
 
 .hero {

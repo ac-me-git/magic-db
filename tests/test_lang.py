@@ -121,3 +121,11 @@ def test_numbers_on_the_page_follow_the_visitor(catalog, fixture_cards):
     client.get("/lang/it")
     italian = client.get(f"/card/{lotus['id']}").text
     assert "Tutte le stampe" in italian and "All printings" in usd_free
+
+
+def test_footer_links_to_the_coffee_page_in_both_languages(client):
+    link = 'href="https://buymeacoffee.com/amtg"'
+    english = client.get("/").text
+    assert link in english and "Buy me a coffee" in english
+    italian = client.get("/", headers={"Accept-Language": "it"}).text
+    assert link in italian and "Offrimi un caffè" in italian
