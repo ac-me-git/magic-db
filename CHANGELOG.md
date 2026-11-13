@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.1 — 2026-11-14
 
 - The *Add cards* page is gone. Copies are added from a card's page (the form under
   *My copies*), with fast input, or by importing a file. As before, only printings in
