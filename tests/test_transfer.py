@@ -414,6 +414,26 @@ def test_dates_locations_and_notes(conn):
     assert (own.fields["location"], own.fields["location_kind"]) == ("Mine", "")
 
 
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        # as TopDecked writes some rows, with the zone name in the device's language
+        (
+            "Sat May 03 2025 17:21:51 GMT+0200 (Ora legale dell’Europa centrale)",
+            "2025-05-03T15:21:51+00:00",
+        ),
+        ("Tue Feb 18 2025 23:17:30 GMT-0500 (Eastern Standard Time)", "2025-02-19T04:17:30+00:00"),
+        ("Mon Jun 02 2025 22:23:11 GMT+0530", "2025-06-02T16:53:11+00:00"),
+        ("May 3 2025 07:05:09 GMT+0000", "2025-05-03T07:05:09+00:00"),
+        ("Sat Foo 03 2025 17:21:51 GMT+0200", None),  # no such month
+        ("Fri Feb 30 2025 17:21:51 GMT+0200", None),  # no such day
+        ("Sat May 03 2025 17:21:51", None),  # no offset: we would have to guess the zone
+    ],
+)
+def test_javascript_dates(conn, value, expected):
+    assert one(conn, "Added", f'"{value}"').fields["added_at"] == expected
+
+
 # --- formats --------------------------------------------------------------------------
 
 
@@ -580,6 +600,21 @@ def test_topdecked_rows_with_more_columns_filled(conn):
     assert whole_price.status == "matched" and whole_price.fields["added_at"]
     assert no_id.status == "matched" and no_id.card["scryfall_id"] == bolt  # set + number
     assert (short.status, short.problem) == ("ambiguous", "ambiguous")
+
+
+def test_topdecked_rows_with_a_javascript_date(conn):
+    """40 of 493 rows of a real binder export carry the acquired date in this shape."""
+    bolt = pid(conn, "Lightning Bolt", "m10")
+    header = TOPDECKED.read_text(encoding="utf-8").splitlines()[0]
+    row = (
+        f'1,"Lightning Bolt",m10,"Magic 2010",146,nonfoil,€0,31,common,{bolt},'
+        "Sat May 03 2025 17:21:51 GMT+0200 (Ora legale dell’Europa centrale)"
+    )
+    parsed = importers.parse_file(f"{header}\n{row}\n".encode())
+    importers.resolve(conn, parsed)
+    (only,) = parsed.rows
+    assert parsed.profile == "topdecked" and only.status == "matched"
+    assert only.fields["added_at"] == "2025-05-03T15:21:51+00:00"
 
 
 def test_rejoin_prices():

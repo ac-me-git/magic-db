@@ -628,7 +628,9 @@ fixture (`scripts/make_topdecked_sample.py`). Two quirks, present in every row:
 So the header is not trusted for positions: the first six fields are fixed
 (quantity, name, set code, set name, collector number, finish), the Scryfall id is
 found by its shape, and the fields after it are read in header order (acquired date,
-acquired price, language, …, condition, notes), re-joining split prices. The file has
+acquired price, language, …, condition, notes), re-joining split prices. Some rows (40
+of 493 in a real export) write the acquired date as JavaScript's `Date.toString()`,
+`Sat May 03 2025 17:21:51 GMT+0200 (…)`; it is read as well. The file has
 one row per copy and no location: it is the export of one binder, whose name is in the
 file name (`binder-<name>-<uuid>.csv`) and is offered as a new location.
 

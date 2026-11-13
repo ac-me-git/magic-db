@@ -8,9 +8,10 @@ printing each row means and validates its values, without writing anything;
 import csv
 import io
 import json
+import re
 import sqlite3
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 
 from magicdb import db
 from magicdb.collection import service
@@ -231,12 +232,50 @@ def _price(value: str) -> float | None:
     return price
 
 
+_MONTHS = {
+    name: number
+    for number, name in enumerate(
+        ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"),
+        start=1,
+    )
+}
+# JavaScript's Date.toString(), which TopDecked writes for some rows:
+# "Sat May 03 2025 17:21:51 GMT+0200 (Central European Summer Time)". The month names
+# are always English; the zone name in brackets is in the device's language and ignored.
+_JS_DATE = re.compile(
+    r"(?:[a-z]{3} )?([a-z]{3}) (\d{1,2}) (\d{4}) (\d{1,2}):(\d{2}):(\d{2}) gmt([+-])(\d{2})(\d{2})",
+    re.IGNORECASE,
+)
+
+
+def _js_date(value: str) -> datetime | None:
+    match = _JS_DATE.match(value)
+    if match is None or match[1].lower() not in _MONTHS:
+        return None
+    month, day, year, hour, minute, second, sign, off_hours, off_minutes = match.groups()
+    offset = timedelta(hours=int(off_hours), minutes=int(off_minutes))
+    try:
+        return datetime(
+            int(year),
+            _MONTHS[month.lower()],
+            int(day),
+            int(hour),
+            int(minute),
+            int(second),
+            tzinfo=timezone(-offset if sign == "-" else offset),
+        )
+    except ValueError:  # a day or an hour that does not exist
+        return None
+
+
 def _date(value: str) -> str | None:
     """An ISO timestamp in our own format, or None if it cannot be read."""
     try:
         moment = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
     except ValueError:
-        return None
+        moment = _js_date(value.strip())
+        if moment is None:
+            return None
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=UTC)
     return moment.astimezone(UTC).isoformat(timespec="seconds")

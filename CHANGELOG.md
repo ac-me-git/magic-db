@@ -6,6 +6,8 @@
   are gone. It records one copy per finish; for more copies use *Add cards*.
 - Fast input: quick clicks on both boxes of a card no longer leave the row showing a box
   that is out of date.
+- Import from TopDecked keeps the acquired date also for rows that write it as
+  `Sat May 03 2025 17:21:51 GMT+0200 (…)`; those cards used to get the day of the import.
 
 ## 1.2.0 — 2026-11-13
 
