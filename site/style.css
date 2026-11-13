@@ -10,7 +10,8 @@ a{color:var(--accent)}
 .mark{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:7px;background:var(--accent);color:var(--accent-fg);font-family:Georgia,serif}
 .top nav{display:flex;flex-wrap:wrap;gap:4px 18px;margin-left:auto}
 .top nav a{color:var(--fg);text-decoration:none;padding:4px 0;border-bottom:2px solid transparent}
-.top nav a.lang{padding-left:18px;border-left:1px solid var(--line)}
+.top nav a.lang{display:flex;align-items:center}
+.flag{display:block;width:30px;height:20px;border-radius:3px;box-shadow:0 0 0 1px var(--line)}
 .top nav a:hover,.top nav a[aria-current]{border-bottom-color:var(--accent)}
 main{padding-top:32px;padding-bottom:48px}
 h1{font-size:2rem;line-height:1.2;margin:.2em 0 .5em}
