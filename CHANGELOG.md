@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- New default colour theme: violet, in light and dark. The colour of the lock switch and
+  of the colour bars is unchanged.
+
 ## 1.1.0 — 2026-11-13
 
 - The program is now called **AMTG** — Another Magic Tracking Gizmo — in the header and
