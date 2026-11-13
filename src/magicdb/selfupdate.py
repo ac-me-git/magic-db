@@ -84,10 +84,15 @@ def is_newer(candidate: str, current: str = __version__) -> bool:
     return new is not None and old is not None and new > old
 
 
+def _on_windows() -> bool:
+    """By name, so that tests can pretend without changing ``os.name`` for everyone."""
+    return os.name == "nt"
+
+
 def install_kind() -> str:
     """How this copy was installed: 'exe', 'docker' or 'source'."""
     if getattr(sys, "frozen", False):
-        return "exe" if os.name == "nt" else "source"
+        return "exe" if _on_windows() else "source"
     return "docker" if Path("/.dockerenv").exists() else "source"
 
 

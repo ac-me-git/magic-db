@@ -105,7 +105,7 @@ def as_exe(monkeypatch, tmp_path):
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     monkeypatch.setattr(sys, "executable", str(program))
     monkeypatch.setattr(sys, "argv", [str(program)])
-    monkeypatch.setattr(selfupdate.os, "name", "nt")
+    monkeypatch.setattr(selfupdate, "_on_windows", lambda: True)
     return program
 
 
@@ -220,7 +220,7 @@ def test_settings():
 
 def test_install_kind(monkeypatch, as_exe):
     assert selfupdate.install_kind() == "exe"
-    monkeypatch.setattr(selfupdate.os, "name", "posix")
+    monkeypatch.setattr(selfupdate, "_on_windows", lambda: False)
     assert selfupdate.install_kind() == "source"
     monkeypatch.setattr(sys, "frozen", False)
     assert selfupdate.install_kind() in ("source", "docker")
