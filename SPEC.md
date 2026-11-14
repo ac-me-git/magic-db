@@ -554,6 +554,10 @@ number or by name with the column headings, and tick boxes.
   (`web.recent_expansions`), newest first and year by year. Each is its code and name
   and links to the search `set:<code>`. The list is left out when it is empty.
 
+The map and the list are drawn as a background to the page, not as a page to work on
+(the owner's wish): small, in the muted colour, with no boxes or lines; a line comes
+forward only when it is pointed at. They must not compete with the search box.
+
 Without a catalog the page has only the notice that it is not there yet.
 
 **Header.** On every page: the logo (the way to the home page and its filter panel),

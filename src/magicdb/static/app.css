@@ -279,38 +279,48 @@ main {
   margin: 0.25rem 0;
 }
 
-/* --- home: the map of the syntax and the recent sets --------------------------- */
+/* --- home: the map of the syntax and the recent sets ---------------------------
+   Drawn as a background to the page, not as a page to work on: small, faint, without
+   boxes or lines. What is pointed at comes forward. */
 
 .syntax-map,
 .recent-sets {
-  margin-top: 1.25rem;
+  margin-top: 2.25rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 
 .syntax-map h2,
-.recent-sets h2 {
-  margin: 0 0 0.25rem;
-  font-size: 1.2rem;
+.recent-sets h2,
+.map-group h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.syntax-map .hint,
+.recent-sets .hint {
+  margin: 0;
+}
+
+.syntax-map a,
+.recent-sets a {
+  color: inherit;
 }
 
 /* columns, not a grid: the groups have different heights and pack one under the other */
 .map-groups {
-  columns: 19rem;
-  column-gap: 0.75rem;
-  margin-top: 0.75rem;
+  columns: 15rem;
+  column-gap: 2.5rem;
+  margin: 1.1rem 0 0.4rem;
 }
 
 .map-group {
   break-inside: avoid;
-  margin: 0 0 0.75rem;
-  padding: 0.7rem 0.9rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-}
-
-.map-group h3 {
-  margin: 0 0 0.3rem;
-  font-size: 1rem;
+  margin: 0 0 1.1rem;
 }
 
 .map-group dl,
@@ -325,12 +335,7 @@ main {
   align-items: baseline;
   justify-content: space-between;
   gap: 0 0.75rem;
-  padding: 0.25rem 0;
-  border-top: 1px solid var(--row);
-}
-
-.map-group dt {
-  font-size: 0.95rem;
+  padding: 0.08rem 0;
 }
 
 .map-group dd {
@@ -338,30 +343,42 @@ main {
   text-align: right;
 }
 
-.map-group .example {
-  display: inline-block;
-  padding: 0.05rem 0.35rem;
-  background: var(--row);
-  border-radius: 0.25rem;
+.map-group .example,
+.set-chip {
   text-decoration: none;
 }
 
+/* two ways to write a filter are two searches, not one */
+.map-group .example + .example {
+  margin-left: 0.7em;
+}
+
+.map-group dl > div:hover,
+.recent-sets dl > div:hover dt {
+  color: var(--text);
+}
+
 .map-group .example:hover,
-.set-chip:hover {
+.map-group .example:focus-visible,
+.set-chip:hover,
+.set-chip:focus-visible {
+  color: var(--accent);
   text-decoration: underline;
+}
+
+.recent-sets dl {
+  margin-top: 0.9rem;
 }
 
 .recent-sets dl > div {
   display: flex;
   align-items: baseline;
-  gap: 0.75rem;
-  padding: 0.4rem 0;
-  border-top: 1px solid var(--border);
+  gap: 1rem;
+  padding: 0.08rem 0;
 }
 
 .recent-sets dt {
-  flex: 0 0 2.75rem;
-  color: var(--muted);
+  flex: 0 0 2.4rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -369,24 +386,27 @@ main {
 .recent-sets dd {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem 0.5rem;
+  gap: 0 1.25rem;
   margin: 0;
 }
 
-.set-chip {
-  padding: 0.15rem 0.55rem 0.15rem 0.25rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.4rem;
-  color: var(--text);
-  font-size: 0.9rem;
-  text-decoration: none;
-}
-
 .set-chip code {
-  color: var(--accent);
+  padding: 0;
+  background: none;
   font-weight: 600;
   text-transform: uppercase;
+}
+
+/* a finger needs more room than a pointer */
+@media (pointer: coarse) {
+  .map-group dl > div,
+  .recent-sets dl > div {
+    padding: 0.3rem 0;
+  }
+
+  .recent-sets dd {
+    gap: 0.45rem 1.25rem;
+  }
 }
 
 /* --- filter panel -------------------------------------------------------------- */
