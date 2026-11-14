@@ -65,6 +65,13 @@
     }
   });
 
+  // A field marked to be typed over (the name of a deck just made): ready to type.
+  var typeOver = document.querySelector("[data-select]");
+  if (typeOver) {
+    typeOver.focus();
+    typeOver.select();
+  }
+
   // After an update the program restarts: wait until it has gone away and come back.
   var waiting = document.querySelector("[data-wait-restart]");
   if (waiting && window.fetch) {

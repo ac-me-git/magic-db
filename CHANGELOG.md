@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The Decks page lists the decks one under the other, each with its colour identity in
+  mana symbols, the cards in the main deck and the sideboard, what is missing, the
+  estimated cost of the whole deck and of completing it, and the day it last changed.
+  A **New deck** button at the top right makes "Deck 1", "Deck 2"… and opens it with
+  the name selected; name, format and notes are edited at the top of the deck's page.
 - AMTG has a logo: a page of a card binder, four cards with one amber. It is the icon
   of the browser tab and of `magic-db.exe`, and the logo in the header (on a phone,
   the binder alone). The website shows AMTG.FANS.

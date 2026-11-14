@@ -1,16 +1,8 @@
 {% extends "base.html" %}
-{% from "_forms.html" import dial with context %}
 {% from "_charts.html" import chart with context %}
 {% block title %}{{ deck.name }} · {{ t("deck.tab.stats") }}{% endblock %}
 {% block content %}
-<p class="links"><a href="/decks">← {{ t("decks.title") }}</a></p>
-<div class="deck-head">
-  {{ dial(deck, "big") }}
-  <div>
-    <h1 class="page-title">{{ deck.name }} {% if deck.format %}<span class="tag">{{ deck.format }}</span>{% endif %}</h1>
-    {% if deck.notes %}<p class="hint">{{ deck.notes }}</p>{% endif %}
-  </div>
-</div>
+{% include "_deck_head.html" %}
 
 <nav class="tabs" aria-label="{{ deck.name }}">
   <a href="/decks/{{ deck.id }}">{{ t("deck.tab.list") }}</a>

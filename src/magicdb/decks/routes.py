@@ -6,12 +6,12 @@ from typing import Annotated
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
-from magicdb import db, web
+from magicdb import db, i18n, web
 from magicdb.collection.routes import as_id, currency, redirect
 from magicdb.collection.service import CollectionError
 from magicdb.decks import service
 from magicdb.decks.service import ImportReport
-from magicdb.templating import safe_next
+from magicdb.templating import resolve_language, safe_next
 
 router = APIRouter()
 Field = Annotated[str, Form()]
@@ -24,7 +24,7 @@ def decks_page(
         request,
         "decks.html",
         400 if error else 200,
-        decks=service.list_decks(conn),
+        decks=service.list_decks(conn, currency(request)),
         shortages=service.shortages(conn),
         error=error,
     )
@@ -39,6 +39,12 @@ def decks(request: Request, conn: web.Conn) -> HTMLResponse:
 def create_deck(
     request: Request, conn: web.Conn, name: Field = "", format: Field = "", notes: Field = ""
 ) -> Response:
+    """With no name (the New deck button) the deck is "Deck 1", "Deck 2"... in the
+    visitor's language, and its page opens with the name ready to change."""
+    if not name.strip():
+        t = i18n.translator(resolve_language(request, request.app.state.settings.lang))
+        deck_id = service.create_numbered(conn, t("decks.default_name"))
+        return redirect(f"/decks/{deck_id}?new=1")
     try:
         deck_id = service.create_deck(conn, name, format, notes)
     except CollectionError as error:
@@ -54,14 +60,15 @@ def deck_page(
     report: ImportReport | None = None,
     typed: str = "",
     added: str = "",
+    editing: str = "",
 ) -> HTMLResponse:
+    """``editing`` opens the name, format and notes: "new" for a deck just made (the
+    name is selected, ready to type over), "error" when saving them failed."""
     try:
-        summary = service.summary(conn, deck_id)
+        summary = service.summary(conn, deck_id, currency(request))
         rows = service.deck_rows(conn, deck_id, currency(request))
     except CollectionError:
         return web.render(request, "not_found.html", 404)
-    missing_cost = sum(row.missing * row.price for row in rows if row.missing and row.price)
-    unpriced = sum(row.missing for row in rows if row.missing and row.price is None)
     suggestions = web.autocomplete(conn, typed) if error and typed else []
     return web.render(
         request,
@@ -69,26 +76,27 @@ def deck_page(
         400 if error else 200,
         deck=summary,
         boards=[(board, [row for row in rows if row.board == board]) for board in service.BOARDS],
-        missing_cost=missing_cost,
-        unpriced=unpriced,
         has_catalog=db.has_catalog(conn),
         error=error,
         report=report,
         typed=typed,
         suggestions=suggestions,
         added=added,
+        editing=editing,
     )
 
 
 @router.get("/decks/{deck_id}", response_class=HTMLResponse)
-def deck(request: Request, conn: web.Conn, deck_id: str, added: str = "") -> HTMLResponse:
-    return deck_page(request, conn, as_id(deck_id), added=added[:200])
+def deck(
+    request: Request, conn: web.Conn, deck_id: str, added: str = "", new: str = ""
+) -> HTMLResponse:
+    return deck_page(request, conn, as_id(deck_id), added=added[:200], editing="new" if new else "")
 
 
 @router.get("/decks/{deck_id}/stats", response_class=HTMLResponse)
 def deck_statistics(request: Request, conn: web.Conn, deck_id: str) -> HTMLResponse:
     try:
-        summary = service.summary(conn, as_id(deck_id))
+        summary = service.summary(conn, as_id(deck_id), currency(request))
         rows = service.deck_rows(conn, as_id(deck_id), currency(request))
     except CollectionError:
         return web.render(request, "not_found.html", 404)
@@ -107,7 +115,7 @@ def update_deck(
     try:
         service.update_deck(conn, as_id(deck_id), name, format, notes)
     except CollectionError as error:
-        return deck_page(request, conn, as_id(deck_id), error)
+        return deck_page(request, conn, as_id(deck_id), error, editing="error")
     return redirect(f"/decks/{as_id(deck_id)}")
 
 

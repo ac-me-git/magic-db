@@ -1421,36 +1421,96 @@ textarea {
   background: var(--bg);
 }
 
-.deck-tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+/* a page title with its action on the right (New deck) */
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+/* the decks, one block under the other */
+.deck-rows {
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
   margin: 1rem 0;
   padding: 0;
   list-style: none;
 }
 
-.deck-tile {
+.deck-row {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  padding: 0.75rem 1rem;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
 }
 
-.deck-tile-text {
+.deck-row-text {
+  flex: 1;
   min-width: 0;
 }
 
-.deck-name {
-  font-size: 1.05rem;
-  font-weight: 700;
+.deck-row-title {
+  margin: 0;
 }
 
-.deck-tile .sub {
-  white-space: normal;
+.deck-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.identity {
+  white-space: nowrap;
+}
+
+.page-title .identity {
+  font-size: 0.8em;
+}
+
+.deck-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.5rem;
+  margin: 0.45rem 0 0;
+}
+
+.deck-facts dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.deck-facts dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.deck-facts .sub {
+  font-weight: 400;
+}
+
+.deck-notes {
+  margin: 0.4rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.deck-edit {
+  margin-bottom: 0.75rem;
+}
+
+.deck-edit .wide-field {
+  grid-column: 1 / -1;
+}
+
+.deck-edit textarea {
+  font: inherit;
+  font-size: 1rem;
 }
 
 .deck-head {

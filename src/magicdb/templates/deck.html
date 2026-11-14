@@ -1,15 +1,29 @@
 {% extends "base.html" %}
-{% from "_forms.html" import problem, dial with context %}
+{% from "_forms.html" import problem with context %}
 {% block title %}{{ deck.name }} · {{ t("decks.title") }}{% endblock %}
 {% block content %}
-<p class="links"><a href="/decks">← {{ t("decks.title") }}</a></p>
-<div class="deck-head">
-  {{ dial(deck, "big") }}
-  <div>
-    <h1 class="page-title">{{ deck.name }} {% if deck.format %}<span class="tag">{{ deck.format }}</span>{% endif %}</h1>
-    {% if deck.notes %}<p class="hint">{{ deck.notes }}</p>{% endif %}
-  </div>
-</div>
+{% include "_deck_head.html" %}
+
+{% if not locked %}
+<details class="panel fold deck-edit"{% if editing %} open{% endif %}>
+  <summary>{{ t("deck.details") }}</summary>
+  {% if editing == "new" %}<p class="hint">{{ t("deck.details_new") }}</p>{% endif %}
+  <form method="post" action="/decks/{{ deck.id }}">
+    <div class="fields">
+      <label>{{ t("locations.name") }}
+        <input type="text" name="name" value="{{ deck.name }}" maxlength="80" required{% if editing == "new" %} data-select{% endif %}>
+      </label>
+      <label>{{ t("decks.format") }}
+        <input type="text" name="format" value="{{ deck.format or '' }}" maxlength="40" placeholder="Commander">
+      </label>
+      <label class="wide-field">{{ t("entry.notes") }}
+        <textarea name="notes" rows="2" maxlength="500">{{ deck.notes or '' }}</textarea>
+      </label>
+    </div>
+    <div class="actions"><button type="submit" class="primary">{{ t("entry.save") }}</button></div>
+  </form>
+</details>
+{% endif %}
 
 <nav class="tabs" aria-label="{{ deck.name }}">
   <a href="/decks/{{ deck.id }}" aria-current="page">{{ t("deck.tab.list") }}</a>
@@ -46,11 +60,11 @@
 {% if deck.copies %}
 <dl class="tiles">
   <div><dt>{{ t("decks.cards") }}</dt><dd>{{ deck.copies | count }}</dd></div>
-
+  <div><dt>{{ t("decks.value") }}</dt><dd>{{ deck.value | money }}</dd></div>
   <div><dt>{{ t("decks.missing") }}</dt><dd>{{ deck.missing | count }}</dd></div>
-  <div><dt>{{ t("deck.missing_cost") }}</dt><dd>{{ missing_cost | money if deck.missing else "—" }}</dd></div>
+  <div><dt>{{ t("deck.missing_cost") }}</dt><dd>{{ (deck.missing_cost or 0) | money if deck.missing else "—" }}</dd></div>
 </dl>
-{% if unpriced %}<p class="hint">{{ t("deck.unpriced", n=unpriced | count) }}</p>{% endif %}
+{% if deck.unpriced %}<p class="hint">{{ t("deck.unpriced", n=deck.unpriced | count) }}</p>{% endif %}
 {% if deck.contested %}<p class="hint">{{ t("deck.contested_note", n=deck.contested | count) }}</p>{% endif %}
 <p class="links">
   <a href="{{ search_url('deck:"' ~ deck.name ~ '"') }}">{{ t("deck.view_cards") }}</a> ·
@@ -158,21 +172,7 @@
 </details>
 
 <details class="panel fold">
-  <summary>{{ t("deck.settings") }}</summary>
-  <form method="post" action="/decks/{{ deck.id }}">
-    <div class="fields">
-      <label>{{ t("locations.name") }}
-        <input type="text" name="name" value="{{ deck.name }}" maxlength="80" required>
-      </label>
-      <label>{{ t("decks.format") }}
-        <input type="text" name="format" value="{{ deck.format or '' }}" maxlength="40">
-      </label>
-      <label>{{ t("entry.notes") }}
-        <input type="text" name="notes" value="{{ deck.notes or '' }}" maxlength="500">
-      </label>
-    </div>
-    <div class="actions"><button type="submit" class="primary">{{ t("entry.save") }}</button></div>
-  </form>
+  <summary>{{ t("deck.delete") }}</summary>
   <form class="inline-form" method="post" action="/decks/{{ deck.id }}/delete">
     <button type="submit" class="danger">{{ t("deck.delete") }}</button>
     <span class="hint">{{ t("deck.delete_hint") }}</span>

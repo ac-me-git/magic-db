@@ -66,6 +66,7 @@ class Row:
     mana_cost: str | None = None
     cmc: float = 0
     colors: int | None = None  # bitmask, as in the catalog; None if the card is unknown
+    color_identity: int | None = None  # same bitmask
     price: float | None = None  # cheapest paper printing
 
     @property
@@ -89,14 +90,29 @@ class Summary:
     name: str
     format: str | None
     notes: str | None
+    updated_at: str = ""
     copies: int = 0
     cards: int = 0  # distinct cards
     have: int = 0
     contested: int = 0  # cards short only because other decks want them too
+    main: int = 0  # copies in the main deck
+    side: int = 0  # copies in the sideboard
+    identity: int | None = None  # colour identity of the main deck; None if not known
+    value: float | None = None  # every copy at its cheapest paper price; None if none priced
+    unpriced: int = 0  # copies without a price, left out of the value
+    missing_cost: float | None = None  # the missing copies only
+    missing_unpriced: int = 0
 
     @property
     def missing(self) -> int:
         return self.copies - self.have
+
+    @property
+    def colours(self) -> str:
+        """The colour identity as mana symbols, ``{W}{U}``; ``{C}`` when colourless."""
+        if self.identity is None:
+            return ""
+        return "".join(f"{{{c}}}" for c in "WUBRG" if self.identity & COLOR_BITS[c]) or "{C}"
 
     @property
     def percent(self) -> int:
@@ -205,7 +221,8 @@ def _catalog_facts(conn: sqlite3.Connection, ids: list[str], currency: str) -> d
     for chunk in _chunks(ids):
         marks = ", ".join("?" * len(chunk))
         for row in conn.execute(
-            f"SELECT p.oracle_id, p.id, p.type_line, p.mana_cost, p.cmc, p.colors, MAX(p.pref) "
+            f"SELECT p.oracle_id, p.id, p.type_line, p.mana_cost, p.cmc, p.colors, "
+            f"p.color_identity, MAX(p.pref) "
             f"FROM cat.printings p WHERE p.oracle_id IN ({marks}) GROUP BY p.oracle_id",
             chunk,
         ):
@@ -215,6 +232,7 @@ def _catalog_facts(conn: sqlite3.Connection, ids: list[str], currency: str) -> d
                 "mana_cost": row["mana_cost"],
                 "cmc": row["cmc"],
                 "colors": row["colors"],
+                "color_identity": row["color_identity"],
                 "price": None,
             }
         for row in conn.execute(
@@ -245,6 +263,17 @@ def create_deck(
         except sqlite3.IntegrityError:
             raise CollectionError("deck_exists", name=name) from None
     return cursor.lastrowid
+
+
+def create_numbered(conn: sqlite3.Connection, pattern: str) -> int:
+    """A new, empty deck named by ``pattern`` (``"Deck {n}"``) with the next number:
+    one more than the decks there are, or higher if that name is taken. The deck is
+    then named on its own page."""
+    names = {row[0].lower() for row in conn.execute("SELECT name FROM decks")}
+    number = len(names) + 1
+    while pattern.format(n=number).lower() in names:
+        number += 1
+    return create_deck(conn, pattern.format(n=number))
 
 
 def update_deck(
@@ -430,29 +459,76 @@ def _deck_names(conn: sqlite3.Connection) -> dict[int, str]:
     return dict(conn.execute("SELECT id, name FROM decks"))
 
 
-def list_decks(conn: sqlite3.Connection) -> list[Summary]:
-    """Every deck with its completion, by name."""
+def list_decks(
+    conn: sqlite3.Connection, currency: str = "eur", only: int | None = None
+) -> list[Summary]:
+    """Every deck (or only one) with its completion, colour identity and estimated
+    cost, by name. Completion looks at every deck, since a card several decks want is
+    contested."""
     demand = _demand(conn)
     owned = _owned(conn, list(demand))
     decks = {
-        row["id"]: Summary(row["id"], row["name"], row["format"], row["notes"])
+        row["id"]: Summary(row["id"], row["name"], row["format"], row["notes"], row["updated_at"])
         for row in conn.execute("SELECT * FROM decks ORDER BY name COLLATE NOCASE")
+        if only is None or row["id"] == only
     }
     for oracle_id, wanted_by in demand.items():
         have, wanted = owned.get(oracle_id, 0), sum(wanted_by.values())
         for deck_id, copies in wanted_by.items():
-            deck = decks[deck_id]
+            deck = decks.get(deck_id)
+            if deck is None:
+                continue
             deck.copies += copies
             deck.cards += 1
             deck.have += min(have, copies)
             if len(wanted_by) > 1 and have < wanted and have >= copies:
                 deck.contested += 1
+    _add_boards_and_prices(conn, decks, owned, currency)
     return list(decks.values())
 
 
-def summary(conn: sqlite3.Connection, deck_id: int) -> Summary:
+def _add_cost(deck: Summary, copies: int, missing: int, price: float | None) -> None:
+    """Count the copies of a card into the deck's value, and the missing ones into the
+    cost of completing it. Without a price they are counted as unpriced."""
+    if price is None:
+        deck.unpriced += copies
+        deck.missing_unpriced += missing
+        return
+    deck.value = (deck.value or 0) + copies * price
+    if missing:
+        deck.missing_cost = (deck.missing_cost or 0) + missing * price
+
+
+def _add_boards_and_prices(
+    conn: sqlite3.Connection, decks: dict[int, Summary], owned: dict[str, int], currency: str
+) -> None:
+    """Copies per board, the colour identity of the main deck and the prices."""
+    lines = [
+        row
+        for row in conn.execute("SELECT deck_id, oracle_id, board, quantity FROM deck_cards")
+        if row["deck_id"] in decks
+    ]
+    facts = _catalog_facts(conn, sorted({row["oracle_id"] for row in lines}), currency)
+    copies: dict[tuple[int, str], int] = {}
+    for row in lines:
+        deck = decks[row["deck_id"]]
+        if row["board"] == "main":
+            deck.main += row["quantity"]
+        else:
+            deck.side += row["quantity"]
+        key = (row["deck_id"], row["oracle_id"])
+        copies[key] = copies.get(key, 0) + row["quantity"]
+        card = facts.get(row["oracle_id"])
+        if row["board"] == "main" and card is not None:
+            deck.identity = (deck.identity or 0) | card["color_identity"]
+    for (deck_id, oracle_id), wanted in copies.items():
+        missing = wanted - min(owned.get(oracle_id, 0), wanted)
+        _add_cost(decks[deck_id], wanted, missing, facts.get(oracle_id, {}).get("price"))
+
+
+def summary(conn: sqlite3.Connection, deck_id: int, currency: str = "eur") -> Summary:
     get_deck(conn, deck_id)
-    return next(deck for deck in list_decks(conn) if deck.id == deck_id)
+    return list_decks(conn, currency, only=deck_id)[0]
 
 
 def deck_rows(conn: sqlite3.Connection, deck_id: int, currency: str = "eur") -> list[Row]:

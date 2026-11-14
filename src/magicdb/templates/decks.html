@@ -2,20 +2,39 @@
 {% from "_forms.html" import problem, dial with context %}
 {% block title %}{{ t("decks.title") }} · {{ t("app.name") }}{% endblock %}
 {% block content %}
-<h1 class="page-title">{{ t("decks.title") }}</h1>
+<div class="page-head">
+  <h1 class="page-title">{{ t("decks.title") }}</h1>
+  {% if not locked %}
+  <form method="post" action="/decks">
+    <button type="submit" class="primary">+ {{ t("decks.new") }}</button>
+  </form>
+  {% endif %}
+</div>
 <p class="hint">{{ t("decks.intro") }}</p>
 
 {{ problem(error) }}
 
 {% if decks %}
-<ul class="deck-tiles">
+<ul class="deck-rows">
   {% for deck in decks %}
-  <li class="deck-tile">
+  <li class="deck-row">
     {{ dial(deck) }}
-    <div class="deck-tile-text">
-      <a class="deck-name" href="/decks/{{ deck.id }}">{{ deck.name }}</a>
-      {% if deck.format %}<span class="tag">{{ deck.format }}</span>{% endif %}
-      <span class="sub">{{ t("decks.tile", cards=deck.copies | count, missing=deck.missing | count) }}{% if deck.contested %} · {{ t("decks.contested_n", n=deck.contested) }}{% endif %}</span>
+    <div class="deck-row-text">
+      <p class="deck-row-title">
+        <a class="deck-name" href="/decks/{{ deck.id }}">{{ deck.name }}</a>
+        {%- if deck.colours %} <span class="mana identity" title="{{ t('decks.identity') }}">{{ deck.colours | symbols }}</span>{% endif %}
+        {%- if deck.format %} <span class="tag">{{ deck.format }}</span>{% endif %}
+      </p>
+      <dl class="deck-facts">
+        <div><dt>{{ t("deck.board.main") }}</dt><dd>{{ deck.main | count }}</dd></div>
+        {% if deck.side %}<div><dt>{{ t("deck.board.side") }}</dt><dd>{{ deck.side | count }}</dd></div>{% endif %}
+        <div><dt>{{ t("decks.missing") }}</dt><dd>{{ deck.missing | count }}</dd></div>
+        {% if deck.contested %}<div><dt>{{ t("decks.contested") }}</dt><dd>{{ deck.contested | count }}</dd></div>{% endif %}
+        <div><dt>{{ t("decks.value") }}</dt><dd>{{ deck.value | money }}</dd></div>
+        {% if deck.missing %}<div><dt>{{ t("decks.to_complete") }}</dt><dd>{{ (deck.missing_cost or 0) | money }}</dd></div>{% endif %}
+        <div><dt>{{ t("decks.updated") }}</dt><dd>{{ deck.updated_at[:10] }}</dd></div>
+      </dl>
+      {% if deck.notes %}<p class="hint deck-notes">{{ deck.notes }}</p>{% endif %}
     </div>
   </li>
   {% endfor %}
@@ -54,23 +73,5 @@
 </section>
 {% endif %}
 
-{% if locked %}{% include "_locked_notice.html" %}{% else %}
-<form class="panel" method="post" action="/decks">
-  <h2>{{ t("decks.new") }}</h2>
-  <div class="fields">
-    <label>{{ t("locations.name") }}
-      <input type="text" name="name" maxlength="80" required placeholder="{{ t('decks.name_example') }}">
-    </label>
-    <label>{{ t("decks.format") }}
-      <input type="text" name="format" maxlength="40" placeholder="Commander">
-    </label>
-    <label>{{ t("entry.notes") }}
-      <input type="text" name="notes" maxlength="500">
-    </label>
-  </div>
-  <div class="actions">
-    <button type="submit" class="primary">{{ t("locations.create") }}</button>
-  </div>
-</form>
-{% endif %}
+{% if locked %}{% include "_locked_notice.html" %}{% endif %}
 {% endblock %}

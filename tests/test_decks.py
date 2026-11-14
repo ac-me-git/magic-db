@@ -147,6 +147,22 @@ def test_create_rename_delete(conn):
     assert conn.execute("SELECT COUNT(*) FROM deck_cards").fetchone()[0] == 0
 
 
+def test_new_decks_are_numbered(conn):
+    """The New deck button: the next number, never a name already taken."""
+    assert service.get_deck(conn, service.create_numbered(conn, "Deck {n}"))["name"] == "Deck 1"
+    service.create_deck(conn, "Burn")
+    third = service.create_numbered(conn, "Deck {n}")
+    assert service.get_deck(conn, third)["name"] == "Deck 3"  # the third deck
+    service.delete_deck(conn, 1)  # left: Burn, Deck 3 -> Deck 3 is taken
+    assert service.get_deck(conn, service.create_numbered(conn, "Deck {n}"))["name"] == "Deck 4"
+    service.create_deck(conn, "mazzo 5")
+    italian = service.create_numbered(conn, "Mazzo {n}")
+    assert service.get_deck(conn, italian)["name"] == "Mazzo 6"  # case does not matter
+    deck = service.get_deck(conn, italian)
+    assert (deck["format"], deck["notes"]) == (None, None)
+    assert service.deck_rows(conn, italian) == []
+
+
 @pytest.mark.parametrize(
     ("name", "expected"),
     [
@@ -468,6 +484,53 @@ def test_decks_with_card(decks):
     assert service.decks_with_card(conn, "nothing") == []
 
 
+def test_summary_has_colour_identity_boards_and_costs(decks):
+    conn, burn, control = decks
+    summaries = {deck.name: deck for deck in service.list_decks(conn)}
+    burn_summary, control_summary = summaries["Burn"], summaries["Control"]
+    # Bolt is red, Serra Angel white, Sol Ring colourless; always in WUBRG order
+    assert (burn_summary.identity, burn_summary.colours) == (1 | 8, "{W}{R}")
+    assert control_summary.colours == "{U}{R}"  # Fire // Ice
+    assert (burn_summary.main, burn_summary.side) == (9, 0)
+    assert (control_summary.main, control_summary.side) == (7, 1)
+    assert burn_summary.updated_at.startswith("20")
+
+    # the same prices as the rows: the cheapest paper printing of each card
+    for deck_id in (burn, control):
+        rows = service.deck_rows(conn, deck_id)
+        deck = summaries["Burn" if deck_id == burn else "Control"]
+        assert all(row.price is not None for row in rows)
+        assert deck.value == pytest.approx(sum(row.quantity * row.price for row in rows))
+        assert deck.unpriced == deck.missing_unpriced == 0
+    angel = by_name(service.deck_rows(conn, burn))[("Serra Angel", "main")]
+    assert burn_summary.missing_cost == pytest.approx(3 * angel.price)  # 3 Angels missing
+    fire = by_name(service.deck_rows(conn, control))[("Fire // Ice", "main")]
+    assert control_summary.missing_cost == pytest.approx(2 * fire.price)
+    assert service.summary(conn, burn) == burn_summary
+    in_dollars = service.summary(conn, burn, "usd")
+    assert in_dollars.value != burn_summary.value and in_dollars.colours == "{W}{R}"
+
+
+def test_colourless_deck_and_empty_deck_have_no_cost(conn):
+    artifacts = service.create_deck(conn, "Artifacts")
+    service.add_card(conn, artifacts, name="Sol Ring", quantity=2)
+    empty = service.create_deck(conn, "Empty")
+    service.add_card(conn, empty, name="Lightning Bolt", board="side")
+    summaries = {deck.name: deck for deck in service.list_decks(conn)}
+    assert summaries["Artifacts"].colours == "{C}"
+    assert summaries["Artifacts"].missing_cost == summaries["Artifacts"].value
+    # only a sideboard: no colour identity to speak of, but its cost still counts
+    assert (summaries["Empty"].identity, summaries["Empty"].colours) == (None, "")
+    assert summaries["Empty"].value is not None and summaries["Empty"].side == 1
+    nothing = service.summary(conn, service.create_deck(conn, "Nothing"))
+    assert (nothing.colours, nothing.value, nothing.missing_cost, nothing.unpriced) == (
+        "",
+        None,
+        None,
+        0,
+    )
+
+
 def test_reading_decks_without_a_catalog(settings):
     db.migrate(settings)
     with closing(db.connect(settings)) as conn:
@@ -484,7 +547,9 @@ def test_reading_decks_without_a_catalog(settings):
             None,
             "Other",
         )
-        assert service.list_decks(conn)[0].percent == 0
+        (summary,) = service.list_decks(conn)
+        assert summary.percent == 0 and summary.colours == ""
+        assert (summary.value, summary.unpriced, summary.missing_unpriced) == (None, 4, 4)
         with pytest.raises(CollectionError) as excinfo:
             service.import_text(conn, deck, "1 Sol Ring")
         assert code(excinfo) == "no_catalog"
@@ -572,9 +637,55 @@ def test_decks_page_when_empty(client):
     assert 'href="/decks"' in client.get("/").text  # in the header of every page
 
 
+def test_new_deck_button(client):
+    page = client.get("/decks").text
+    # a button next to the title, not a form to fill in
+    head = page.split('<div class="page-head">')[1].split("</div>")[0]
+    assert 'action="/decks"' in head and "+ New deck</button>" in head and "<h1" in head
+    assert 'name="name"' not in page
+
+    made = client.post("/decks")
+    assert (made.status_code, made.headers["location"]) == (303, "/decks/1?new=1")
+    new = client.get(made.headers["location"]).text
+    assert "<title>Deck 1" in new
+    # the name, format and notes are open, the name ready to type over
+    assert '<details class="panel fold deck-edit" open>' in new
+    assert 'value="Deck 1" maxlength="80" required data-select>' in new
+    assert "A new deck: give it a name" in new
+    assert client.post("/decks", data={"name": " "}).headers["location"] == "/decks/2?new=1"
+
+    saved = client.post(
+        "/decks/1", data={"name": "Dragons", "format": "Commander", "notes": "Big flyers"}
+    )
+    assert saved.headers["location"] == "/decks/1"
+    page = client.get("/decks/1").text
+    assert "<title>Dragons" in page and ">Commander</span>" in page
+    assert '<p class="hint deck-notes">Big flyers</p>' in page
+    assert ">Big flyers</textarea>" in page
+    assert '<details class="panel fold deck-edit">' in page and "data-select" not in page
+
+    clash = client.post("/decks/2", data={"name": "dragons"})
+    assert clash.status_code == 400 and '<details class="panel fold deck-edit" open>' in clash.text
+
+    client.get("/lang/it")
+    assert client.post("/decks").headers["location"] == "/decks/3?new=1"
+    assert "<title>Mazzo 3" in client.get("/decks/3").text
+    assert "+ Nuovo mazzo</button>" in client.get("/decks").text
+
+
 def test_decks_page_lists_completion_and_shortages(site):
     page = site.get("/decks").text
     assert '<a class="deck-name" href="/decks/1">Burn</a>' in page and ">Modern</span>" in page
+    assert '<ul class="deck-rows">' in page  # one block under the other
+    burn, control = page.split('<li class="deck-row">')[1:3]
+    assert 'alt="{W}"' in burn and 'alt="{R}"' in burn and 'alt="{U}"' not in burn
+    assert 'alt="{U}"' in control and 'alt="{R}"' in control
+    for fact in ("<dt>Main deck</dt><dd>9</dd>", "<dt>Missing</dt><dd>3", "Estimated cost"):
+        assert fact in burn, fact
+    assert "To complete it" in burn and "<dt>Contested</dt><dd>1</dd>" in burn
+    assert "Sideboard" not in burn
+    assert "<dt>Sideboard</dt><dd>1</dd>" in control
+    assert re.search(r"<dt>Changed</dt><dd>\d{4}-\d\d-\d\d</dd>", burn)
     assert (
         'style="--p: 66"' in page and 'style="--p: 75"' in page and "66%" in page and "75%" in page
     )
@@ -606,9 +717,12 @@ def test_deck_page(site):
         ">Instant</th>",
         ">Creature</th>",
         'alt="{R}"',
+        "<dt>Estimated cost</dt>",
+        '<span class="mana identity" title="Colour identity">',
     ]:
         assert expected in body, expected
     assert "Sideboard (" not in body  # Burn has none
+    assert 'class="mana identity"' in site.get("/decks/1/stats").text
     assert "Sideboard (1)" in site.get("/decks/2").text
     assert 'class="is-missing"' in body and 'class="is-contested"' in body
 
@@ -671,7 +785,7 @@ def test_import_a_list_through_the_page(site):
     assert "Line 2: <code>1 Lightnig Bolt</code>" in page.text and "Lightning Bolt" in page.text
     # the lines to correct are back in the box, and the box is open
     assert '<details class="panel fold" open>' in page.text
-    box = page.text.split("<textarea")[1].split("</textarea>")[0]
+    box = page.text.split('<textarea name="text"')[1].split("</textarea>")[0]
     assert "1 Lightnig Bolt\nNot a card" in box and "Fire" not in box
     assert "Fire // Ice" in site.get("/decks/1").text
 

@@ -991,12 +991,21 @@ Rules:
   together** ask for. A row is *missing* when there are not enough copies for this deck;
   *contested* when there are enough for this deck alone but not for all of them;
   otherwise it is fine. "Missing" wins over "contested".
-- `/decks` shows each deck as a tile with a round gauge of its completion, and one list
-  of the cards that several decks want and the collection cannot give to all, with the
-  copies owned, the copies wanted and which decks want how many. `/decks/{id}` lists
-  the deck by board and card type with the state of every row, the estimated cost of
-  what is missing (cheapest paper printing of each card), a download as text and a link
-  to see the cards as images (`deck:"name"`). A card's page lists the decks it is in.
+- `/decks` shows the decks one under the other. Each has a round gauge of its
+  completion, its colour identity (of the main deck, as mana symbols; `{C}` when
+  colourless), its format, the copies in the main deck and in the sideboard, the cards
+  missing and contested, the **estimated cost** (every copy at the price of its
+  cheapest paper printing), the cost of completing it, the day of its last change and
+  its notes. Below them, one list of the cards that several decks want and the
+  collection cannot give to all, with the copies owned, the copies wanted and which
+  decks want how many. `/decks/{id}` lists the deck by board and card type with the
+  state of every row, the estimated cost of the deck and of what is missing, a download
+  as text and a link to see the cards as images (`deck:"name"`). A card's page lists
+  the decks it is in.
+- A **New deck** button, at the top right of `/decks`, makes an empty deck named
+  "Deck *n*" in the interface language — *n* is one more than the decks there are, or
+  higher if that name is taken — and opens it with its name selected. Name, format
+  and notes are edited at the top of the deck's page; deleting it is at the bottom.
 - `/decks/{id}/stats`, the second tab of a deck, describes the **main deck** (the
   sideboard is counted but not analysed): cards, lands, other cards, average mana
   value, and four bar charts — by card type (a card counts under each of its types),
