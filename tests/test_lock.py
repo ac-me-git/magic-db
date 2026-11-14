@@ -61,10 +61,10 @@ def test_a_new_collection_is_unlocked(client, catalog):
 
 
 def test_locking_and_unlocking(client, catalog):
-    response = set_lock(client, "on", "/collection?sort=name")
-    assert (response.status_code, response.headers["location"]) == (303, "/collection?sort=name")
+    response = set_lock(client, "on", "/stats?location=none")
+    assert (response.status_code, response.headers["location"]) == (303, "/stats?location=none")
     assert lock.load(catalog) is True
-    page = client.get("/collection?sort=name").text
+    page = client.get("/stats?location=none").text
     assert 'class="menu-row lock-switch is-locked"' in page
     # the lock is in the menu, so the button that opens it says it is on
     name = "Menu · Collection locked: read only"
@@ -73,9 +73,9 @@ def test_locking_and_unlocking(client, catalog):
     assert '<span class="menu-lock"><svg' in button
     assert 'name="state" value="off"' in page
     assert 'title="Collection locked: read only"' in page
-    assert 'name="next" value="/collection?sort=name"' in page  # comes back to this page
+    assert 'name="next" value="/stats?location=none"' in page  # comes back to this page
 
-    assert set_lock(client, "off").headers["location"] == "/collection"
+    assert set_lock(client, "off").headers["location"] == "/"
     assert lock.load(catalog) is False
     assert "is-unlocked" in client.get("/").text
 
@@ -97,7 +97,7 @@ def test_a_meaningless_state_changes_nothing(client, catalog, state):
 
 
 def test_switch_redirect_stays_on_this_site(client):
-    assert set_lock(client, "on", "https://evil.example/").headers["location"] == "/collection"
+    assert set_lock(client, "on", "https://evil.example/").headers["location"] == "/"
 
 
 def test_the_bar_is_on_every_page(stocked, bolt):
@@ -105,7 +105,6 @@ def test_the_bar_is_on_every_page(stocked, bolt):
         "/",
         "/search?q=bolt",
         f"/card/{bolt}",
-        "/collection",
         "/locations",
         "/import",
         "/export",
@@ -186,8 +185,6 @@ def test_reading_works_while_locked(stocked, bolt):
         "/search?q=bolt",
         "/search?q=have:yes",
         f"/card/{bolt}",
-        "/collection",
-        "/collection?q=bolt&sort=value",
         "/locations",
         "/stats",
         "/export",
@@ -206,7 +203,7 @@ def test_reading_works_while_locked(stocked, bolt):
 def test_changing_the_language_works_while_locked(stocked):
     set_lock(stocked, "on")
     assert stocked.get("/lang/it").status_code == 303
-    assert "Collezione bloccata: sola lettura" in stocked.get("/collection").text
+    assert "Collezione bloccata: sola lettura" in stocked.get("/stats").text
 
 
 def test_backups_and_catalog_updates_work_while_locked(stocked, catalog, monkeypatch):
@@ -227,7 +224,6 @@ def test_backups_and_catalog_updates_work_while_locked(stocked, catalog, monkeyp
 
 def test_pages_hide_their_forms_while_locked(stocked, bolt):
     open_pages = {
-        "/collection": "/collection/1/edit",
         f"/card/{bolt}": 'name="printing"',
         "/locations": 'action="/locations"',
         "/import": 'enctype="multipart/form-data"',
@@ -252,11 +248,11 @@ def test_pages_hide_their_forms_while_locked(stocked, bolt):
 
 def test_unlocking_from_a_notice_comes_back_to_that_page(stocked):
     set_lock(stocked, "on")
-    page = stocked.get("/collection/1/edit?next=%2Fcollection").text
+    page = stocked.get("/collection/1/edit?next=%2Fstats").text
     notice = page.split('class="notice locked-notice"')[1].split("</form>")[0]
-    assert 'name="next" value="/collection/1/edit?next=%2Fcollection"' in notice
-    back = set_lock(stocked, "off", "/collection/1/edit?next=%2Fcollection").headers["location"]
-    assert back == "/collection/1/edit?next=%2Fcollection"
+    assert 'name="next" value="/collection/1/edit?next=%2Fstats"' in notice
+    back = set_lock(stocked, "off", "/collection/1/edit?next=%2Fstats").headers["location"]
+    assert back == "/collection/1/edit?next=%2Fstats"
     assert 'action="/collection/1"' in stocked.get(back).text  # the form is there again
 
 

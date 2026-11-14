@@ -504,62 +504,26 @@ def stocked(conn, places):
     return conn
 
 
-def names(rows):
-    return [(row["name"], row["set_code"]) for row in rows]
-
-
-def test_list_entries_filters(stocked, places):
-    rows, total = service.list_entries(stocked)
-    assert len(rows) == 4 and (total["entries"], total["copies"]) == (4, 10)
-    rows, total = service.list_entries(stocked, location=places["Binder 1"])
-    assert sorted(names(rows)) == [("Lightning Bolt", "m10"), ("Serra Angel", "dom")]
-    assert (total["entries"], total["copies"]) == (2, 7)
-    rows, total = service.list_entries(stocked, location=service.UNASSIGNED)
-    assert names(rows) == [("Sol Ring", "c21")] and total["copies"] == 2
-    rows, total = service.list_entries(stocked, text="bolt")
-    assert len(rows) == 2 and total["copies"] == 4
-    assert service.list_entries(stocked, text="%")[0] == []
-    rows, total = service.list_entries(stocked, location=places["Dragons"])
-    assert rows == [] and (total["entries"], total["copies"], total["value"]) == (0, 0, None)
-
-
-def test_list_entries_sorting_and_paging(stocked):
-    def order(sort):
-        return names(service.list_entries(stocked, sort=sort)[0])
-
-    assert order("added")[0] == ("Sol Ring", "c21")  # newest first
-    assert order("name") == sorted(order("name"))
-    assert [n for n, _ in order("quantity")][:2] == ["Serra Angel", "Lightning Bolt"]
-    assert order("set") == sorted(order("set"), key=lambda pair: pair[1])
-    assert order("location")[-1] == ("Sol Ring", "c21")  # unassigned last
-    assert order("nonsense") == order("added")
-    values = [row["value"] for row in service.list_entries(stocked, sort="value")[0]]
-    priced = [v for v in values if v is not None]
-    assert priced == sorted(priced, reverse=True) and values[: len(priced)] == priced
-
-    first, _ = service.list_entries(stocked, sort="name", per_page=3)
-    second, total = service.list_entries(stocked, sort="name", page=2, per_page=3)
-    assert len(first) == 3 and len(second) == 1 and total["entries"] == 4
-
-
 def test_values_follow_the_finish(stocked, fixture_cards):
     def price(name, set_code, key):
         card = next(c for c in fixture_cards if c["name"] == name and c["set"] == set_code)
         value = card["prices"].get(key)
         return float(value) if value else None
 
-    by_name = {(r["name"], r["set_code"]): r for r in service.list_entries(stocked)[0]}
-    bolt = by_name[("Lightning Bolt", "m10")]
-    assert bolt["price"] == price("Lightning Bolt", "m10", "eur")
-    assert bolt["value"] == pytest.approx(3 * bolt["price"])
-    angel = by_name[("Serra Angel", "dom")]  # foil copies use the foil price
-    assert angel["price"] == price("Serra Angel", "dom", "eur_foil") or price(
-        "Serra Angel", "dom", "eur"
+    def value(name, set_code, currency="eur"):
+        entry = stocked.execute(
+            "SELECT id FROM entries WHERE name = ? AND set_code = ?", (name, set_code)
+        ).fetchone()["id"]
+        return service.totals(stocked, currency, "e.id = ?", (entry,))["value"]
+
+    assert value("Lightning Bolt", "m10") == pytest.approx(
+        3 * price("Lightning Bolt", "m10", "eur")
     )
-    dollars = {
-        (r["name"], r["set_code"]): r for r in service.list_entries(stocked, currency="usd")[0]
-    }
-    assert dollars[("Lightning Bolt", "m10")]["price"] == price("Lightning Bolt", "m10", "usd")
+    # foil copies use the foil price, or the plain one when there is none
+    each = price("Serra Angel", "dom", "eur_foil") or price("Serra Angel", "dom", "eur")
+    assert value("Serra Angel", "dom") == (pytest.approx(4 * each) if each else None)
+    dollars = price("Lightning Bolt", "m10", "usd")
+    assert value("Lightning Bolt", "m10", "usd") == pytest.approx(3 * dollars)
 
 
 def test_list_locations_counts(stocked):
@@ -606,9 +570,9 @@ def test_reads_work_without_a_catalog(settings):
             " VALUES ('p', 'o', 'Lightning Bolt', 'm10', '146', 2, ?, 'now', 'now')",
             (box,),
         )
-        rows, total = service.list_entries(conn)
-        assert rows[0]["name"] == "Lightning Bolt" and rows[0]["value"] is None
-        assert (total["copies"], total["value"]) == (2, None)
+        total = service.totals(conn)
+        assert (total["entries"], total["copies"], total["value"]) == (1, 2, None)
         assert service.list_locations(conn)[0]["copies"] == 2
-        service.move_entry(conn, rows[0]["id"], 1, None)  # moving needs no catalog either
-        assert service.list_entries(conn)[1]["entries"] == 2
+        entry = conn.execute("SELECT id FROM entries").fetchone()["id"]
+        service.move_entry(conn, entry, 1, None)  # moving needs no catalog either
+        assert service.totals(conn)["entries"] == 2

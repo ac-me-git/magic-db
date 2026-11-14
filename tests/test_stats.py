@@ -386,7 +386,7 @@ def test_stats_page(client):
     assert 'style="width: 100.0%"' in text  # the longest bar of a chart is full width
     assert "set%3Am10+haveprint%3Ano+unique%3Aprints+order%3Aset" in text  # the missing link
     assert "Jace, the Mind Sculptor" in text
-    assert 'href="/stats"' in client.get("/collection").text
+    assert 'href="/stats"' in client.get("/locations").text  # the menu, on every page
 
 
 def test_stats_page_for_one_location(client):

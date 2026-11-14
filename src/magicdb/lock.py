@@ -61,4 +61,4 @@ def switch(
     if state in ("on", "off"):
         save(conn, state == "on")
         request.app.state.locked = state == "on"
-    return RedirectResponse(safe_next(next, "/collection"), status_code=303)
+    return RedirectResponse(safe_next(next, "/"), status_code=303)

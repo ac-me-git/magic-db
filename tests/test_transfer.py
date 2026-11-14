@@ -749,7 +749,7 @@ def test_import_and_export_pages(client):
     assert 'enctype="multipart/form-data"' in client.get("/import").text
     page = client.get("/export").text
     assert 'href="/export/csv"' in page and 'href="/export/json"' in page
-    collection = client.get("/collection").text
+    collection = client.get("/stats").text
     assert 'href="/import"' in collection and 'href="/export"' in collection
 
 

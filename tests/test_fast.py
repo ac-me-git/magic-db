@@ -2,7 +2,6 @@
 
 import re
 from contextlib import closing
-from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from fastapi.testclient import TestClient
@@ -126,26 +125,10 @@ def test_sorting_and_paging_stay_in_the_view(client, both):
     assert len(sort_links) == 2 and all("view=input" in link for link in sort_links)
 
 
-def test_fast_opens_the_newest_set(client, catalog):
-    answer = client.get("/fast")
-    assert answer.status_code == 303
-    target = urlsplit(answer.headers["location"])
-    query = parse_qs(target.query)
-    assert target.path == "/search" and query["view"] == ["input"]
-    code = re.fullmatch(r"set:(\w+) order:set", query["q"][0]).group(1)
-    with closing(db.connect(catalog)) as conn:
-        newest = conn.execute(
-            "SELECT code FROM cat.sets WHERE catalog_count > 0 AND is_digital = 0 "
-            "AND set_type IN ('expansion','core','masters','draft_innovation','commander') "
-            "AND released_at <= date('now') ORDER BY released_at DESC, code LIMIT 1"
-        ).fetchone()[0]
-    assert code == newest
-    assert client.get(answer.headers["location"]).status_code == 200
-
-
-def test_fast_is_linked_from_the_collection_and_administration(client):
-    assert 'href="/fast"' in client.get("/stats").text
-    assert 'href="/fast"' in client.get("/admin").text
+def test_fast_input_is_only_a_view_of_the_search_results(client):
+    assert client.get("/fast").status_code == 404
+    for path in ("/stats", "/admin", "/"):
+        assert 'href="/fast' not in client.get(path).text, path
 
 
 # --- ticking --------------------------------------------------------------------------
@@ -231,7 +214,7 @@ def test_without_javascript_the_page_is_reloaded(client, catalog, both):
     assert answer.status_code == 303 and answer.headers["location"] == here
     assert len(entries(catalog)) == 1
     elsewhere = client.post("/fast/toggle", data={**data, "next": "https://evil.example/"})
-    assert elsewhere.headers["location"] == "/fast"
+    assert elsewhere.headers["location"] == "/"
 
 
 def test_the_row_keeps_the_way_back(client, both):
@@ -271,9 +254,9 @@ def test_settings_ignore_nonsense_and_share_quick_adds_memory(client, catalog, b
     client.get("/fast/settings", params={"condition": "??", "language": "xx", "location": "x"})
     toggle(client, both, "foil")
     assert entries(catalog)[-1] == (both["id"], 1, "foil", "GD", "de", None)
-    assert client.get("/fast/settings").headers["location"] == "/fast"
+    assert client.get("/fast/settings").headers["location"] == "/"
     bad = client.get("/fast/settings", params={"next": "//evil.example"})
-    assert bad.headers["location"] == "/fast"
+    assert bad.headers["location"] == "/"
 
 
 def test_a_location_that_was_deleted_becomes_no_location(client, catalog, both):

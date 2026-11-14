@@ -12,7 +12,7 @@
   {% for place in locations %}
   <li class="location" id="l{{ place.id }}">
     <div class="location-head">
-      <a href="/collection?location={{ place.id }}"><strong>{{ place.name }}</strong></a>
+      <a href="{{ location_search(place.name) }}"><strong>{{ place.name }}</strong></a>
       <span class="tag">{{ t("kind." ~ place.kind) }}</span>
       <span class="sub">{{ t("locations.holds", copies=place.copies | count, value=place.value | money) }}</span>
       {% if place.notes %}<span class="sub">{{ place.notes }}</span>{% endif %}
@@ -74,7 +74,7 @@
   {% if unassigned.entries %}
   <li class="location">
     <div class="location-head">
-      <a href="/collection?location=none"><strong>{{ t("entry.unassigned") }}</strong></a>
+      <strong>{{ t("entry.unassigned") }}</strong>
       <span class="sub">{{ t("locations.holds", copies=unassigned.copies | count, value=unassigned.value | money) }}</span>
     </div>
   </li>

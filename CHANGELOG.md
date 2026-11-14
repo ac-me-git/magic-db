@@ -13,14 +13,19 @@
   has the number). To have the filter panel there instead, choose *Filters* under *Home
   page* in Administration.
 - The header is now just the logo, the search box — as wide as the page allows — and a
-  menu (☰). The menu has *Search only my collection*, the safety lock, My stats, My
-  decks, the language, light, dark or automatic pages (*Auto* follows your device, as
-  before) and Administration. While the collection is locked, the ☰ shows a padlock.
-  The statistics page is now called *My stats*, like its link.
+  menu (☰). The menu has *Search only my collection*, the safety lock, My collection,
+  My decks, the language, light, dark or automatic pages (*Auto* follows your device, as
+  before), Search syntax and Administration. While the collection is locked, the ☰
+  shows a padlock.
+- The card list of the collection is gone: search your collection instead
+  (`haveprint:yes`, `loc:`, `qty`…, or the switch in the menu). Copies are still edited
+  from each card's page. *My collection* opens the statistics, with links to locations,
+  import and export; a location's name on the locations page searches what it holds.
+  Fast input is reached from the search results only (the *Fast input* view).
   The browser tab now has an icon, one for light and one for dark.
 - The footer keeps only the Fan Content notice — with links to Wizards of the Coast and
   to Scryfall, credited on the copyright line — and *Buy me a coffee* at the very
-  bottom. The link to the syntax page is in Administration.
+  bottom.
 - Docker: a development image, `ghcr.io/ac-me-git/magic-db:edge`, is rebuilt at every
   change to the program, to try what is not released yet. `latest` is still the last
   release. The Administration page says when the development version is the one running,

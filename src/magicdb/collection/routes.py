@@ -6,7 +6,6 @@ a POST followed by a redirect, so reloading a page never repeats it.
 
 import sqlite3
 from typing import Annotated
-from urllib.parse import urlencode
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -15,7 +14,7 @@ from markupsafe import escape
 from magicdb import db, stats, web
 from magicdb.collection import forms, service
 from magicdb.collection.service import CollectionError
-from magicdb.templating import safe_next, search_url
+from magicdb.templating import safe_next
 
 router = APIRouter()
 Field = Annotated[str, Form()]
@@ -79,24 +78,6 @@ def add(
 # --- fast input -----------------------------------------------------------------------
 
 FAST_FINISHES = ("nonfoil", "foil")
-_MAIN_SETS = ("expansion", "core", "masters", "draft_innovation", "commander")
-
-
-@router.get("/fast")
-def fast_start(conn: web.Conn) -> Response:
-    """Open fast input on the newest set that is out, in collector-number order."""
-    code = None
-    if db.has_catalog(conn):
-        marks = ", ".join("?" * len(_MAIN_SETS))
-        row = conn.execute(
-            f"SELECT code FROM cat.sets WHERE catalog_count > 0 AND is_digital = 0 "
-            f"AND set_type IN ({marks}) AND released_at <= date('now') "
-            f"ORDER BY released_at DESC, code LIMIT 1",
-            _MAIN_SETS,
-        ).fetchone()
-        code = row["code"] if row else None
-    query = f"set:{code} order:set" if code else ""
-    return redirect(search_url(query, 1, "input"))
 
 
 @router.get("/fast/settings")
@@ -106,7 +87,7 @@ def fast_settings(
     """Remember what fast input gives to new copies (the same memory the card page's add
     form uses)."""
     sticky = forms.read_sticky(request)
-    response = redirect(safe_next(next, "/fast"))
+    response = redirect(safe_next(next, "/"))
     forms.write_sticky(
         response,
         finish=sticky["finish"],
@@ -144,7 +125,7 @@ def fast_toggle(
     else:
         service.take_one(conn, printing, finish=finish, **key)
     if request.headers.get("HX-Request") != "true":
-        return redirect(safe_next(next, "/fast"))
+        return redirect(safe_next(next, "/"))
     return web.render(
         request,
         "_fast_toggled.html",
@@ -155,52 +136,7 @@ def fast_toggle(
     )
 
 
-# --- the collection -------------------------------------------------------------------
-
-
-@router.get("/collection", response_class=HTMLResponse)
-def collection_page(
-    request: Request,
-    conn: web.Conn,
-    q: str = "",
-    location: str = "",
-    sort: str = "added",
-    page: str = "1",
-) -> HTMLResponse:
-    page_number = int(page) if page.isascii() and page.isdigit() and len(page) < 7 else 1
-    page_number = max(1, page_number)
-    sort = sort if sort in service.SORTS else "added"
-    try:
-        place = forms.location_id(location)
-        where = service.UNASSIGNED if location == service.UNASSIGNED else place or service.ALL
-    except CollectionError:
-        location, where = "", service.ALL
-    rows, totals = service.list_entries(
-        conn, location=where, text=q, sort=sort, page=page_number, currency=currency(request)
-    )
-
-    def url(number: int) -> str:
-        params = {"q": q, "location": location, "sort": sort, "page": number}
-        return "/collection?" + urlencode({k: v for k, v in params.items() if v not in ("", 1)})
-
-    return web.render(
-        request,
-        "collection.html",
-        rows=rows,
-        totals=totals,
-        everything=service.totals(conn, currency(request)),
-        q=q,
-        location=location,
-        sort=sort,
-        page=page_number,
-        pages=max(1, -(-totals["entries"] // service.PER_PAGE)),
-        page_url=url,
-        sort_url=lambda key: (
-            "/collection?"
-            + urlencode({k: v for k, v in {"q": q, "location": location, "sort": key}.items() if v})
-        ),
-        options=forms.options(conn),
-    )
+# --- copies: edit, move, remove (from the card page) ------------------------------------
 
 
 def entry_page(
@@ -210,14 +146,13 @@ def entry_page(
     next: str,
     error: CollectionError | None = None,
 ) -> Response:
-    target = safe_next(next, "/collection")
+    target = safe_next(next, "/stats")
     entry = service.get_entry(conn, entry_id)
     if entry is None:
         return redirect(target) if error else web.render(request, "not_found.html", 404)
-    partial = request.headers.get("HX-Request") == "true" and error is None
     return web.render(
         request,
-        "_entry_edit.html" if partial else "entry.html",
+        "entry.html",
         400 if error else 200,
         entry=entry,
         next=target,
@@ -259,7 +194,7 @@ def save_entry(
         )
     except CollectionError as error:
         return entry_page(request, conn, as_id(entry_id), next, error)
-    return redirect(safe_next(next, "/collection"))
+    return redirect(safe_next(next, "/stats"))
 
 
 @router.post("/collection/{entry_id}/move")
@@ -275,7 +210,7 @@ def move_entry(
         service.move_entry(conn, as_id(entry_id), quantity, forms.location_id(location))
     except CollectionError as error:
         return entry_page(request, conn, as_id(entry_id), next, error)
-    return redirect(safe_next(next, "/collection"))
+    return redirect(safe_next(next, "/stats"))
 
 
 @router.post("/collection/{entry_id}/remove")
@@ -286,7 +221,7 @@ def remove_entry(
         service.remove_entry(conn, as_id(entry_id), quantity)
     except CollectionError as error:
         return entry_page(request, conn, as_id(entry_id), next, error)
-    return redirect(safe_next(next, "/collection"))
+    return redirect(safe_next(next, "/stats"))
 
 
 # --- locations ------------------------------------------------------------------------

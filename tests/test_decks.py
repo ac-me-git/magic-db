@@ -706,7 +706,7 @@ def test_rename_and_delete_a_deck(site):
     assert site.post("/decks/1/delete").headers["location"] == "/decks"
     listing = site.get("/decks").text
     assert "Burn 2" not in listing and "several decks want" not in listing  # no more contest
-    assert "Cards: 12" in site.get("/collection").text  # the collection is as it was
+    assert "<dt>Cards</dt><dd>12</dd>" in site.get("/stats").text  # the collection is as it was
 
 
 def test_export_a_deck_as_text(site):

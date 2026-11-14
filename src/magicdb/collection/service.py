@@ -9,19 +9,16 @@ import sqlite3
 from dataclasses import dataclass
 
 from magicdb import db
-from magicdb.search.compiler import LIKE, _contains
 
 FINISHES = ("nonfoil", "foil", "etched")
 CONDITIONS = ("MT", "NM", "EX", "GD", "LP", "PL", "PO")  # Cardmarket scale, best first
 LANGUAGES = ("en", "it", "fr", "de", "es", "pt", "ja", "ko", "ru", "zhs", "zht", "ph")
 KINDS = ("binder", "box", "deck", "other")
-SORTS = ("added", "name", "set", "quantity", "value", "location")
-PER_PAGE = 100
 MAX_QUANTITY = 9999
 MAX_NAME = 80
 
-ALL = "all"  # list_entries: every location
-UNASSIGNED = "none"  # list_entries: entries without a location
+ALL = "all"  # the statistics: every location
+UNASSIGNED = "none"  # the statistics: entries without a location
 
 _KEY = ("finish", "condition", "language", "location_id")
 _EDITABLE = (*_KEY, "quantity", "notes", "purchase_price")
@@ -622,49 +619,6 @@ def totals(
         f"SUM(e.quantity * {price}) AS value FROM entries e {join} WHERE {where}",
         params,
     ).fetchone()
-
-
-_ORDER_BY = {
-    "added": "e.created_at DESC, e.id DESC",
-    "name": "e.name COLLATE NOCASE, e.set_code, e.id",
-    "set": "e.set_code, CAST(e.collector_number AS INTEGER), e.collector_number, e.id",
-    "quantity": "e.quantity DESC, e.name COLLATE NOCASE, e.id",
-    "value": "value IS NULL, value DESC, e.name COLLATE NOCASE, e.id",
-    "location": "l.sort_order IS NULL, l.sort_order, e.name COLLATE NOCASE, e.id",
-}
-
-
-def list_entries(
-    conn: sqlite3.Connection,
-    *,
-    location: str | int = ALL,
-    text: str = "",
-    sort: str = "added",
-    page: int = 1,
-    per_page: int | None = None,
-    currency: str = "eur",
-) -> tuple[list[sqlite3.Row], sqlite3.Row]:
-    """One page of entries and the totals of everything that matches."""
-    clauses, params = ["1"], []
-    if location == UNASSIGNED:
-        clauses.append("e.location_id IS NULL")
-    elif location != ALL:
-        clauses.append("e.location_id = ?")
-        params.append(int(location))
-    if text.strip():
-        clauses.append(f"e.name {LIKE}")
-        params.append(_contains(text.strip()))
-    where = " AND ".join(clauses)
-    join, price = _catalog_join(conn, currency)
-    per_page = per_page or PER_PAGE
-    rows = conn.execute(
-        f"SELECT e.*, l.name AS location_name, {price} AS price, "
-        f"e.quantity * {price} AS value FROM entries e "
-        f"LEFT JOIN locations l ON l.id = e.location_id {join} "
-        f"WHERE {where} ORDER BY {_ORDER_BY.get(sort, _ORDER_BY['added'])} LIMIT ? OFFSET ?",
-        (*params, per_page, (max(1, page) - 1) * per_page),
-    ).fetchall()
-    return rows, totals(conn, currency, where, tuple(params))
 
 
 def copies_of_card(conn: sqlite3.Connection, oracle_id: str) -> list[sqlite3.Row]:

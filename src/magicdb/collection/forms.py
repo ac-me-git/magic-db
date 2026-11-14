@@ -53,7 +53,6 @@ def options(conn: sqlite3.Connection) -> dict[str, object]:
         "conditions": service.CONDITIONS,
         "languages": service.LANGUAGES,
         "kinds": service.KINDS,
-        "sorts": service.SORTS,
         "locations": conn.execute(
             "SELECT id, name FROM locations ORDER BY sort_order, id"
         ).fetchall(),

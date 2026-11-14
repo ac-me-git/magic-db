@@ -77,10 +77,11 @@ def test_the_menu_has_the_switches_the_ways_onward_the_choices_and_administratio
     order = [
         '<label for="mine-switch">Search only my collection</label>',
         '<label for="lock-switch">Lock the collection</label>',
-        ">My stats</a>",
+        ">My collection</a>",
         ">My decks</a>",
         "<span>Language</span>",
         "<span>Appearance</span>",
+        ">Search syntax</a>",
         ">Administration</a>",
     ]
     places = [inside.index(text) for text in order]
@@ -88,17 +89,24 @@ def test_the_menu_has_the_switches_the_ways_onward_the_choices_and_administratio
     assert [link for link in links(inside) if not link.startswith("/lang/")] == [
         "/stats",
         "/decks",
+        "/syntax",
         "/admin",
     ]
-    # the two ways onward and Administration each have an icon
-    for address in ("/stats", "/decks", "/admin"):
+    # the ways onward, the syntax and Administration each have an icon
+    for address in ("/stats", "/decks", "/syntax", "/admin"):
         assert inside.split(f'href="{address}"')[1].split("</a>")[0].count("<svg") == 1
     assert inside.count('role="switch"') == 2
 
 
 def test_the_page_you_are_on_is_marked_in_the_menu(client):
-    assert "aria-current" not in menu(client.get("/syntax").text).replace('aria-current="true"', "")
-    for address, link in (("/stats", "/stats"), ("/decks", "/decks"), ("/admin", "/admin")):
+    plain = menu(client.get("/locations").text).replace('aria-current="true"', "")
+    assert "aria-current" not in plain
+    for address, link in (
+        ("/stats", "/stats"),
+        ("/decks", "/decks"),
+        ("/syntax", "/syntax"),
+        ("/admin", "/admin"),
+    ):
         inside = menu(client.get(address).text)
         assert f'href="{link}" aria-current="page"' in inside, address
 
@@ -113,27 +121,29 @@ def test_administration_is_the_last_line_of_the_menu_with_a_gear(client):
     assert "</svg>Amministrazione</a>" in italian
 
 
-def test_syntax_is_reached_from_administration(client):
+def test_the_syntax_is_in_the_menu_above_administration_with_an_info_icon(client):
+    inside = menu(client.get("/").text)
+    assert links(inside)[-2:] == ["/syntax", "/admin"]
+    line = inside.split('href="/syntax"')[1].split("</a>")[0]
+    assert '<circle cx="12" cy="12" r="9.5"/>' in line and line.endswith("</svg>Search syntax")
+    # and nowhere else: not in Administration, not in the footer
     admin = client.get("/admin").text
-    section = admin.split('<section class="chart" id="syntax">')[1].split("</section>")[0]
-    assert "<h2>Search syntax</h2>" in section
-    assert '<a href="/syntax">Every filter of the search box, with examples to press</a>' in section
+    assert 'id="syntax"' not in admin and 'href="/syntax"' not in admin.split("<main>")[1]
     page = client.get("/search?q=bolt").text
-    assert 'href="/syntax"' not in header(page)
     assert 'href="/syntax"' not in page.split('<footer class="site-footer">')[1]
 
 
 def test_my_collection_opens_the_statistics_with_the_ways_onward(owned):
     page = owned.get("/stats").text
-    assert '<h1 class="page-title">My stats</h1>' in page and "Statistics" in page
-    assert "<title>My stats · AMTG</title>" in page  # the same name as the link to it
+    assert '<h1 class="page-title">My collection</h1>' in page and "Statistics" in page
+    assert "<title>My collection · AMTG</title>" in page  # the same name as the link to it
     hub = page.split('<p class="links">')[1].split("</p>")[0]
-    assert links(hub) == ["/collection", "/fast", "/locations", "/import", "/export"]
+    assert links(hub) == ["/locations", "/import", "/export"]  # no card list, no fast input
     assert "<dd>6</dd>" in page  # and the numbers are there
 
 
 def test_no_page_links_to_add_cards_any_more(owned):
-    for path in ("/admin", "/collection", "/stats"):
+    for path in ("/admin", "/stats", "/locations"):
         assert 'href="/add"' not in owned.get(path).text, path
 
 
@@ -537,28 +547,12 @@ def test_grid_has_a_sort_line(client):
     assert "sort-line" not in client.get("/search?q=t:dragon&view=list").text
 
 
-def test_collection_columns_sort_the_list(owned):
-    page = owned.get("/collection?q=l&location=none").text
-    head = page.split("<thead>")[1].split("</thead>")[0]
-    for key in ("quantity", "name", "set", "location", "value", "added"):
-        assert f'href="/collection?q=l&amp;location=none&amp;sort={key}"' in head, key
-    assert (
-        'class="sorter is-sorted" href="/collection?q=l&amp;location=none&amp;sort=added"' in head
-    )
-    by_quantity = owned.get("/collection?sort=quantity").text
-    assert (
-        by_quantity.index("Sol Ring")
-        < by_quantity.index("Lightning Bolt")
-        < by_quantity.index("Serra Angel")
-    )
-    assert 'class="sorter is-sorted" href="/collection?sort=quantity"' in by_quantity
-
-
 def test_new_labels_in_italian(owned):
     owned.get("/lang/it")
     top = header(owned.get("/search?q=bolt haveprint:yes").text)
     for expected in [
-        ">Le mie statistiche</a>",
+        ">La mia collezione</a>",
+        ">Sintassi di ricerca</a>",
         "I miei mazzi",
         '<button type="submit">Cerca</button>',
         '<label for="mine-switch">Cerca solo nella mia collezione</label>',
@@ -575,8 +569,8 @@ def test_new_labels_in_italian(owned):
         in owned.get("/search?q=t:dragon haveprint:yes").text
     )
     stats = owned.get("/stats").text
-    assert "Elenco delle carte" in stats
-    assert '<h1 class="page-title">Le mie statistiche</h1>' in stats
+    assert '<h1 class="page-title">La mia collezione</h1>' in stats
+    assert ">Posizioni</a>" in stats
 
 
 # --- style sheets and scripts are refreshed when they change --------------------------

@@ -431,11 +431,11 @@ a search, edit the text in the search box.
 | `/search?q=&page=&view=grid\|list` | results |
 | `/card/{scryfall_id}` | large image (flip for back face), full text, legalities, prices, all printings, my copies of this card, add form |
 | `POST /add` | the card page's add form: copies of one printing in the catalog. Finish, condition, language and location stay as they were for the next add. There is no add page |
-| `/collection` | my entries: filter by location / text, sort, inline edit of quantity / finish / condition / location, move, remove |
+| `/collection/{id}/edit` | edit, move or remove the copies of one entry, reached from the card page (`POST /collection/{id}`, `…/move`, `…/remove`). There is no list of entries: the collection is searched like every card (`haveprint:yes`, `loc:`, `qty`…) |
 | `/locations` | create, rename, reorder, delete; card count and value per location |
-| `/stats` | see §9 |
+| `/stats` | "My collection": links to locations, import and export, then the statistics (§9) |
 | `/import`, `/export` | see §8 |
-| `/admin` | software version (check, and install on Windows), catalog and backup status, last job runs, "update now", "back up now", download latest backup; link to the syntax page; what the home page shows |
+| `/admin` | software version (check, and install on Windows), catalog and backup status, last job runs, "update now", "back up now", download latest backup; what the home page shows |
 | `/syntax` | search syntax reference, generated from the same table the parser uses |
 | `/healthz` | `{"status":"ok"}`, no auth |
 | `/img/{size}/{scryfall_id}/{face}` | image cache proxy |
@@ -452,8 +452,9 @@ catalog has: a card Scryfall does not list cannot be added. The card page's add 
 (`POST /add`) goes back to `/card/{id}#mine`; a refused add shows the card page again,
 status 400, with the reason above the form, and a printing the catalog does not have
 gets 404. The form keeps finish, condition, language and location of the last add in
-the `magicdb_add` cookie. HTMX only loads fragments (name suggestions, the edit form
-inside a table row); all of it also works as plain page loads. Search results show a
+the `magicdb_add` cookie. HTMX only loads fragments (name suggestions, the boxes of
+fast input); all of it also works as plain page loads. Without a `next`, a change to
+an entry goes back to `/stats`. Search results show a
 badge with the copies owned: of every printing in card mode, of that printing in print
 mode. The card page lists every copy of the card and adds the printing shown.
 
@@ -535,9 +536,8 @@ number or by name with the column headings, and tick boxes.
   sends what its box shows by the time it goes out. Every change goes
   through the collection service, so it is merged, logged and undoable like any other.
 - While the safety lock is on the boxes are shown disabled, with the usual notice.
-- `/fast` opens the view on the newest released main set (expansion, core, masters,
-  draft innovation, commander) in collector-number order; linked from the collection
-  page and from Administration.
+- Fast input is only a view of the search results: no page or link of its own leads to
+  it.
 
 **Home page.** The page has no title, tagline or catalog status line of its own: the
 name is in the header, and how many printings the catalog holds and when it was built
@@ -579,15 +579,14 @@ or with Escape. It holds, in this order:
 
 - "Search only my collection", with its switch (see *Where to search*);
 - the safety lock, "Lock the collection", with its switch;
-- "My stats", which opens the statistics, and "My decks", each with an icon;
+- "My collection", which opens the statistics, and "My decks", each with an icon;
 - the language, ENG or ITA (§7, "i18n"), and light, dark or automatic pages (§7,
   "Light and dark"), each a row of small buttons with the current one filled in;
-- "Administration", with a gear.
+- "Search syntax", with an *i* in a circle, and "Administration", with a gear.
 
-The link to the page being shown is marked. The statistics page, titled "My stats"
-like its link, is the collection's
-landing page and links to the card list, fast input, locations, import and export; the
-administration page links to them too, and to the syntax page.
+The link to the page being shown is marked. The statistics page, titled "My
+collection" like its link, is the collection's landing page and links to locations,
+import and export; the administration page links to them too.
 
 **Footer.** On every page, and nothing else: the Fan Content Policy notice, its
 copyright line followed by the credit to Scryfall, then "Buy me a coffee". "Wizards"
@@ -818,9 +817,9 @@ Details (`jobs.py`):
 **`/admin`** shows the live catalog, the backups (each downloadable; only file names
 the app gives to backups are served), the last 20 job runs in local time and the
 settings, and has "Update the catalog now" and "Back up now" (`POST
-/admin/{job}/run`, run in a background thread), a link to the syntax page and the
-choice of what the home page shows (§7, "Home page"). The language and light or dark
-pages are chosen in the menu.
+/admin/{job}/run`, run in a background thread) and the choice of what the home page
+shows (§7, "Home page"). The language, light or dark pages and the syntax page are in
+the menu.
 
 **Password.** `MAGICDB_PASSWORD` turns on HTTP Basic auth for everything except
 `/healthz`: any user name, that password, compared in constant time (`app.py`).
@@ -829,6 +828,10 @@ pages are chosen in the menu.
 
 Computed with SQL on entries joined to the catalog; charts are server-rendered
 SVG/CSS bars, no JavaScript library. A selector limits everything to one location.
+The page is titled "My collection" and opens with links to locations, import and
+export. On the locations page each place's name is a search for what it holds
+(`loc:"<name>"`, `templating.location_search`); copies without a location have no
+search, since no filter means "no location".
 
 - **Totals**: copies, distinct printings, distinct cards, estimated value.
 - **Value**: `quantity × price`, where non-foil uses `price_eur`, foil uses

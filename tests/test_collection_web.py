@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from magicdb import db, i18n
 from magicdb.app import create_app
 from magicdb.collection import forms, service
+from magicdb.templating import search_url
 
 UNKNOWN = "00000000-0000-4000-8000-000000000000"
 
@@ -61,7 +62,7 @@ def test_navigation_links(client):
     home = client.get("/").text
     menu = home.split('<div class="menu-panel">')[1].split("</details>")[0]
     assert 'href="/stats"' in menu and 'href="/decks"' in menu
-    assert menu.count('<a class="menu-link"') == 3  # and Administration
+    assert menu.count('<a class="menu-link"') == 4  # and the syntax, and Administration
 
 
 def test_name_suggestions_for_htmx(client):
@@ -213,76 +214,31 @@ def stocked(client, ids, places):
     return client
 
 
-def test_empty_collection(client):
-    page = client.get("/collection")
-    assert page.status_code == 200 and "Your collection is empty" in page.text
-    assert "Cards: 0 · Entries: 0" in page.text
-
-
-def test_collection_lists_entries(stocked, ids):
-    page = stocked.get("/collection").text
-    assert "Cards: 9 · Entries: 3" in page
-    for name in ("Lightning Bolt", "Serra Angel", "Sol Ring"):
-        assert name in page
-    assert f'href="/card/{ids("Sol Ring", "c21")}"' in page
-    assert 'id="e1"' in page and 'hx-get="/collection/1/edit?next=/collection"' in page
-    assert ">Foil</span>" in page and ">IT</span>" in page and "No location" in page
-    assert "Shown —" not in page  # nothing is filtered
-
-
-def test_collection_filters_and_sorts(stocked, places):
-    binder = stocked.get(f"/collection?location={places['Binder 1']}").text
-    assert "Sol Ring" not in binder and "Serra Angel" in binder
-    assert "Shown — cards: 7 · entries: 2" in binder
-    assert selected(binder, "location") == places["Binder 1"]
-    loose = stocked.get("/collection?location=none").text
-    assert "Sol Ring" in loose and "Serra Angel" not in loose
-    named = stocked.get("/collection?q=bolt").text
-    assert "Lightning Bolt" in named and "Sol Ring" not in named and 'value="bolt"' in named
-    assert "Nothing in your collection matches" in stocked.get("/collection?q=zzz").text
-
-    by_name = stocked.get("/collection?sort=name").text
-    assert (
-        by_name.index("Lightning Bolt") < by_name.index("Serra Angel") < by_name.index("Sol Ring")
-    )
-    assert selected(by_name, "sort") == "name"
-    newest = stocked.get("/collection?sort=nonsense&location=abc&page=x").text
-    assert newest.index("Sol Ring") < newest.index("Lightning Bolt")  # falls back to defaults
-
-
-def test_collection_paging(stocked, monkeypatch):
-    monkeypatch.setattr(service, "PER_PAGE", 2)
-    first = stocked.get("/collection?sort=name").text
-    assert "Page 1 of 2" in first and 'href="/collection?sort=name&amp;page=2"' in first
-    assert "Sol Ring" not in first
-    second = stocked.get("/collection?sort=name&page=2").text
-    assert "Page 2 of 2" in second and "Sol Ring" in second and 'rel="prev"' in second
+def test_there_is_no_card_list_page(stocked):
+    # the collection is searched like every card: haveprint:yes, loc:, qty …
+    assert stocked.get("/collection").status_code == 404
+    for path in ("/", "/stats", "/admin", "/locations", "/import"):
+        assert 'href="/collection"' not in stocked.get(path).text, path
 
 
 def test_collection_works_without_a_catalog(settings):
     client = TestClient(create_app(settings), follow_redirects=False)
     client.post("/locations", data={"name": "Box"})
-    assert client.get("/collection").status_code == 200
     assert client.get("/locations").status_code == 200
 
 
 # --- editing --------------------------------------------------------------------------
 
 
-def test_inline_edit_form(stocked):
-    inline = stocked.get(
-        "/collection/1/edit?next=/collection?sort=name", headers={"HX-Request": "true"}
-    )
-    assert inline.status_code == 200
-    assert inline.text.lstrip().startswith('<tr class="editing" id="e1">')
-    assert "<html" not in inline.text
-    assert 'action="/collection/1"' in inline.text
-    assert 'name="next" value="/collection?sort=name"' in inline.text
-    assert 'name="quantity" value="3"' in inline.text
-    assert selected(inline.text, "finish") == "nonfoil" and selected(inline.text, "location") == "1"
-
-    full = stocked.get("/collection/1/edit")
+def test_edit_form(stocked):
+    full = stocked.get("/collection/1/edit?next=/locations")
     assert "<html" in full.text and "Edit copies" in full.text and 'class="editing"' in full.text
+    assert 'action="/collection/1"' in full.text
+    assert 'name="next" value="/locations"' in full.text
+    assert 'name="quantity" value="3"' in full.text
+    assert selected(full.text, "finish") == "nonfoil" and selected(full.text, "location") == "1"
+    # a whole page even when htmx asks: only the card list asked for a bare row
+    assert "<html" in stocked.get("/collection/1/edit", headers={"HX-Request": "true"}).text
     for missing in ("99", "abc", "1e3", "-1"):
         assert stocked.get(f"/collection/{missing}/edit").status_code == 404
 
@@ -298,10 +254,10 @@ def test_save_entry(stocked, catalog, places):
             "location": places["Blue box"],
             "notes": "signed",
             "purchase_price": "2,50",
-            "next": "/collection?sort=name#e1",
+            "next": "/locations#l1",
         },
     )
-    assert (response.status_code, response.headers["location"]) == (303, "/collection?sort=name#e1")
+    assert (response.status_code, response.headers["location"]) == (303, "/locations#l1")
     assert rows(catalog)[0] == ("Lightning Bolt", "m10", 5, "foil", "GD", "de", "Blue box")
     form = stocked.get("/collection/1/edit").text
     assert 'name="notes" value="signed"' in form and 'name="purchase_price" value="2.5"' in form
@@ -319,7 +275,7 @@ def test_save_into_a_collision_merges(stocked, catalog, ids, places):
             "location": places["Binder 1"],
         },
     )
-    assert response.headers["location"] == "/collection"
+    assert response.headers["location"] == "/stats"  # no next: the collection's page
     bolts = [row for row in rows(catalog) if row[0] == "Lightning Bolt"]
     assert bolts == [("Lightning Bolt", "m10", 4, "nonfoil", "NM", "en", "Binder 1")]
 
@@ -333,12 +289,12 @@ def test_save_explains_bad_input(stocked, catalog):
             "condition": "NM",
             "language": "en",
             "location": "1",
-            "next": "/collection?q=bolt",
+            "next": "/locations",
         },
     )
     assert page.status_code == 400
     assert "whole number from 1 to 9999" in page.text and 'action="/collection/1"' in page.text
-    assert 'name="next" value="/collection?q=bolt"' in page.text
+    assert 'name="next" value="/locations"' in page.text
     assert rows(catalog)[0][2] == 3
 
 
@@ -346,7 +302,7 @@ def test_move_entry(stocked, catalog, places):
     response = stocked.post(
         "/collection/1/move", data={"quantity": "2", "location": places["Blue box"]}
     )
-    assert (response.status_code, response.headers["location"]) == (303, "/collection")
+    assert (response.status_code, response.headers["location"]) == (303, "/stats")
     bolts = sorted(row[2:] for row in rows(catalog) if row[0] == "Lightning Bolt")
     assert bolts == [(1, "nonfoil", "NM", "en", "Binder 1"), (2, "nonfoil", "NM", "en", "Blue box")]
 
@@ -360,8 +316,8 @@ def test_remove_entry(stocked, catalog):
     assert stocked.post("/collection/1/remove", data={}).status_code == 303  # all of them
     assert "Lightning Bolt" not in [row[0] for row in rows(catalog)]
     # the row is gone: a second click just goes back
-    again = stocked.post("/collection/1/remove", data={"next": "/collection?sort=name"})
-    assert (again.status_code, again.headers["location"]) == (303, "/collection?sort=name")
+    again = stocked.post("/collection/1/remove", data={"next": "/locations"})
+    assert (again.status_code, again.headers["location"]) == (303, "/locations")
 
 
 # --- locations ------------------------------------------------------------------------
@@ -399,7 +355,11 @@ def test_rename_reorder_empty_delete(stocked, catalog, places):
     page = stocked.get("/locations").text
     assert page.index("Red box") < page.index("Binder 1") and "desk" in page
     assert "Cards: 7" in page  # Binder 1
-    assert 'href="/collection?location=none"' in page  # the loose Sol Rings
+    # a place leads to a search for what is kept there; the loose Sol Rings have none
+    for name in ("Red box", "Binder 1"):
+        found = search_url(f'loc:"{name}"')
+        assert f'<a href="{found}"><strong>{name}</strong></a>' in page, name
+    assert "<strong>No location</strong>" in page and 'href="/collection' not in page
     assert 'action="/locations/1/empty"' in page and 'action="/locations/1/delete"' not in page
 
     refused = stocked.post("/locations/1/delete")
@@ -436,7 +396,7 @@ def test_changes_from_another_site_are_refused(client, headers, expected):
 
 
 def test_reading_is_never_blocked_by_origin(client):
-    assert client.get("/collection", headers={"Origin": "https://evil.example"}).status_code == 200
+    assert client.get("/stats", headers={"Origin": "https://evil.example"}).status_code == 200
 
 
 def test_every_change_is_a_post(client):
@@ -464,14 +424,13 @@ def test_every_choice_has_a_label():
             ("condition", service.CONDITIONS),
             ("lang", service.LANGUAGES),
             ("kind", service.KINDS),
-            ("collection.sort", service.SORTS),
         ]:
             assert {f"{prefix}.{value}" for value in values} <= set(strings)
 
 
 def test_italian_collection_pages(client, ids):
     client.get("/lang/it")
-    assert "La tua collezione è vuota" in client.get("/collection").text
+    assert '<h1 class="page-title">La mia collezione</h1>' in client.get("/stats").text
     page = add(client, ids("Sol Ring", "c21"), quantity="0")
     assert "La quantità deve essere un numero intero" in page.text
     assert "Aggiungi questa stampa (C21 #" in page.text
