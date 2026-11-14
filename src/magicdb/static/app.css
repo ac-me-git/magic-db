@@ -224,6 +224,116 @@ main {
   margin: 0.25rem 0;
 }
 
+/* --- home: the map of the syntax and the recent sets --------------------------- */
+
+.syntax-map,
+.recent-sets {
+  margin-top: 1.25rem;
+}
+
+.syntax-map h2,
+.recent-sets h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.2rem;
+}
+
+/* columns, not a grid: the groups have different heights and pack one under the other */
+.map-groups {
+  columns: 19rem;
+  column-gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.map-group {
+  break-inside: avoid;
+  margin: 0 0 0.75rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.map-group h3 {
+  margin: 0 0 0.3rem;
+  font-size: 1rem;
+}
+
+.map-group dl,
+.recent-sets dl {
+  margin: 0;
+}
+
+/* what it is on the left, how to write it on the right; underneath when there is no room */
+.map-group dl > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 0.75rem;
+  padding: 0.25rem 0;
+  border-top: 1px solid var(--row);
+}
+
+.map-group dt {
+  font-size: 0.95rem;
+}
+
+.map-group dd {
+  margin: 0 0 0 auto;
+  text-align: right;
+}
+
+.map-group .example {
+  display: inline-block;
+  padding: 0.05rem 0.35rem;
+  background: var(--row);
+  border-radius: 0.25rem;
+  text-decoration: none;
+}
+
+.map-group .example:hover,
+.set-chip:hover {
+  text-decoration: underline;
+}
+
+.recent-sets dl > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.recent-sets dt {
+  flex: 0 0 2.75rem;
+  color: var(--muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.recent-sets dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  margin: 0;
+}
+
+.set-chip {
+  padding: 0.15rem 0.55rem 0.15rem 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  color: var(--text);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.set-chip code {
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
 /* --- filter panel -------------------------------------------------------------- */
 
 .panel {

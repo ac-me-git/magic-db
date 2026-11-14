@@ -2,14 +2,16 @@
 
 import re
 from dataclasses import replace
+from datetime import date
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from fastapi.testclient import TestClient
 
-from magicdb import i18n, search
+from magicdb import db, i18n, search, web
 from magicdb.app import create_app
 from magicdb.catalog.ingest import is_extra
+from magicdb.templating import search_url
 
 UNKNOWN = "00000000-0000-4000-8000-000000000000"
 
@@ -44,17 +46,116 @@ def test_home_shows_catalog_status_and_panel(client, fixture_cards):
         assert option in page.text
     assert "<option>modern</option>" in page.text
     assert "Kept in" not in page.text  # no locations yet
+    # the panel is there, folded: the page opens on the map of the syntax
+    assert '<details class="panel fold">\n  <summary>Search by filters</summary>' in page.text
+    assert "<details open" not in page.text and 'fold" open' not in page.text
+    assert page.text.index("Search by filters") < page.text.index("Syntax map")
 
 
 def test_home_lists_locations_once_there_are_some(client, catalog):
-    from magicdb import db
-
     conn = db.connect(catalog)
     with conn:
         conn.execute("INSERT INTO locations (name, created_at) VALUES ('Blue box', 'now')")
     conn.close()
     page = client.get("/")
     assert "Kept in" in page.text and "<option>Blue box</option>" in page.text
+
+
+def link(query: str) -> str:
+    return f'<a class="example" href="{search_url(query)}">'
+
+
+def test_the_map_of_the_syntax_has_every_filter_once():
+    mapped = [name for _, names in web.SYNTAX_MAP for name in names]
+    assert sorted(mapped) == sorted(definition.name for definition in search.FILTERS)
+    assert [definition.name for _, group in web.syntax_map() for definition in group] == mapped
+    english, italian = i18n.strings("en"), i18n.strings("it")
+    for strings in (english, italian):
+        for group, _ in web.SYNTAX_MAP:
+            assert strings[f"map.group.{group}"]
+        for name in mapped:
+            assert strings[f"map.filter.{name}"]
+        for number in range(1, len(web.BASICS) + 1):
+            # a short label for the map, the sentence of the syntax page beside it
+            assert strings[f"map.basic.{number}"] and strings[f"syntax.basic.{number}"]
+        assert f"map.basic.{len(web.BASICS) + 1}" not in strings
+
+
+def test_home_maps_the_syntax(client):
+    page = client.get("/").text
+    assert "<h2>Syntax map</h2>" in page
+    for title in ("The basics", "The card", "Colours and mana", "Set and printing"):
+        assert f"<h3>{title}</h3>" in page
+    for title in ("Formats and prices", "My collection", "How results are shown"):
+        assert f"<h3>{title}</h3>" in page
+    english = i18n.strings("en")
+    for definition in search.FILTERS:
+        assert f"<dt>{english[f'map.filter.{definition.name}']}</dt>" in page
+        for example in definition.example.split("  "):
+            assert link(example) in page  # every example is a search to try
+    for number, example in enumerate(web.BASICS, 1):
+        assert f"<dt>{english[f'map.basic.{number}']}</dt>" in page and link(example) in page
+    # what the syntax page says at length is one hover away, and the page itself one link
+    assert 'title="I own this exact printing (yes / no)"><dt>I own this printing</dt>' in page
+    assert 'title="Quotes keep words together."><dt>Words kept together</dt>' in page
+    assert "mv&lt;=3 or pow&gt;=5" in page and '<a href="/syntax">The whole syntax' in page
+    # a map: one line for each filter, none of the other ways to write it
+    assert "<code>cmc</code>" not in page and "<code>edition</code>" not in page
+
+
+def test_recent_expansions_are_five_years_of_paper_expansions(catalog):
+    conn = db.connect(catalog)
+
+    def codes(on: date) -> list[tuple[str, list[str]]]:
+        return [(year, [row["code"] for row in sets]) for year, sets in on_day(on)]
+
+    def on_day(on: date) -> list:
+        return web.recent_expansions(conn, on)
+
+    try:
+        # newest first, year by year; no Modern Horizons (draft innovation), Commander,
+        # Double Masters, core set or digital set, however recent
+        assert codes(date(2025, 6, 1)) == [
+            ("2023", ["mom"]),
+            ("2022", ["dmu"]),
+            ("2021", ["khm"]),
+            ("2020", ["znr"]),
+        ]
+        assert on_day(date(2025, 6, 1))[1][1][0]["name"] == "Dominaria United"
+        # five years to the day
+        assert codes(date(2025, 9, 25))[-1] == ("2020", ["znr"])
+        assert codes(date(2025, 9, 26))[-1] == ("2021", ["khm"])
+        assert codes(date(2028, 4, 21)) == [("2023", ["mom"])]
+        assert codes(date(2028, 4, 22)) == []
+        # a set that is announced and already has cards is the most recent of all
+        assert codes(date(2022, 1, 1))[0] == ("2023", ["mom"])
+        assert codes(date(2024, 2, 29))[-1] == ("2019", ["war", "eld"][::-1])
+    finally:
+        conn.close()
+
+
+def test_home_lists_the_recent_expansions(client, monkeypatch):
+    monkeypatch.setattr(web, "today", lambda: date(2025, 6, 1))
+    page = client.get("/").text
+    assert "<h2>Recent expansions</h2>" in page
+    assert "The codes of the expansions of the last 5 years, to write as set:code." in page
+    chips = [
+        '<a class="set-chip" href="/search?q=set%3Amom"><code>mom</code> March of the Machine</a>',
+        '<a class="set-chip" href="/search?q=set%3Admu"><code>dmu</code> Dominaria United</a>',
+        '<a class="set-chip" href="/search?q=set%3Akhm"><code>khm</code> Kaldheim</a>',
+        '<a class="set-chip" href="/search?q=set%3Aznr"><code>znr</code> Zendikar Rising</a>',
+    ]
+    assert [page.index(chip) for chip in chips] == sorted(page.index(chip) for chip in chips)
+    assert page.count('class="set-chip"') == len(chips)
+    for year in ("2023", "2022", "2021", "2020"):
+        assert f"<dt>{year}</dt>" in page
+    assert "<dt>2019</dt>" not in page
+    assert page.index("Syntax map") < page.index("Recent expansions")
+    assert "100 cards" in client.get("/search?q=set%3Admu").text  # what a chip searches
+
+    monkeypatch.setattr(web, "today", lambda: date(2040, 1, 1))
+    page = client.get("/").text
+    assert "Recent expansions" not in page and "Syntax map" in page
 
 
 def test_filter_panel_redirects_to_the_search_it_built(client):
@@ -227,6 +328,9 @@ def test_syntax_page_lists_every_filter(client):
         for key in definition.keys:
             assert f"<code>{key}</code>" in page.text
     assert 'href="/search?q=mv%3C%3D3"' in page.text
+    for example in web.BASICS:  # the same first examples as the home page's map
+        assert link(example) in page.text
+    assert "Quotes keep words together." in page.text
 
 
 def test_translations_are_complete():
@@ -240,8 +344,15 @@ def test_translations_are_complete():
         ), key
 
 
-def test_italian_interface(italian, fixture_cards):
-    assert "Cerca con i filtri" in italian.get("/").text
+def test_italian_interface(italian, fixture_cards, monkeypatch):
+    monkeypatch.setattr(web, "today", lambda: date(2025, 6, 1))
+    home = italian.get("/").text
+    assert "<summary>Cerca con i filtri</summary>" in home
+    assert "<h2>Mappa della sintassi</h2>" in home and "<h3>Colori e mana</h3>" in home
+    assert (
+        'title="Possiedo proprio questa stampa (yes / no)"><dt>Possiedo questa stampa</dt>' in home
+    )
+    assert "<h2>Espansioni recenti</h2>" in home and "degli ultimi 5 anni" in home
     page = italian.get("/search?q=t:dragon")
     assert '<html lang="it">' in page.text and "carte" in page.text
     assert "Sintassi di ricerca" in italian.get("/syntax").text

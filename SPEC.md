@@ -418,14 +418,15 @@ most), colour identity, mana value range, type / subtype / keyword pickers fed b
 Submitting it **builds a query string** and goes to `/search?q=…`; the generated query
 is shown in the search box so the syntax teaches itself. The form is a plain `GET` to
 `/filter`, which builds the query (`search/panel.py`) and redirects, so it works without
-JavaScript. The panel is on the home page and always starts empty: to refine a search,
-edit the text in the search box.
+JavaScript. The panel is on the home page, folded until its title is pressed (the page
+opens on the map of the syntax, §7), and always starts empty: to refine a search, edit
+the text in the search box.
 
 ## 7. Pages
 
 | Route | Content |
 |---|---|
-| `/` | search box, filter panel, catalog status line |
+| `/` | search box, catalog status line, filter panel (folded), map of the syntax, recent expansions |
 | `/filter?…` | the filter panel's form target: redirects to `/search?q=…` |
 | `/search?q=&page=&view=grid\|list` | results |
 | `/card/{scryfall_id}` | large image (flip for back face), full text, legalities, prices, all printings, my copies of this card, add form |
@@ -537,6 +538,23 @@ number or by name with the column headings, and tick boxes.
 - `/fast` opens the view on the newest released main set (expansion, core, masters,
   draft innovation, commander) in collector-number order; linked from the collection
   page and from Administration.
+
+**Home page.** Under the catalog status line, in this order:
+
+- The filter panel (§6.4), folded: a `<details>` under its title, closed at every visit.
+- A *map of the syntax*, a summary of the syntax page: its first examples ("the
+  basics") and every filter of §6.2 once, under six headings — the card, colours and
+  mana, set and printing, formats and prices, my collection, how results are shown
+  (`web.SYNTAX_MAP`; a filter that is not in it fails a test). A line is a short label
+  and the filter's examples, each a link to that search; the sentence of the syntax
+  page is the line's tooltip, and a link under the map leads to that page. The other
+  ways to write a filter (`cmc` for `mv`…) are on the syntax page only.
+- *Recent expansions*: the sets of type `expansion` printed on paper, with cards in the
+  catalog, released in the five years before today or announced since
+  (`web.recent_expansions`), newest first and year by year. Each is its code and name
+  and links to the search `set:<code>`. The list is left out when it is empty.
+
+Without a catalog the page has only the notice that it is not there yet.
 
 **Header.** On every page: the logo (the way to the home page and its filter panel),
 the search box, and two links — "My collection", which opens the statistics, and "My

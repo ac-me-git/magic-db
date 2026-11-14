@@ -19,6 +19,9 @@ def test_home_page(client):
     assert "Every Magic card" in response.text
     assert "Not approved/endorsed by Wizards" in response.text
     assert 'action="/search"' in response.text
+    # no catalog yet: nothing to search, so no map of the syntax and no filter panel
+    assert "The card catalog has not been downloaded yet" in response.text
+    assert "Syntax map" not in response.text and 'action="/filter"' not in response.text
 
 
 def test_home_page_in_italian(settings):

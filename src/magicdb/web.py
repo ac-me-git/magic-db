@@ -3,6 +3,8 @@
 import json
 import re
 import sqlite3
+from datetime import date
+from itertools import groupby
 from typing import Annotated
 from urllib.parse import urlencode
 
@@ -17,7 +19,7 @@ from magicdb.collection import forms, service
 from magicdb.config import LANGS
 from magicdb.decks import service as decks
 from magicdb.search import panel
-from magicdb.search.compiler import LIKE, ORDERS, _contains
+from magicdb.search.compiler import LIKE, ORDERS, FilterDef, _contains
 from magicdb.templating import LANG_COOKIE, ONE_YEAR, safe_next, search_url
 
 router = APIRouter()
@@ -28,6 +30,33 @@ SCOPES = ("all", "collection")  # what the switch beside the search box sends
 FAST_PER_PAGE = 500  # fast input: a whole set on one page
 AUTOCOMPLETE_LIMIT = 15
 SUGGEST_LIMIT = 8
+RECENT_YEARS = 5  # how far back the home page's list of expansions goes
+today = date.today  # a name of its own, so that a test can choose the day
+
+# The syntax page's first examples, in the order of the strings "syntax.basic.N".
+BASICS = (
+    "lightning bolt",
+    '"serra angel"',
+    '!"Lightning Bolt"',
+    "t:dragon c:r",
+    "t:elf or t:goblin",
+    "(t:elf or t:goblin) mv<=2",
+    "c:r -t:creature",
+)
+
+# The home page's map of the syntax: every filter of the table (``search.FILTERS``, by
+# name) under a heading, whose title is the string "map.group.<heading>".
+SYNTAX_MAP: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("card", ("name", "oracle", "type", "keyword", "power", "toughness", "loyalty")),
+    ("colors", ("color", "identity", "mv", "mana")),
+    (
+        "printing",
+        ("set", "settype", "number", "rarity", "year", "date", "artist", "flavor", "is"),
+    ),
+    ("market", ("format", "eur", "usd")),
+    ("mine", ("have", "haveprint", "qty", "loc", "cond", "finish", "lang", "deck")),
+    ("display", ("unique", "order", "dir", "include")),
+)
 _SYNTAX = re.compile(r'[:=<>()"!]|\bor\b', re.IGNORECASE)
 _ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
@@ -71,13 +100,43 @@ def panel_options(conn: sqlite3.Connection) -> dict[str, list]:
     }
 
 
+def syntax_map() -> list[tuple[str, list[FilterDef]]]:
+    """The filters of the search, in the groups the home page shows them in."""
+    by_name = {definition.name: definition for definition in search.FILTERS}
+    return [(group, [by_name[name] for name in names]) for group, names in SYNTAX_MAP]
+
+
+def recent_expansions(conn: sqlite3.Connection, on: date) -> list[tuple[str, list[sqlite3.Row]]]:
+    """The expansions of the five years before ``on``, newest first, year by year.
+
+    Only sets printed on paper that have cards in the catalog; one that is announced and
+    already has cards is the newest of all, and is listed too.
+    """
+    rows = conn.execute(
+        "SELECT code, name, released_at FROM cat.sets "
+        "WHERE set_type = ? AND is_digital = 0 AND catalog_count > 0 "
+        "AND released_at >= date(?, ?) ORDER BY released_at DESC, code",
+        ("expansion", on.isoformat(), f"-{RECENT_YEARS} years"),
+    )
+    return [(year, list(sets)) for year, sets in groupby(rows, lambda row: row["released_at"][:4])]
+
+
 @router.get("/", response_class=HTMLResponse)
 def home(request: Request, conn: Conn) -> HTMLResponse:
     if not db.has_catalog(conn):
         return render(request, "home.html", catalog=None, options=None)
     meta = dict(conn.execute("SELECT key, value FROM cat.meta"))
     catalog = {"count": int(meta["row_count"]), "date": meta["built_at"][:10]}
-    return render(request, "home.html", catalog=catalog, options=panel_options(conn))
+    return render(
+        request,
+        "home.html",
+        catalog=catalog,
+        options=panel_options(conn),
+        basics=BASICS,
+        syntax_map=syntax_map(),
+        recent=recent_expansions(conn, today()),
+        recent_years=RECENT_YEARS,
+    )
 
 
 @router.get("/filter")
@@ -246,7 +305,7 @@ def set_language(code: str, next: str = "/") -> RedirectResponse:
 
 @router.get("/syntax", response_class=HTMLResponse)
 def syntax_page(request: Request) -> HTMLResponse:
-    return render(request, "syntax.html", filters=search.FILTERS)
+    return render(request, "syntax.html", filters=search.FILTERS, basics=BASICS)
 
 
 @router.get("/api/autocomplete")

@@ -9,7 +9,7 @@
   <div class="table-wrap">
   <table class="card-list">
     <tbody>
-      {% for example in ("lightning bolt", '"serra angel"', '!"Lightning Bolt"', "t:dragon c:r", "t:elf or t:goblin", "(t:elf or t:goblin) mv<=2", "c:r -t:creature") %}
+      {% for example in basics %}
       <tr>
         <td><a class="example" href="{{ search_url(example) }}">{{ example }}</a></td>
         <td>{{ t("syntax.basic." ~ loop.index) }}</td>

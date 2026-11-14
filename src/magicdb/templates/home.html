@@ -11,8 +11,9 @@
 </section>
 
 {% if options %}
-<form class="panel" action="/filter" method="get">
-  <h2>{{ t("panel.title") }}</h2>
+<details class="panel fold">
+  <summary>{{ t("panel.title") }}</summary>
+  <form action="/filter" method="get">
   <p class="hint">{{ t("panel.hint") }}</p>
 
   <div class="fields">
@@ -129,6 +130,45 @@
   <datalist id="subtypes">{% for value in options.subtypes %}<option value="{{ value }}">{% endfor %}</datalist>
   <datalist id="keywords">{% for value in options.keywords %}<option value="{{ value }}">{% endfor %}</datalist>
   <datalist id="sets">{% for row in options.sets %}<option value="{{ row.code }}">{{ row.name }}</option>{% endfor %}</datalist>
-</form>
+  </form>
+</details>
+
+<section class="syntax-map">
+  <h2>{{ t("map.title") }}</h2>
+  <p class="hint">{{ t("map.hint") }}</p>
+  <div class="map-groups">
+    <section class="map-group">
+      <h3>{{ t("syntax.basics") }}</h3>
+      <dl>
+        {% for example in basics %}
+        <div title="{{ t('syntax.basic.' ~ loop.index) }}"><dt>{{ t("map.basic." ~ loop.index) }}</dt><dd><a class="example" href="{{ search_url(example) }}">{{ example }}</a></dd></div>
+        {% endfor %}
+      </dl>
+    </section>
+    {% for group, filters in syntax_map %}
+    <section class="map-group">
+      <h3>{{ t("map.group." ~ group) }}</h3>
+      <dl>
+        {% for filter in filters %}
+        <div title="{{ t('syntax.filter.' ~ filter.name, default=filter.summary) }}"><dt>{{ t("map.filter." ~ filter.name) }}</dt><dd>{% for example in filter.example.split("  ") %}<a class="example" href="{{ search_url(example) }}">{{ example }}</a>{% if not loop.last %} {% endif %}{% endfor %}</dd></div>
+        {% endfor %}
+      </dl>
+    </section>
+    {% endfor %}
+  </div>
+  <p class="hint">{{ t("syntax.operators") }} <a href="/syntax">{{ t("map.more") }}</a></p>
+</section>
+
+{% if recent %}
+<section class="recent-sets">
+  <h2>{{ t("sets.recent.title") }}</h2>
+  <p class="hint">{{ t("sets.recent.hint", years=recent_years) }}</p>
+  <dl>
+    {% for year, sets in recent %}
+    <div><dt>{{ year }}</dt><dd>{% for row in sets %}<a class="set-chip" href="{{ search_url("set:" ~ row.code) }}"><code>{{ row.code }}</code> {{ row.name }}</a>{% endfor %}</dd></div>
+    {% endfor %}
+  </dl>
+</section>
+{% endif %}
 {% endif %}
 {% endblock %}
