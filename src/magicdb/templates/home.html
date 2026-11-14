@@ -1,12 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
+{% if not catalog %}
 <section class="hero">
-  {% if catalog %}
-  <p class="status">{{ t("home.status", count=catalog["count"] | count, date=catalog["date"]) }}</p>
-  {% else %}
   <p class="notice">{{ t("nocatalog.text") }}</p>
-  {% endif %}
 </section>
+{% endif %}
 
 {# Administration chooses which of the two the page shows: the filter panel, or the map
    of the syntax with the recent expansions. #}

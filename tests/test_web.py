@@ -46,8 +46,10 @@ def show_filters(client) -> None:
 def test_home_opens_on_the_map_of_the_syntax(client, fixture_cards):
     page = client.get("/")
     assert page.status_code == 200
-    assert f"{len(fixture_cards)} printings in the catalog" in page.text
     assert "<h2>Syntax map</h2>" in page.text
+    # how big the catalog is, is said in Administration and not here
+    assert "printings in the catalog" not in page.text and 'class="hero"' not in page.text
+    assert f"<dt>Printings</dt><dd>{len(fixture_cards)}</dd>" in client.get("/admin").text
     # no title, no tagline, and the filters neither shown nor folded away
     assert "<h1" not in page.text and "Every Magic card" not in page.text
     assert 'action="/filter"' not in page.text and "Search by filters" not in page.text
@@ -58,7 +60,7 @@ def test_home_shows_the_filter_panel_when_administration_says_so(client, fixture
     show_filters(client)
     page = client.get("/")
     assert page.status_code == 200
-    assert f"{len(fixture_cards)} printings in the catalog" in page.text
+    assert "printings in the catalog" not in page.text and 'class="hero"' not in page.text
     assert '<form class="panel" action="/filter" method="get">' in page.text
     assert "<h2>Search by filters</h2>" in page.text
     for option in ['<option value="Dragon">', '<option value="Flying">', '<option value="arn">']:

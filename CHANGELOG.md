@@ -8,11 +8,13 @@
   Typing the filter yourself turns the switch on. Addresses saved with
   `scope=collection` still work.
 - The home page is now a quiet *map of the syntax* — every filter on one line, with an
-  example to press — and the codes of the expansions of the last five years; its title
-  and tagline are gone. To have the filter panel there instead, choose *Filters* under
-  *Home page* in Administration.
-- A button in the footer switches between light and dark pages; until you choose, they
-  follow your device as before. The browser tab now has an icon, one for each.
+  example to press — and the codes of the expansions of the last five years; its
+  title, its tagline and the line with the number of printings are gone (Administration
+  has the number). To have the filter panel there instead, choose *Filters* under *Home
+  page* in Administration.
+- Administration has an *Appearance* choice: light, dark or automatic pages. Automatic
+  follows your device, as before. The browser tab now has an icon, one for light and
+  one for dark.
 - Docker: a development image, `ghcr.io/ac-me-git/magic-db:edge`, is rebuilt at every
   change to the program, to try what is not released yet. `latest` is still the last
   release. The Administration page says when the development version is the one running,

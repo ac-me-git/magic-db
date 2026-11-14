@@ -21,14 +21,7 @@ from magicdb.config import LANGS, Settings
 from magicdb.decks import service as decks
 from magicdb.search import panel
 from magicdb.search.compiler import LIKE, ORDERS, FilterDef, _contains
-from magicdb.templating import (
-    LANG_COOKIE,
-    ONE_YEAR,
-    THEME_COOKIE,
-    THEMES,
-    safe_next,
-    search_url,
-)
+from magicdb.templating import LANG_COOKIE, ONE_YEAR, safe_next, search_url
 
 router = APIRouter()
 Conn = Annotated[sqlite3.Connection, Depends(db.get_conn)]
@@ -152,15 +145,13 @@ def recent_expansions(conn: sqlite3.Connection, on: date) -> list[tuple[str, lis
 @router.get("/", response_class=HTMLResponse)
 def home(request: Request, conn: Conn) -> HTMLResponse:
     if not db.has_catalog(conn):
-        return render(request, "home.html", catalog=None, options=None)
-    meta = dict(conn.execute("SELECT key, value FROM cat.meta"))
-    catalog = {"count": int(meta["row_count"]), "date": meta["built_at"][:10]}
+        return render(request, "home.html", catalog=False, options=None)
     if getattr(request.app.state, "home", HOME_VIEWS[0]) == "filters":
-        return render(request, "home.html", catalog=catalog, options=panel_options(conn))
+        return render(request, "home.html", catalog=True, options=panel_options(conn))
     return render(
         request,
         "home.html",
-        catalog=catalog,
+        catalog=True,
         options=None,
         basics=BASICS,
         syntax_map=syntax_map(),
@@ -330,15 +321,6 @@ def set_language(code: str, next: str = "/") -> RedirectResponse:
     response = RedirectResponse(safe_next(next), status_code=303)
     if code in LANGS:
         response.set_cookie(LANG_COOKIE, code, max_age=ONE_YEAR, samesite="lax", path="/")
-    return response
-
-
-@router.get("/theme/{name}")
-def set_theme(name: str, next: str = "/") -> RedirectResponse:
-    """Remember that the visitor wants the light or the dark pages, whatever the device asks."""
-    response = RedirectResponse(safe_next(next), status_code=303)
-    if name in THEMES:
-        response.set_cookie(THEME_COOKIE, name, max_age=ONE_YEAR, samesite="lax", path="/")
     return response
 
 

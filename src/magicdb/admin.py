@@ -10,10 +10,12 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Resp
 
 from magicdb import __version__, db, jobs, selfupdate, web
 from magicdb.catalog import ingest, publish
+from magicdb.templating import ONE_YEAR, THEME_COOKIE, THEMES
 
 router = APIRouter()
 Conn = Annotated[sqlite3.Connection, Depends(db.get_conn)]
 
+THEME_CHOICES = ("auto", *THEMES)  # "auto" is no choice: the pages follow the device
 HISTORY = 20
 SHOWN_BACKUPS = 30
 
@@ -71,6 +73,7 @@ def admin_page(request: Request, conn: Conn, started: str = "", failed: str = ""
         ],
         home=request.app.state.home,
         home_views=web.HOME_VIEWS,
+        theme_choices=THEME_CHOICES,
         settings=settings,
         data_dir=settings.data_dir.resolve(),
         backup_dir=settings.backup_dir.resolve(),
@@ -117,6 +120,17 @@ def choose_home(request: Request, conn: Conn, view: Annotated[str, Form()] = "")
         web.save_home(conn, view)
         request.app.state.home = view
     return RedirectResponse("/admin#home", status_code=303)
+
+
+@router.post("/admin/theme")
+def choose_theme(theme: Annotated[str, Form()] = "") -> Response:
+    """Light or dark pages in this browser, or what its device asks for ("auto")."""
+    response = RedirectResponse("/admin#theme", status_code=303)
+    if theme in THEMES:
+        response.set_cookie(THEME_COOKIE, theme, max_age=ONE_YEAR, samesite="lax", path="/")
+    elif theme == "auto":
+        response.delete_cookie(THEME_COOKIE, path="/", samesite="lax")
+    return response
 
 
 @router.post("/admin/{job}/run")

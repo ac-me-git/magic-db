@@ -201,37 +201,6 @@ main {
   vertical-align: -0.2em;
 }
 
-.theme-switch .button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4em;
-  padding: 0.3rem 0.7rem;
-  text-decoration: none;
-}
-
-/* "Dark mode" on a light page, "Light mode" on a dark one */
-.theme-switch .to-light {
-  display: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .to-dark {
-    display: none;
-  }
-
-  :root:not([data-theme="light"]) .to-light {
-    display: inline-flex;
-  }
-}
-
-:root[data-theme="dark"] .to-dark {
-  display: none;
-}
-
-:root[data-theme="dark"] .to-light {
-  display: inline-flex;
-}
-
 /* --- home and messages --------------------------------------------------------- */
 
 .hero {

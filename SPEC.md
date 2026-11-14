@@ -426,7 +426,7 @@ a search, edit the text in the search box.
 
 | Route | Content |
 |---|---|
-| `/` | search box, catalog status line, and either the map of the syntax with the recent expansions or the filter panel |
+| `/` | search box, and either the map of the syntax with the recent expansions or the filter panel |
 | `/filter?…` | the filter panel's form target: redirects to `/search?q=…` |
 | `/search?q=&page=&view=grid\|list` | results |
 | `/card/{scryfall_id}` | large image (flip for back face), full text, legalities, prices, all printings, my copies of this card, add form |
@@ -539,8 +539,9 @@ number or by name with the column headings, and tick boxes.
   draft innovation, commander) in collector-number order; linked from the collection
   page and from Administration.
 
-**Home page.** The page has no title or tagline of its own: the name is in the header.
-Under the catalog status line it shows one of two things, chosen in Administration
+**Home page.** The page has no title, tagline or catalog status line of its own: the
+name is in the header, and how many printings the catalog holds and when it was built
+are in Administration. It shows one of two things, chosen in Administration
 ("Home page": two buttons, `POST /admin/home` with `view=map|filters`). The choice is
 one for the whole server, saved in the `settings` table under `home` and mirrored in
 `app.state.home` (`web.load_home`, `web.save_home`), like the safety lock, and can be
@@ -573,8 +574,7 @@ Without a catalog the page has only the notice that it is not there yet.
 the search box, and two links — "My collection", which opens the statistics, and "My
 decks". The statistics page is the collection's landing page and links to the card
 list, fast input, locations, import and export; the administration page links to
-them too. Syntax and Administration are in the footer, with the languages and the
-button for light or dark pages (see "Light and dark" below).
+them too. Syntax and Administration are in the footer, with the languages.
 
 - **Where to search.** Beside the Search button there is a switch, drawn like the
   safety lock: "search only my collection". Searching the collection is not a mode but
@@ -660,15 +660,15 @@ page gets `t`, `lang`, `languages` and `here` from a template context processor
 (`templating.py`), so routes never deal with language. Messages of `QueryError` are
 English only.
 
-**Light and dark.** The pages follow the device (`prefers-color-scheme`) until the
-visitor presses the button in the footer: "Dark mode" on a light page, "Light mode" on
-a dark one. It is a link to `/theme/{light|dark}?next=…`, which stores the choice in the
-`magicdb_theme` cookie for a year and goes back; from then on the choice wins over the
-device, **per visitor**, and is written as `data-theme` on `<html>`. It works without
-JavaScript: both links are in every page and the style sheet shows the one that applies,
-because without a choice the server does not know what the device asked for. The dark
-colours are therefore listed twice in `app.css` (for the device, for the choice), and a
-test keeps the lists equal. The browser-tab icon has a version for each
+**Light and dark.** The pages follow the device (`prefers-color-scheme`) unless the
+visitor chooses otherwise in Administration, under "Appearance": three buttons,
+Automatic, Light and Dark (`POST /admin/theme` with `theme=auto|light|dark`). Light and
+Dark are stored in the `magicdb_theme` cookie for a year — so the choice is **per
+browser**, not one for the whole server — and written as `data-theme` on `<html>`,
+which wins over the device; Automatic throws the cookie away. It can be changed while
+the collection is locked. Without a choice the server does not know what the device
+asked for, so the dark colours are listed twice in `app.css` (for the device, for the
+choice), and a test keeps the lists equal. The browser-tab icon has a version for each
 (`static/favicon-light.svg`, `favicon-dark.svg`): the page links the one of the chosen
 theme, or both with a `media` query when nothing was chosen. Every page gets `theme`
 from the same context processor.
@@ -791,8 +791,8 @@ Details (`jobs.py`):
 **`/admin`** shows the live catalog, the backups (each downloadable; only file names
 the app gives to backups are served), the last 20 job runs in local time and the
 settings, and has "Update the catalog now" and "Back up now" (`POST
-/admin/{job}/run`, run in a background thread) and the choice of what the home page
-shows (§7, "Home page").
+/admin/{job}/run`, run in a background thread) and two choices: what the home page
+shows (§7, "Home page") and light or dark pages (§7, "Light and dark").
 
 **Password.** `MAGICDB_PASSWORD` turns on HTTP Basic auth for everything except
 `/healthz`: any user name, that password, compared in constant time (`app.py`).
