@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ t("stats.title") }} · {{ t("app.name") }}{% endblock %}
+{% block title %}{{ t("nav.my_stats") }} · {{ t("app.name") }}{% endblock %}
 
 {% from "_charts.html" import chart with context %}
 
@@ -9,7 +9,7 @@
 {%- endmacro %}
 
 {% block content %}
-<h1 class="page-title">{{ t("collection.title") }}</h1>
+<h1 class="page-title">{{ t("nav.my_stats") }}</h1>
 <p class="links">
   <a href="/collection">{{ t("collection.hub.list") }}</a> ·
   <a href="/fast">{{ t("nav.fast") }}</a> ·

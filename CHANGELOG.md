@@ -16,6 +16,7 @@
   menu (☰). The menu has *Search only my collection*, the safety lock, My stats, My
   decks, the language, light, dark or automatic pages (*Auto* follows your device, as
   before) and Administration. While the collection is locked, the ☰ shows a padlock.
+  The statistics page is now called *My stats*, like its link.
   The browser tab now has an icon, one for light and one for dark.
 - The footer keeps only the Fan Content notice — with links to Wizards of the Coast and
   to Scryfall, credited on the copyright line — and *Buy me a coffee* at the very

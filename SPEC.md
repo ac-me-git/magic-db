@@ -584,7 +584,8 @@ or with Escape. It holds, in this order:
   "Light and dark"), each a row of small buttons with the current one filled in;
 - "Administration", with a gear.
 
-The link to the page being shown is marked. The statistics page is the collection's
+The link to the page being shown is marked. The statistics page, titled "My stats"
+like its link, is the collection's
 landing page and links to the card list, fast input, locations, import and export; the
 administration page links to them too, and to the syntax page.
 

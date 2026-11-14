@@ -125,7 +125,8 @@ def test_syntax_is_reached_from_administration(client):
 
 def test_my_collection_opens_the_statistics_with_the_ways_onward(owned):
     page = owned.get("/stats").text
-    assert '<h1 class="page-title">My collection</h1>' in page and "Statistics" in page
+    assert '<h1 class="page-title">My stats</h1>' in page and "Statistics" in page
+    assert "<title>My stats · AMTG</title>" in page  # the same name as the link to it
     hub = page.split('<p class="links">')[1].split("</p>")[0]
     assert links(hub) == ["/collection", "/fast", "/locations", "/import", "/export"]
     assert "<dd>6</dd>" in page  # and the numbers are there
@@ -573,7 +574,9 @@ def test_new_labels_in_italian(owned):
         "Nessuna carta trovata nella tua collezione."
         in owned.get("/search?q=t:dragon haveprint:yes").text
     )
-    assert "Elenco delle carte" in owned.get("/stats").text
+    stats = owned.get("/stats").text
+    assert "Elenco delle carte" in stats
+    assert '<h1 class="page-title">Le mie statistiche</h1>' in stats
 
 
 # --- style sheets and scripts are refreshed when they change --------------------------
