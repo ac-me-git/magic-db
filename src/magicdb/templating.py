@@ -15,6 +15,8 @@ from magicdb.i18n import translator
 from magicdb.symbols import render_symbols
 
 LANG_COOKIE = "magicdb_lang"
+THEME_COOKIE = "magicdb_theme"
+THEMES = ("light", "dark")
 ONE_YEAR = 365 * 24 * 60 * 60
 _SYMBOL = {"eur": "€", "usd": "$"}
 
@@ -97,7 +99,9 @@ def build_templates(settings: Settings) -> Jinja2Templates:
     def per_request(request: Request) -> dict[str, object]:
         lang = resolve_language(request, settings.lang)
         here = request.url.path + (f"?{request.url.query}" if request.url.query else "")
+        chosen = request.cookies.get(THEME_COOKIE)
         return {
+            "theme": chosen if chosen in THEMES else "",  # '' follows the device
             "t": _translator(lang),
             "lang": lang,
             "languages": LANGS,

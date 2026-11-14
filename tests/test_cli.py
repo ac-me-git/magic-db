@@ -132,10 +132,12 @@ def test_every_data_file_of_the_package_is_of_a_kind_the_builds_include():
     assumption that nothing the app needs lives outside it."""
     package = ROOT / "src" / "magicdb"
     kinds = {p.suffix for p in package.rglob("*") if p.is_file() and "__pycache__" not in p.parts}
-    assert kinds == {".py", ".html", ".css", ".js", ".json", ".sql"}
+    assert kinds == {".py", ".html", ".css", ".js", ".json", ".sql", ".svg"}
     for needed in [
         "templates/base.html",
         "static/app.css",
+        "static/favicon-light.svg",
+        "static/favicon-dark.svg",
         "static/htmx.min.js",
         "i18n/en.json",
         "i18n/it.json",

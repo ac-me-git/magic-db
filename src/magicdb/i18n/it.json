@@ -13,6 +13,8 @@
   "footer.coffee": "Offrimi un caffè",
   "language.en": "English",
   "language.it": "Italiano",
+  "theme.dark": "Modalità scura",
+  "theme.light": "Modalità chiara",
   "search.placeholder": "Nome della carta, oppure t:dragon c:r mv<=4",
   "search.button": "Cerca",
   "nav.filters": "Filtri",

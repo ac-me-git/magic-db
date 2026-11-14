@@ -10,6 +10,8 @@
 - The home page opens on a *map of the syntax* — every filter on one line, with an
   example to press — and on the codes of the expansions of the last five years. The
   filter panel is still there, folded under *Search by filters*.
+- A button in the footer switches between light and dark pages; until you choose, they
+  follow your device as before. The browser tab now has an icon, one for each.
 - Docker: a development image, `ghcr.io/ac-me-git/magic-db:edge`, is rebuilt at every
   change to the program, to try what is not released yet. `latest` is still the last
   release. The Administration page says when the development version is the one running,

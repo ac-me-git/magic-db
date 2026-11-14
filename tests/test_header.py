@@ -509,9 +509,10 @@ def test_static_files_carry_a_fingerprint_of_their_content(client):
     from magicdb.templating import STATIC_DIR, asset
 
     page = client.get("/").text
-    for name in ("app.css", "htmx.min.js", "app.js"):
+    names = ("app.css", "htmx.min.js", "app.js", "favicon-light.svg", "favicon-dark.svg")
+    for name in names:
         digest = hashlib.sha256((STATIC_DIR / name).read_bytes()).hexdigest()[:10]
         assert asset(name) == f"/static/{name}?v={digest}"
         assert asset(name) in page, name
         assert client.get(asset(name)).status_code == 200
-    assert len(set(re.findall(r"\?v=([0-9a-f]{10})", page))) == 3  # one per file
+    assert len(set(re.findall(r"\?v=([0-9a-f]{10})", page))) == len(names)  # one per file

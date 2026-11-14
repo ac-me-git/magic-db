@@ -103,6 +103,7 @@ uv run magicdb
 | **My collection** | Statistics, and from there: the card list, fast input, locations, import, export |
 | **My decks** | Deck lists and how complete each one is |
 | **Syntax** (footer) | Every search filter, with examples you can click |
+| **Dark mode / Light mode** (footer) | Switches between light and dark pages; until you choose, they follow your device |
 | **Administration** (footer) | Whether a newer version is out (and, on Windows, install it); catalog and backup status, run them now, download a backup |
 
 In the list view, click a column's heading to sort by it; click again to reverse.

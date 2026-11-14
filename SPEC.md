@@ -560,7 +560,8 @@ Without a catalog the page has only the notice that it is not there yet.
 the search box, and two links — "My collection", which opens the statistics, and "My
 decks". The statistics page is the collection's landing page and links to the card
 list, fast input, locations, import and export; the administration page links to
-them too. Syntax and Administration are in the footer.
+them too. Syntax and Administration are in the footer, with the languages and the
+button for light or dark pages (see "Light and dark" below).
 
 - **Where to search.** Beside the Search button there is a switch, drawn like the
   safety lock: "search only my collection". Searching the collection is not a mode but
@@ -645,6 +646,19 @@ the choice made with the selector in the footer (`/lang/{code}?next=…`, stored
 page gets `t`, `lang`, `languages` and `here` from a template context processor
 (`templating.py`), so routes never deal with language. Messages of `QueryError` are
 English only.
+
+**Light and dark.** The pages follow the device (`prefers-color-scheme`) until the
+visitor presses the button in the footer: "Dark mode" on a light page, "Light mode" on
+a dark one. It is a link to `/theme/{light|dark}?next=…`, which stores the choice in the
+`magicdb_theme` cookie for a year and goes back; from then on the choice wins over the
+device, **per visitor**, and is written as `data-theme` on `<html>`. It works without
+JavaScript: both links are in every page and the style sheet shows the one that applies,
+because without a choice the server does not know what the device asked for. The dark
+colours are therefore listed twice in `app.css` (for the device, for the choice), and a
+test keeps the lists equal. The browser-tab icon has a version for each
+(`static/favicon-light.svg`, `favicon-dark.svg`): the page links the one of the chosen
+theme, or both with a `media` query when nothing was chosen. Every page gets `theme`
+from the same context processor.
 
 ## 8. Import, export, backup
 

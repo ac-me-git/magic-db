@@ -15,8 +15,15 @@
   color-scheme: light dark;
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* The dark colours are written twice: for a device that asks for them, unless the
+   visitor chose the light pages, and for a visitor who chose the dark ones (the button
+   in the footer). A test keeps the two lists equal. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #15141b;
     --surface: #1e1d27;
     --text: #ecebf2;
@@ -31,6 +38,23 @@
     --switch-off: #45425a;
     --switch-off-icon: #7a7794;
   }
+}
+
+:root[data-theme="dark"] {
+  --bg: #15141b;
+  --surface: #1e1d27;
+  --text: #ecebf2;
+  --muted: #a3a0b4;
+  --border: #33313f;
+  --accent: #9d90f0;
+  --accent-text: #15141b;
+  --error-bg: #3a1f1b;
+  --error-border: #e57368;
+  --row: #25232f;
+  --switch-on: #e0a030;
+  --switch-off: #45425a;
+  --switch-off-icon: #7a7794;
+  color-scheme: dark;
 }
 
 * {
@@ -175,6 +199,37 @@ main {
 .site-footer .coffee svg {
   margin-right: 0.3em;
   vertical-align: -0.2em;
+}
+
+.theme-switch .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.3rem 0.7rem;
+  text-decoration: none;
+}
+
+/* "Dark mode" on a light page, "Light mode" on a dark one */
+.theme-switch .to-light {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .to-dark {
+    display: none;
+  }
+
+  :root:not([data-theme="light"]) .to-light {
+    display: inline-flex;
+  }
+}
+
+:root[data-theme="dark"] .to-dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .to-light {
+  display: inline-flex;
 }
 
 /* --- home and messages --------------------------------------------------------- */

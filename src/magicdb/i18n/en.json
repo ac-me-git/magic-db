@@ -13,6 +13,8 @@
   "footer.coffee": "Buy me a coffee",
   "language.en": "English",
   "language.it": "Italiano",
+  "theme.dark": "Dark mode",
+  "theme.light": "Light mode",
   "search.placeholder": "Card name, or t:dragon c:r mv<=4",
   "search.button": "Search",
   "nav.filters": "Filters",
