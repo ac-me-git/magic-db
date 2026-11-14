@@ -493,7 +493,18 @@ released one and when that was last asked.
   then shows "development version, commit abc1234" beside the installed version, with
   a line on what it is and how to go back to the released one. A release, the
   executable and a checkout have no such file and show nothing; a file that does not
-  hold a commit id is ignored. Newer releases are announced as usual.
+  hold a commit id is ignored.
+  - With the release check, a development version also asks GitHub which commit was
+    last published as one: the newest run of the CI workflow on `main` that passed
+    (its last job publishes `edge`), at an address derived from `MAGICDB_RELEASES_URL`
+    (`selfupdate.edge_url`; nothing is asked when that is not `…/releases/latest`). The
+    two answers are trusted for 15 minutes instead of 12 hours.
+  - The page shows "Latest development version": that commit, its date and the first
+    line of its message; then either "You have the latest development version" or
+    that a newer one is available, with `docker compose pull` / `up -d`
+    (`selfupdate.newer_edge`: the published commit is not the running one).
+  - A newer release is still announced, with its notes, but without the commands to
+    update to it: a development version is brought up to date as a development version.
 - The safety lock does not block these (`/admin/…` is exempt); the same-origin check
   and the optional password do apply.
 

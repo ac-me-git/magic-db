@@ -118,7 +118,10 @@ never touches `latest` or the version tags, and makes no GitHub release.
 The image is built with its commit (`--build-arg REVISION=…`, which the Dockerfile writes
 to `magicdb/REVISION`), so its Administration page shows "development version, commit …"
 beside the version number. A release, the executable and a checkout have no such file and
-show nothing. The same commit is the image's `org.opencontainers.image.revision` label:
+show nothing. A development version also asks GitHub for the newest run of the CI workflow
+on `main` that passed — the commit last published as `edge` — and the page says whether
+that is the one running. The same commit is the image's
+`org.opencontainers.image.revision` label:
 
 ```sh
 docker image inspect ghcr.io/<owner>/magic-db:edge --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}'

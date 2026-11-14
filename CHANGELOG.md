@@ -10,7 +10,8 @@
 - Docker: a development image, `ghcr.io/ac-me-git/magic-db:edge`, is rebuilt at every
   change to the program, to try what is not released yet. `latest` is still the last
   release. The Administration page says when the development version is the one running,
-  and from which commit.
+  from which commit, which is the latest development version published and whether it is
+  newer.
 
 ## 1.2.1 — 2026-11-14
 

@@ -11,6 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from magicdb import __version__, cli, selfupdate
+from magicdb import admin as admin_page
 from magicdb.app import create_app
 from magicdb.config import DEFAULT_RELEASES_URL, ConfigError, load_settings
 
@@ -33,6 +34,32 @@ def github(version: str = "9.9.9", **asset: object) -> dict:
                 "size": len(NEW_PROGRAM),
                 **asset,
             },
+        ],
+    }
+
+
+NEWER = "9bc60dc0ffee0123456789abcdef0123456789ab"
+EDGE_URL = (
+    "https://api.github.com/repos/ac-me-git/magic-db/actions/workflows/ci.yml/runs"
+    "?branch=main&event=push&status=success&per_page=1"
+)
+
+
+def runs(commit: str = NEWER, **head_commit: object) -> dict:
+    """GitHub's list of workflow runs, cut down to what is read."""
+    return {
+        "total_count": 1,
+        "workflow_runs": [
+            {
+                "head_sha": commit,
+                "conclusion": "success",
+                "head_commit": {
+                    "id": commit,
+                    "message": "Admin: say more\n\nA longer explanation.",
+                    "timestamp": "2026-11-14T10:00:00Z",
+                    **head_commit,
+                },
+            }
         ],
     }
 
@@ -61,13 +88,14 @@ class Asked(list):
 def latest(monkeypatch):
     """Make GitHub answer with a release; returns the list of URLs that were asked."""
     asked = Asked()
-    answer = {"value": Answer(github())}
+    answer = {"value": Answer(github()), "edge": Answer(runs())}
 
     def get(url: str, **kwargs: object) -> Answer:
         asked.append(url)
-        if isinstance(answer["value"], Exception):
-            raise answer["value"]
-        return answer["value"]
+        reply = answer["edge" if "/actions/" in url else "value"]
+        if isinstance(reply, Exception):
+            raise reply
+        return reply
 
     monkeypatch.setattr(selfupdate, "_get", get)
     asked.answer = answer
@@ -495,6 +523,145 @@ def test_admin_says_when_it_is_the_development_version(client, latest, revision_
     page = client.get("/admin").text
     assert "<strong>versione di sviluppo, commit 199f1a1</strong>" in page
     assert "Questa è la versione di sviluppo" in page and "immagine edge" in page
+
+
+def test_edge_url_follows_the_releases_address(settings):
+    assert selfupdate.edge_url(settings) == EDGE_URL
+    fork = replace(settings, releases_url="https://api.github.com/repos/me/fork/releases/latest")
+    assert selfupdate.edge_url(fork).startswith(
+        "https://api.github.com/repos/me/fork/actions/workflows/ci.yml/runs?branch=main"
+    )
+    for other in ("https://example.com/latest.json", "https://x/releases/latest/extra", ""):
+        assert selfupdate.edge_url(replace(settings, releases_url=other)) == ""
+
+
+def test_read_edge():
+    edge = selfupdate.read_edge(runs())
+    assert (edge.commit, edge.date, edge.title) == (
+        NEWER,
+        "2026-11-14T10:00:00Z",
+        "Admin: say more",
+    )
+    assert selfupdate.read_edge({"total_count": 0, "workflow_runs": []}) is None
+    bare = selfupdate.read_edge({"workflow_runs": [{"head_sha": NEWER}]})
+    assert (bare.commit, bare.date, bare.title) == (NEWER, "", "")
+    long = selfupdate.read_edge(runs(message="x" * 500, timestamp="y" * 500))
+    assert len(long.title) == selfupdate.TITLE_LIMIT and len(long.date) == 40
+    for bad in (
+        None,
+        [],
+        {},
+        {"message": "Not Found"},
+        {"workflow_runs": "x"},
+        {"workflow_runs": ["x"]},
+        {"workflow_runs": [{"head_sha": "main"}]},
+        {"workflow_runs": [{"head_sha": NEWER[:7]}]},
+        {"workflow_runs": [{"head_sha": "<script>" + NEWER}]},
+    ):
+        with pytest.raises(ValueError):
+            selfupdate.read_edge(bad)
+
+
+def test_only_a_development_version_asks_for_the_newest_one(settings, latest, revision_file):
+    selfupdate.check(settings, now=1000.0)
+    assert latest == [DEFAULT_RELEASES_URL] and selfupdate.state.edge is None
+
+    revision_file.write_text(COMMIT, encoding="ascii")
+    checked = selfupdate.check(settings, force=True, now=2000.0)
+    assert latest[1:] == [DEFAULT_RELEASES_URL, EDGE_URL]
+    assert checked.edge.commit == NEWER and checked.release.version == "9.9.9"
+    assert selfupdate.newer_edge(settings).commit == NEWER
+    # and asks again sooner than a release does
+    selfupdate.check(settings, now=2000.0 + selfupdate.EDGE_CHECK_EVERY - 1)
+    assert len(latest) == 3
+    selfupdate.check(settings, now=2000.0 + selfupdate.EDGE_CHECK_EVERY + 1)
+    assert len(latest) == 5
+
+    off = replace(settings, update_check=False)
+    assert selfupdate.check(off, force=True) is selfupdate.state and len(latest) == 5
+    assert selfupdate.newer_edge(off) is None
+    other = replace(settings, releases_url="https://example.com/latest.json")
+    selfupdate.check(other, force=True, now=9000.0)
+    assert latest[5:] == ["https://example.com/latest.json"]  # no telling where to ask
+
+
+def test_newer_edge_is_another_commit_than_the_one_running(settings, latest, revision_file):
+    revision_file.write_text(NEWER, encoding="ascii")
+    selfupdate.check(settings, now=1000.0)
+    assert selfupdate.state.edge.commit == NEWER and selfupdate.newer_edge(settings) is None
+    revision_file.write_text(NEWER[:7], encoding="ascii")  # a short id is the same commit
+    assert selfupdate.newer_edge(settings) is None
+    revision_file.write_text(COMMIT, encoding="ascii")
+    assert selfupdate.newer_edge(settings).commit == NEWER
+    revision_file.unlink()  # a release never offers a development version
+    assert selfupdate.newer_edge(settings) is None
+
+
+def test_a_failed_edge_check_is_reported_and_keeps_what_was_known(settings, latest, revision_file):
+    revision_file.write_text(COMMIT, encoding="ascii")
+    selfupdate.check(settings, now=1000.0)
+    latest.answer["edge"] = Answer({"message": "rate limited"}, status=403)
+    checked = selfupdate.check(settings, force=True, now=2000.0)
+    assert checked.error == "HTTP 403" and checked.edge.commit == NEWER
+    latest.answer["edge"] = Answer({"message": "Not Found"})
+    assert selfupdate.check(settings, force=True, now=3000.0).error == "unexpected answer"
+    latest.answer["edge"] = Answer({"workflow_runs": []})  # nothing published yet
+    checked = selfupdate.check(settings, force=True, now=4000.0)
+    assert checked.error == "" and checked.edge is None
+
+
+def test_admin_shows_the_latest_development_version(client, latest, revision_file):
+    latest.answer["value"] = Answer(github(__version__))
+    page = client.get("/admin").text
+    assert "Latest development version" not in page  # a release says nothing about it
+    assert "You have the latest version." in page and len(latest) == 1
+
+    revision_file.write_text(COMMIT, encoding="ascii")
+    client.post("/admin/version/check")
+    page = client.get("/admin").text
+    when = admin_page.local_time("2026-11-14T10:00:00Z")
+    assert (
+        f"<dt>Latest development version</dt>\n    <dd>commit 9bc60dc · {when}<br>Admin: say more</dd>"
+        in page
+    )
+    assert "A longer explanation." not in page  # the first line of the message only
+    assert "<strong>A newer development version is available: commit 9bc60dc.</strong>" in page
+    assert "docker compose pull\ndocker compose up -d" in page
+    assert "You have the latest" not in page
+
+    latest.answer["edge"] = Answer(runs(COMMIT, message="<b>bold</b> & co"))
+    client.post("/admin/version/check")
+    page = client.get("/admin").text
+    assert "commit 199f1a1 ·" in page and "&lt;b&gt;bold&lt;/b&gt; &amp; co" in page
+    assert "You have the latest development version." in page
+    assert "is available" not in page and "docker compose pull\n" not in page
+    assert "You have the latest version." not in page
+
+    latest.answer["edge"] = Answer({"workflow_runs": []})
+    client.post("/admin/version/check")
+    page = client.get("/admin").text
+    assert "<dt>Latest development version</dt>\n    <dd>—</dd>" in page
+    assert "development version is available" not in page
+
+
+def test_a_development_version_is_told_of_a_release_but_updated_as_one(
+    client, latest, revision_file, monkeypatch
+):
+    monkeypatch.setattr(selfupdate, "install_kind", lambda: "docker")
+    revision_file.write_text(COMMIT, encoding="ascii")
+    page = client.get("/admin").text
+    assert "Version 9.9.9 is available." in page and "What is new" in page
+    # one set of commands, for the development version
+    assert page.count("docker compose pull\ndocker compose up -d") == 1
+    assert page.index("Version 9.9.9 is available.") < page.index("A newer development version")
+
+    client.get("/lang/it")
+    page = client.get("/admin").text
+    assert "<dt>Ultima versione di sviluppo</dt>" in page
+    assert "È disponibile una versione di sviluppo più recente: commit 9bc60dc." in page
+    latest.answer["edge"] = Answer(runs(COMMIT))
+    client.post("/admin/version/check")
+    assert "ultima versione di sviluppo." in client.get("/admin").text
 
 
 def test_the_header_shows_the_new_name(admin):

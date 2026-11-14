@@ -63,12 +63,25 @@ Then open `http://localhost:8080`. Data lives in the `magic-db-data` volume. Set
 To update: `docker compose pull`, then `docker compose up -d`. The Administration page
 tells you when there is something to update to.
 
-To try what is not released yet, use the development image: in `compose.yaml` write
-`magic-db:edge` instead of `magic-db:latest`, then `docker compose pull` and
-`docker compose up -d`. `edge` is rebuilt at every change to the program, so it is newer
-and less tried than a release; the Administration page says that it is the development
-version, and from which commit. Make a backup first (Administration). To go back, write
-`latest` again, pull and up.
+To try what is not released yet, use the development image, `edge`. It is rebuilt at
+every change to the program, so it is newer and less tried than a release. Make a backup
+first (Administration), then in the folder of `compose.yaml`:
+
+```sh
+sed -i 's|magic-db:latest|magic-db:edge|' compose.yaml
+docker compose pull
+docker compose up -d
+```
+
+The Administration page then says that it is the development version, from which commit,
+and whether a newer one is out; the last two commands fetch it. To go back to the released
+version:
+
+```sh
+sed -i 's|magic-db:edge|magic-db:latest|' compose.yaml
+docker compose pull
+docker compose up -d
+```
 
 ### From source
 

@@ -7,6 +7,9 @@ downloaded beside the old one, checked against the digest GitHub publishes for i
 two are swapped by renaming, and a new process is started before this one exits.
 
 A Docker container or a source checkout cannot update itself; the page says how to.
+
+A development version (the ":edge" image) also asks which commit was last published as
+one, so that the page can say whether a newer one is there to be pulled.
 """
 
 import hashlib
@@ -27,11 +30,15 @@ from magicdb.config import DEFAULT_RELEASES_URL, Settings
 
 ASSET_NAME = "magic-db.exe"
 CHECK_EVERY = 12 * 3600  # seconds a good answer is trusted
+EDGE_CHECK_EVERY = 15 * 60  # by a development version: there is a new one far more often
 RETRY_AFTER = 10 * 60  # seconds before asking again after a failure
 CHECK_TIMEOUT = 5.0  # the administration page waits for this at most
 DOWNLOAD_TIMEOUT = 30.0  # per read, not for the whole file
 MAX_SIZE = 200 * 1024 * 1024  # refuse a download that is absurdly large
 NOTES_LIMIT = 2000
+TITLE_LIMIT = 120
+# The newest run of the CI workflow on main that passed: its last job publishes ":edge".
+EDGE_RUNS = "/actions/workflows/ci.yml/runs?branch=main&event=push&status=success&per_page=1"
 EXIT_DELAY = 1.5  # seconds: let the answer reach the browser before exiting
 AFTER_UPDATE = "MAGICDB_AFTER_UPDATE"  # set for the process started by an update
 HEADERS = {
@@ -42,6 +49,7 @@ HEADERS = {
 REVISION_FILE = Path(__file__).parent / "REVISION"  # only in a development image
 _VERSION = re.compile(r"v?(\d+)\.(\d+)\.(\d+)")
 _REVISION = re.compile(r"[0-9a-f]{7,40}")
+_COMMIT = re.compile(r"[0-9a-f]{40}")
 _DIGEST = re.compile(r"sha256:([0-9a-f]{64})")
 
 
@@ -65,9 +73,19 @@ class Release:
 
 
 @dataclass
+class Edge:
+    """The newest development version that has been published (the ":edge" image)."""
+
+    commit: str
+    date: str  # when it was committed, as GitHub writes it; may be empty
+    title: str  # first line of the commit message
+
+
+@dataclass
 class State:
     checked_at: float = 0.0  # time.time() of the last attempt; 0 = never
     release: Release | None = None
+    edge: Edge | None = None  # asked only by a development version
     error: str = ""
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -135,25 +153,55 @@ def read_release(payload: object) -> Release:
     return release
 
 
+def edge_url(settings: Settings) -> str:
+    """Where GitHub says which commit was last published as the development version;
+    '' when the releases address is not of the usual form, so there is no telling."""
+    base, found, rest = settings.releases_url.partition("/releases/latest")
+    return base + EDGE_RUNS if found and not rest else ""
+
+
+def read_edge(payload: object) -> Edge | None:
+    """The parts of GitHub's 'workflow runs' answer that are used; None for no run yet."""
+    runs = payload.get("workflow_runs") if isinstance(payload, dict) else None
+    if not isinstance(runs, list):
+        raise ValueError("unexpected answer")
+    if not runs:
+        return None
+    run = runs[0]
+    if not isinstance(run, dict) or not _COMMIT.fullmatch(str(run.get("head_sha", ""))):
+        raise ValueError("unexpected answer")
+    commit = run.get("head_commit")
+    commit = commit if isinstance(commit, dict) else {}
+    return Edge(
+        commit=run["head_sha"],
+        date=str(commit.get("timestamp") or "")[:40],
+        title=str(commit.get("message") or "").strip().split("\n")[0][:TITLE_LIMIT],
+    )
+
+
+def _ask(url: str) -> object:
+    response = _get(url, headers=HEADERS, timeout=CHECK_TIMEOUT, follow_redirects=True)
+    response.raise_for_status()
+    return response.json()
+
+
 def check(settings: Settings, force: bool = False, now: float | None = None) -> State:
-    """Ask for the latest release, unless a recent answer is still good."""
+    """Ask for the latest release, unless a recent answer is still good. A development
+    version also asks for the newest development version, and trusts answers for less."""
     if not settings.update_check:
         return state
     now = time.time() if now is None else now
+    development = bool(development_revision())
     with state.lock:
-        wait = RETRY_AFTER if state.error else CHECK_EVERY
+        good_for = EDGE_CHECK_EVERY if development else CHECK_EVERY
+        wait = RETRY_AFTER if state.error else good_for
         if not force and state.checked_at and now - state.checked_at < wait:
             return state
         state.checked_at = now
         try:
-            response = _get(
-                settings.releases_url,
-                headers=HEADERS,
-                timeout=CHECK_TIMEOUT,
-                follow_redirects=True,
-            )
-            response.raise_for_status()
-            state.release, state.error = read_release(response.json()), ""
+            state.release, state.error = read_release(_ask(settings.releases_url)), ""
+            if development and edge_url(settings):
+                state.edge = read_edge(_ask(edge_url(settings)))
         except httpx.HTTPStatusError as error:
             state.error = f"HTTP {error.response.status_code}"
         except (httpx.HTTPError, ValueError) as error:
@@ -166,6 +214,15 @@ def available(settings: Settings) -> Release | None:
     release = state.release
     if settings.update_check and release is not None and is_newer(release.version):
         return release
+    return None
+
+
+def newer_edge(settings: Settings) -> Edge | None:
+    """The development version to offer: the newest published one, if this is a
+    development version made from another commit."""
+    revision, edge = development_revision(), state.edge
+    if settings.update_check and revision and edge and not edge.commit.startswith(revision):
+        return edge
     return None
 
 

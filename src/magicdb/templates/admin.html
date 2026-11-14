@@ -22,6 +22,10 @@
     <dt>{{ t("admin.version.current") }}</dt><dd>{{ version }}{% if revision %} · <strong>{{ t("admin.version.development", commit=revision) }}</strong>{% endif %}</dd>
     {% if settings.update_check %}
     <dt>{{ t("admin.version.latest") }}</dt><dd>{{ latest or "—" }}</dd>
+    {% if revision %}
+    <dt>{{ t("admin.version.edge") }}</dt>
+    <dd>{% if edge %}{{ t("admin.version.commit", commit=edge.commit[:7]) }}{% if edge_date %} · {{ edge_date }}{% endif %}{% if edge.title %}<br>{{ edge.title }}{% endif %}{% else %}—{% endif %}</dd>
+    {% endif %}
     <dt>{{ t("admin.version.checked") }}</dt><dd>{{ checked_at or t("admin.version.never") }}</dd>
     {% endif %}
   </dl>
@@ -41,6 +45,8 @@
     <button type="submit">{{ t("admin.version.install", version=release.version) }}</button>
   </form>
   <p class="hint">{{ t("admin.version.install_hint") }}</p>
+  {% elif revision %}
+  {# a development version is brought up to date as said below, not release by release #}
   {% elif install_kind == "docker" %}
   <p class="hint">{{ t("admin.version.how.docker") }}</p>
   <pre class="commands">docker compose pull
@@ -52,8 +58,16 @@ uv sync</pre>
   {% else %}
   <p class="hint">{{ t("admin.version.how.manual") }}</p>
   {% endif %}
-  {% elif latest %}
+  {% elif latest and not revision %}
   <p class="hint">{{ t("admin.version.up_to_date") }}</p>
+  {% endif %}
+  {% if newer_edge %}
+  <p role="status"><strong>{{ t("admin.version.edge.available", commit=newer_edge.commit[:7]) }}</strong></p>
+  <p class="hint">{{ t("admin.version.how.docker") }}</p>
+  <pre class="commands">docker compose pull
+docker compose up -d</pre>
+  {% elif revision and edge %}
+  <p class="hint">{{ t("admin.version.edge.up_to_date") }}</p>
   {% endif %}
   <form method="post" action="/admin/version/check">
     <button type="submit">{{ t("admin.version.check") }}</button>
