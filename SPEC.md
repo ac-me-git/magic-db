@@ -456,7 +456,7 @@ the `magicdb_add` cookie. HTMX only loads fragments (name suggestions, the boxes
 fast input); all of it also works as plain page loads. Without a `next`, a change to
 an entry goes back to `/stats`. Search results show a
 badge with the copies owned: of every printing in card mode, of that printing in print
-mode. The card page lists every copy of the card and adds the printing shown.
+mode. On a card image it sits in the bottom left corner, clear of the mana cost. The card page lists every copy of the card and adds the printing shown.
 
 **Images.** `/img/small|normal/{id}/{front|back}` serves the file from
 `data/images/`; on a miss it downloads from the URL stored in the catalog, saves it,
@@ -999,7 +999,8 @@ Rules:
   its notes. Below them, one list of the cards that several decks want and the
   collection cannot give to all, with the copies owned, the copies wanted and which
   decks want how many. `/decks/{id}` lists the deck by board and card type with the
-  state of every row, the estimated cost of the deck and of what is missing, a download
+  copies owned of every row — red when missing, in the accent colour when contested,
+  the state itself in the number's tooltip and on the row's edge — the estimated cost of the deck and of what is missing, a download
   as text and a link to see the cards as images (`deck:"name"`). A card's page lists
   the decks it is in.
 - A **New deck** button, at the top right of `/decks`, makes an empty deck named

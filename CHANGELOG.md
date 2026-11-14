@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- In the search results the ×N badge of the copies you own sits in the bottom left
+  corner of the card image, where it no longer covers the mana cost.
+- A deck's list drops the *In collection* column ("have it"): the copies owned say it,
+  in red when some are missing and in the accent colour when other decks want them too
+  (the reason shows when you point at the number).
 - The Decks page lists the decks one under the other, each with its colour identity in
   mana symbols, the cards in the main deck and the sideboard, what is missing, the
   estimated cost of the whole deck and of completing it, and the day it last changed.

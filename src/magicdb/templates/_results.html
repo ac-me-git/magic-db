@@ -129,8 +129,10 @@
   {% for card in result.rows %}
   <li>
     <a href="/card/{{ card.id }}">
-      <img src="/img/normal/{{ card.id }}/front" alt="" width="488" height="680" loading="lazy">
-      {{ badge(card) }}
+      <span class="card-face">
+        <img src="/img/normal/{{ card.id }}/front" alt="" width="488" height="680" loading="lazy">
+        {{- badge(card) }}
+      </span>
       <span class="caption">{{ card.name }}</span>
       <span class="sub"><span class="set-code">{{ card.set_code }}</span> {{ card.collector_number }}</span>
     </a>

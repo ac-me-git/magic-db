@@ -872,14 +872,17 @@ button.danger {
   line-height: 1.5;
 }
 
-.card-grid li {
+/* the image and, in its bottom left corner, the copies owned: the top right is where
+   the mana cost is */
+.card-face {
   position: relative;
+  display: block;
 }
 
 .card-grid .owned {
   position: absolute;
-  top: 0.4rem;
-  right: 0.4rem;
+  bottom: 0.4rem;
+  left: 0.4rem;
   margin: 0;
   font-size: 0.9rem;
   box-shadow: 0 1px 3px rgb(0 0 0 / 60%);
@@ -1327,16 +1330,26 @@ button:disabled {
   white-space: normal;
 }
 
-.status-ok {
-  color: var(--muted);
-}
-
 .is-missing td:first-child {
   box-shadow: inset 3px 0 0 var(--error-border);
 }
 
 .is-contested td:first-child {
   box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.owned-short,
+.owned-shared {
+  font-weight: 700;
+  cursor: help;
+}
+
+.owned-short {
+  color: var(--error-border);
+}
+
+.owned-shared {
+  color: var(--accent);
 }
 
 .row-edit summary {

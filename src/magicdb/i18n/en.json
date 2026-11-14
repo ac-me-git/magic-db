@@ -452,8 +452,6 @@
   "deck.board": "Board",
   "deck.board.main": "Main deck",
   "deck.board.side": "Sideboard",
-  "deck.state": "In collection",
-  "deck.state.ok": "have it",
   "deck.state.missing": "{n} missing",
   "deck.state.contested": "contested: {owned} for {wanted} wanted",
   "deck.also_in": "also in",

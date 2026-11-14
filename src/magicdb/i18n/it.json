@@ -486,8 +486,6 @@
   "deck.board": "Parte",
   "deck.board.main": "Mazzo principale",
   "deck.board.side": "Sideboard",
-  "deck.state": "In collezione",
-  "deck.state.ok": "c'è",
   "deck.state.missing": "{n} mancanti",
   "deck.state.contested": "contesa: {owned} per {wanted} richieste",
   "deck.also_in": "anche in",

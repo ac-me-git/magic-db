@@ -706,9 +706,8 @@ def test_deck_page(site):
         "<title>Burn",
         "Main deck (9)",
         "66%",
-        "3 missing",
-        "contested: 6 for 8 wanted",
-        "have it",
+        'class="num owned-short" title="3 missing">1</td>',
+        'class="num owned-shared" title="contested: 6 for 8 wanted">6</td>',
         "also in",
         '<a href="/decks/2">Control</a> ×4',
         "To buy the missing",
@@ -722,6 +721,8 @@ def test_deck_page(site):
     ]:
         assert expected in body, expected
     assert "Sideboard (" not in body  # Burn has none
+    # the copies owned say it all: no column with "have it" beside them
+    assert "have it" not in body and "In collection" not in body
     assert 'class="mana identity"' in site.get("/decks/1/stats").text
     assert "Sideboard (1)" in site.get("/decks/2").text
     assert 'class="is-missing"' in body and 'class="is-contested"' in body

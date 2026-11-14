@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from magicdb import db, i18n
 from magicdb.app import create_app
 from magicdb.collection import forms, service
+from magicdb.templating import STATIC_DIR as STATIC
 from magicdb.templating import search_url
 
 UNKNOWN = "00000000-0000-4000-8000-000000000000"
@@ -193,6 +194,12 @@ def test_search_results_show_what_i_own(client, ids):
 
     cards = client.get('/search?q=!"Lightning Bolt"').text
     assert '<span class="owned" title="You own 4">×4</span>' in cards  # every printing counts
+    # on the picture, in a box of its own that puts it in the bottom left corner: the
+    # top right is where the mana cost is
+    assert re.search(r'<span class="card-face">\s*<img [^>]+><span class="owned"', cards)
+    css = (STATIC / "app.css").read_text(encoding="utf-8")
+    rule = css.split(".card-grid .owned {")[1].split("}")[0]
+    assert "bottom:" in rule and "left:" in rule and "top:" not in rule
     prints = client.get('/search?q=!"Lightning Bolt" unique:prints').text
     assert prints.count('class="owned"') == 2
     assert "×3</span>" in prints and "×1</span>" in prints
