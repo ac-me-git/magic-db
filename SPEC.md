@@ -464,9 +464,22 @@ then serves it with a long cache header. If the download fails, return a placeho
 SVG.
 
 **Name.** The program presents itself as **AMTG**, short for "Another Magic Tracking
-Gizmo": the logo reads AMTG (the full name is its tooltip) and page titles end in
-"· AMTG". `magic-db` remains the technical name: repository, Python package, program
-file, Docker image, `MAGICDB_*` settings, export file names.
+Gizmo": the logo is a page of a card binder beside the letters AMTG (the full name is
+its tooltip) and page titles end in "· AMTG". `magic-db` remains the technical name:
+repository, Python package, program file, Docker image, `MAGICDB_*` settings, export
+file names.
+
+**Logo.** A page of a card binder: four cards in a square, the top right one amber, in
+the violet of the pages (`#4b3f8f`; `#9d90f0` on dark backgrounds) and amber `#e0a030`.
+Beside it the letters AMTG, drawn as strokes so that no font is needed.
+`scripts/make_logo.py` draws every file, with the standard library only: the kit in
+`branding/` (the icon, `amtg.ico` from 16 to 256 pixels, PNG from 16 to 512, the mark,
+AMTG, AMTG.FANS and the full name, each for light and for dark backgrounds) and the
+copies the program and the website use: `static/favicon-light.svg` (the binder on a
+violet tile), `favicon-dark.svg` (on an ink tile), `templates/logo.svg` (the header's,
+coloured by `app.css` so that it follows light and dark), `site/favicon.svg` and
+`site/logo.svg` (AMTG.FANS, on every page of the website). A test fails when one of
+them is not what the script draws.
 
 **Software version** (`/admin`, first section). Shows the installed version, the latest
 released one and when that was last asked.
@@ -570,8 +583,9 @@ forward only when it is pointed at. They must not compete with the search box.
 
 Without a catalog the page has only the notice that it is not there yet.
 
-**Header.** On every page, from the left: the logo (the way to the home page; for now
-the four letters of the name, one day a picture), the search box with its Search
+**Header.** On every page, from the left: the logo (the way to the home page: the
+binder and the letters AMTG in the page's colours, the binder alone on a screen
+narrower than 30rem), the search box with its Search
 button, which takes all the room between the two, and a button with three lines that
 opens the menu. The menu is a `<details>`,
 so it opens and closes without JavaScript; `app.js` only closes it on a click elsewhere
@@ -695,7 +709,7 @@ which wins over the device; Auto throws the cookie away. It can be changed while
 the collection is locked. Without a choice the server does not know what the device
 asked for, so the dark colours are listed twice in `app.css` (for the device, for the
 choice), and a test keeps the lists equal. The browser-tab icon has a version for each
-(`static/favicon-light.svg`, `favicon-dark.svg`): the page links the one of the chosen
+(`static/favicon-light.svg`, `favicon-dark.svg`; see *Logo*): the page links the one of the chosen
 theme, or both with a `media` query when nothing was chosen. Every page gets `theme`
 from the same context processor.
 
@@ -883,7 +897,8 @@ while building it:
 How it is built:
 
 - `scripts/build_exe.py` runs PyInstaller on `packaging/launcher.py` (one file, with a
-  console window that shows the address and stops the server when closed). The data
+  console window that shows the address and stops the server when closed, and the
+  binder as its icon, `branding/amtg.ico`, §7 *Logo*). The data
   files of the package and the modules that pick their implementation at run time
   (`uvicorn`, `ijson`, `rapidfuzz`, `python_multipart`) are collected explicitly.
 - Run as the executable (`sys.frozen`), `cli.py` defaults the data folder to `data`

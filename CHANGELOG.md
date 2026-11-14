@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- AMTG has a logo: a page of a card binder, four cards with one amber. It is the icon
+  of the browser tab and of `magic-db.exe`, and the logo in the header (on a phone,
+  the binder alone). The website shows AMTG.FANS.
 - *Search only my collection* is now a switch, like the safety lock (both are in the
   new menu, below). Searching the collection is no longer a separate mode but one more filter:
   the switch writes `haveprint:yes` into the search box, or takes it out, and searches.

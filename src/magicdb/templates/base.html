@@ -17,7 +17,8 @@
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="/" title="{{ t('app.full_name') }}">{{ t("app.name") }}</a>
+    {# the binder and the letters AMTG, drawn by scripts/make_logo.py #}
+    <a class="brand" href="/" title="{{ t('app.full_name') }}" aria-label="{{ t('app.name') }}">{% include "logo.svg" %}</a>
     <form class="search-box" id="search-form" action="/search" method="get" role="search">
       <div class="search-field">
         <input type="search" name="q" id="q" value="{{ q | default('') }}"

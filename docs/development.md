@@ -75,6 +75,11 @@ Two databases:
 - **The search syntax has one definition**: the `FILTERS` table in `search/compiler.py`.
   The in-app Syntax page and `docs/search-syntax.md` are generated from it — after
   changing it, run `python scripts/make_syntax_doc.py`.
+- **The logo is drawn by code**: `scripts/make_logo.py` writes `branding/`, the
+  favicons, the header's `templates/logo.svg`, the website's `favicon.svg` and
+  `logo.svg`; `branding/amtg.ico` is the executable's icon. Change the script, never
+  the files, then run `python scripts/make_logo.py` (`branding/preview.html` shows them
+  all).
 - **Nothing the app needs at run time may live outside `src/magicdb/`**: that folder is
   what goes into the wheel, the Docker image and the Windows executable.
 - The code must run on Windows and Linux: `pathlib`, no hard-coded `/`, and never assume

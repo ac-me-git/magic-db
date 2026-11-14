@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="branding/amtg-dark.svg">
+  <img src="branding/amtg-light.svg" alt="AMTG" height="64">
+</picture>
+
 # AMTG — Another Magic Tracking Gizmo
 
 *(the repository, the program file and the Docker image are called `magic-db`)*

@@ -14,7 +14,7 @@ def test_healthz(client):
 def test_home_page(client):
     response = client.get("/")
     assert response.status_code == 200
-    assert ">AMTG</a>" in response.text
+    assert 'aria-label="AMTG"><svg' in response.text  # the logo, named AMTG
     assert 'title="Another Magic Tracking Gizmo"' in response.text
     # the name is in the header only: the page has no title or tagline of its own
     assert "<h1" not in response.text and "Every Magic card" not in response.text

@@ -19,6 +19,9 @@ ARGUMENTS = [
     "--console",  # the window shows the address and stops the server when closed
     "--name",
     "magic-db",
+    # the binder, drawn by scripts/make_logo.py
+    "--icon",
+    str(ROOT / "branding" / "amtg.ico"),
     # templates, static files, translations, SQL: everything in the package that is not code
     "--collect-data",
     "magicdb",

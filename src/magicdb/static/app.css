@@ -129,13 +129,35 @@ button.primary,
   border-bottom: 1px solid var(--border);
 }
 
-/* the four letters for now; one day the logo's picture */
+/* the logo (templates/logo.svg, from scripts/make_logo.py): the binder in the accent
+   colour, one card amber, the letters in the colour of the text */
 .brand {
   flex: none;
-  font-weight: 700;
-  font-size: 1.1rem;
-  text-decoration: none;
-  color: var(--text);
+}
+
+.logo {
+  display: block;
+  height: 1.75rem;
+  width: auto;
+}
+
+.logo-card {
+  fill: var(--accent);
+}
+
+.logo-amber {
+  fill: #e0a030;
+}
+
+.logo-letters {
+  stroke: var(--text);
+}
+
+/* on a phone only the binder, so that the search box keeps its room (10 x 12 units) */
+@media (max-width: 30rem) {
+  .logo {
+    width: calc(1.75rem * 10 / 12);
+  }
 }
 
 /* all the room between the logo and the menu */

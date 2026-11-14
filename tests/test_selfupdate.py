@@ -666,5 +666,7 @@ def test_a_development_version_is_told_of_a_release_but_updated_as_one(
 
 def test_the_header_shows_the_new_name(admin):
     page = admin.get("/").text
-    assert '<a class="brand" href="/" title="Another Magic Tracking Gizmo">AMTG</a>' in page
+    assert (
+        '<a class="brand" href="/" title="Another Magic Tracking Gizmo" aria-label="AMTG">' in page
+    )
     assert "<title>AMTG</title>" in page
