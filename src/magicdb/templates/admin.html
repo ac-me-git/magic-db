@@ -19,12 +19,15 @@
 <section class="chart" id="version">
   <h2>{{ t("admin.version") }}</h2>
   <dl class="facts">
-    <dt>{{ t("admin.version.current") }}</dt><dd>{{ version }}</dd>
+    <dt>{{ t("admin.version.current") }}</dt><dd>{{ version }}{% if revision %} · <strong>{{ t("admin.version.development", commit=revision) }}</strong>{% endif %}</dd>
     {% if settings.update_check %}
     <dt>{{ t("admin.version.latest") }}</dt><dd>{{ latest or "—" }}</dd>
     <dt>{{ t("admin.version.checked") }}</dt><dd>{{ checked_at or t("admin.version.never") }}</dd>
     {% endif %}
   </dl>
+  {% if revision %}
+  <p class="hint">{{ t("admin.version.development_hint", version=version) }}</p>
+  {% endif %}
   {% if not settings.update_check %}
   <p class="hint">{{ t("admin.version.check_off") }}</p>
   {% else %}
@@ -149,7 +152,7 @@ uv sync</pre>
 <section class="chart">
   <h2>{{ t("admin.settings") }}</h2>
   <dl class="facts">
-    <dt>{{ t("admin.settings.version") }}</dt><dd>{{ version }}</dd>
+    <dt>{{ t("admin.settings.version") }}</dt><dd>{{ version }}{% if revision %} · {{ t("admin.version.development", commit=revision) }}{% endif %}</dd>
     <dt>{{ t("admin.settings.data") }}</dt><dd>{{ data_dir }}</dd>
     <dt>{{ t("admin.settings.schedule") }}</dt>
     <dd>{% if settings.scheduler %}{{ t("admin.settings.schedule_on", update=settings.update_hour, backup=settings.backup_hour) }}{% else %}{{ t("admin.settings.schedule_off") }}{% endif %}</dd>

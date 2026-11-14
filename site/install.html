@@ -40,7 +40,7 @@ magic-db.exe</code></pre>
 docker compose up -d</code></pre>
 <p>Open <code>http://localhost:8080</code>. Data lives in the <code>magic-db-data</code> volume. Set <code>TZ</code> in <code>compose.yaml</code> to your time zone, so the nightly jobs run at night for you.</p>
 <p><strong>Updating:</strong> <code>docker compose pull</code>, then <code>docker compose up -d</code>.</p>
-<p><strong>Trying what is not released yet:</strong> in <code>compose.yaml</code> write <code>magic-db:edge</code> instead of <code>magic-db:latest</code>, then pull and up as above. <code>edge</code> is rebuilt at every change to the program: newer and less tried than a release. Make a backup first (Administration). To go back, write <code>latest</code> again, pull and up.</p>
+<p><strong>Trying what is not released yet:</strong> in <code>compose.yaml</code> write <code>magic-db:edge</code> instead of <code>magic-db:latest</code>, then pull and up as above. <code>edge</code> is rebuilt at every change to the program: newer and less tried than a release; the Administration page says that it is the development version. Make a backup first (Administration). To go back, write <code>latest</code> again, pull and up.</p>
 
 <h2 id="source">From source</h2>
 <p>You need <a href="https://docs.astral.sh/uv/">uv</a> (or Python 3.12+ with pip).</p>

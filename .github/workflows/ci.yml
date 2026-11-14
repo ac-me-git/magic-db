@@ -39,6 +39,21 @@ jobs:
           curl -fsS http://127.0.0.1:8080/ | grep -q "AMTG"
           curl -fsS http://127.0.0.1:8080/static/app.css > /dev/null
           curl -fsS http://127.0.0.1:8080/syntax > /dev/null
+      - name: An image built with a commit says it is a development version
+        run: |
+          if curl -fsS http://127.0.0.1:8080/admin | grep -q "development version"; then
+            echo "an image built without a commit calls itself a development version"
+            exit 1
+          fi
+          docker rm -f magic-db
+          docker build --build-arg REVISION=${{ github.sha }} -t magic-db:ci-edge .
+          docker run -d --name magic-db -e MAGICDB_SCHEDULER=off -e MAGICDB_UPDATE_CHECK=off -p 8080:8080 magic-db:ci-edge
+          for attempt in $(seq 1 30); do
+            sleep 1
+            if curl -fsS http://127.0.0.1:8080/healthz; then ok=1; break; fi
+          done
+          test "${ok:-0}" = 1
+          curl -fsS http://127.0.0.1:8080/admin | grep -q "development version, commit ${GITHUB_SHA:0:7}"
 
   edge:
     # The development version: every change on main that passes the two jobs above is
@@ -69,6 +84,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/${{ github.repository }}:edge
+          build-args: |
+            REVISION=${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}

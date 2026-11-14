@@ -113,8 +113,12 @@ The release workflow runs the tests, publishes the image to
 
 Every push to `main` that passes CI is published as `ghcr.io/<owner>/magic-db:edge` (the
 `edge` job of `ci.yml`), for trying a change on a real server before releasing it. It
-never touches `latest` or the version tags, and makes no GitHub release. The image's
-`org.opencontainers.image.revision` label is the commit it was built from:
+never touches `latest` or the version tags, and makes no GitHub release.
+
+The image is built with its commit (`--build-arg REVISION=…`, which the Dockerfile writes
+to `magicdb/REVISION`), so its Administration page shows "development version, commit …"
+beside the version number. A release, the executable and a checkout have no such file and
+show nothing. The same commit is the image's `org.opencontainers.image.revision` label:
 
 ```sh
 docker image inspect ghcr.io/<owner>/magic-db:edge --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}'

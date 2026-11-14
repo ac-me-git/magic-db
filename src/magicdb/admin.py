@@ -73,6 +73,7 @@ def admin_page(request: Request, conn: Conn, started: str = "", failed: str = ""
         data_dir=settings.data_dir.resolve(),
         backup_dir=settings.backup_dir.resolve(),
         version=__version__,
+        revision=selfupdate.development_revision()[:7],
         release=release,
         latest=checked.release.version if checked.release else "",
         check_error=checked.error,

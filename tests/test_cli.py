@@ -173,6 +173,11 @@ def test_changes_are_published_as_edge_and_only_releases_as_latest():
     assert "branches" not in release
     compose = (ROOT / "compose.yaml").read_text(encoding="utf-8")
     assert "\n    image: ghcr.io/ac-me-git/magic-db:latest\n" in compose
+    # only the development image is built with its commit, so only it says it is one
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    assert 'ARG REVISION=""' in dockerfile and "> src/magicdb/REVISION" in dockerfile
+    assert dockerfile.index("ARG REVISION") < dockerfile.index("RUN pip install")
+    assert "REVISION=${{ github.sha }}" in steps and "REVISION" not in release
 
 
 def test_wheel_contents_helper_understands_a_wheel(tmp_path):

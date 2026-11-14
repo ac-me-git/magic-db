@@ -438,6 +438,65 @@ def test_install_is_refused_from_another_site_and_in_italian(admin, latest, as_e
     assert "Installa la versione 9.9.9 e riavvia" in page
 
 
+# --- the development version (the ":edge" image) ----------------------------------------
+
+COMMIT = "199f1a1c0ffee0123456789abcdef0123456789a"
+
+
+@pytest.fixture
+def revision_file(monkeypatch, tmp_path):
+    """Where a development image keeps the commit it was built from."""
+    path = tmp_path / "REVISION"
+    monkeypatch.setattr(selfupdate, "REVISION_FILE", path)
+    return path
+
+
+def test_a_release_or_a_checkout_is_not_a_development_version(revision_file):
+    assert selfupdate.development_revision() == ""
+    # and the repository never carries the file: only the image's build writes it
+    assert not (Path(selfupdate.__file__).parent / "REVISION").exists()
+
+
+@pytest.mark.parametrize(
+    ("written", "expected"),
+    [
+        (COMMIT + "\n", COMMIT),
+        ("  199f1a1  ", "199f1a1"),
+        ("", ""),
+        ("\n", ""),
+        ("main", ""),
+        ("199F1A1", ""),
+        ("abc123", ""),  # too short to be a commit
+        (COMMIT + "0", ""),
+        ("<script>alert(1)</script>", ""),
+        ("199f1a1\nsecond line", ""),
+        ("versión", ""),
+    ],
+)
+def test_development_revision_is_a_commit_or_nothing(revision_file, written, expected):
+    revision_file.write_text(written, encoding="utf-8")
+    assert selfupdate.development_revision() == expected
+
+
+def test_admin_says_when_it_is_the_development_version(client, latest, revision_file):
+    page = client.get("/admin").text  # no catalog yet: the page must answer all the same
+    assert "development version" not in page and f"<dd>{__version__}</dd>" in page
+
+    revision_file.write_text(COMMIT + "\n", encoding="ascii")
+    page = client.get("/admin").text
+    assert f"<dd>{__version__} · <strong>development version, commit 199f1a1</strong></dd>" in page
+    assert f"<dd>{__version__} · development version, commit 199f1a1</dd>" in page  # settings
+    assert "This is the development version (the edge image)" in page
+    assert f"after version {__version__} that are not released yet" in page
+    assert COMMIT[:8] not in page  # the short form only
+    assert "Version 9.9.9 is available." in page  # releases are still announced
+
+    client.get("/lang/it")
+    page = client.get("/admin").text
+    assert "<strong>versione di sviluppo, commit 199f1a1</strong>" in page
+    assert "Questa è la versione di sviluppo" in page and "immagine edge" in page
+
+
 def test_the_header_shows_the_new_name(admin):
     page = admin.get("/").text
     assert '<a class="brand" href="/" title="Another Magic Tracking Gizmo">AMTG</a>' in page

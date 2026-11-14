@@ -448,6 +448,8 @@
   "app.full_name": "Another Magic Tracking Gizmo",
   "admin.version": "Software version",
   "admin.version.current": "Installed",
+  "admin.version.development": "development version, commit {commit}",
+  "admin.version.development_hint": "This is the development version (the edge image): it has the changes made after version {version} that are not released yet, and it is rebuilt at every change. docker compose pull and docker compose up -d fetch the newest; to go back to the released version write latest instead of edge in compose.yaml.",
   "admin.version.latest": "Latest released",
   "admin.version.checked": "Last checked",
   "admin.version.never": "never",

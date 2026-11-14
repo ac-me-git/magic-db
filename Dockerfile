@@ -4,6 +4,10 @@ FROM python:3.12-slim AS build
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
+# The development image (":edge") is built with the commit it is made from, and the
+# Administration page then says so. A release is built without.
+ARG REVISION=""
+RUN if [ -n "$REVISION" ]; then printf '%s\n' "$REVISION" > src/magicdb/REVISION; fi
 RUN pip install --no-cache-dir --prefix=/install .
 
 FROM python:3.12-slim

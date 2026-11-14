@@ -487,6 +487,13 @@ released one and when that was last asked.
   `/admin` when the program is back. The data folder is never touched.
 - *Docker and source installs* cannot replace themselves: the page shows the commands
   (`docker compose pull` / `up -d`; `git pull` / `uv sync`).
+- *Development version.* The `edge` image (§10) is built from `main` between releases,
+  so its number is still that of the last release. Its build writes the commit into the
+  package (`magicdb/REVISION`, read by `selfupdate.development_revision`), and the page
+  then shows "development version, commit abc1234" beside the installed version, with
+  a line on what it is and how to go back to the released one. A release, the
+  executable and a checkout have no such file and show nothing; a file that does not
+  hold a commit id is ignored. Newer releases are announced as usual.
 - The safety lock does not block these (`/admin/…` is exempt); the same-origin check
   and the optional password do apply.
 
@@ -782,7 +789,8 @@ while building it:
   the executable, and opens the browser. Alternative documented path: `uv run magicdb`.
 - **CI**: `ruff check`, `ruff format --check`, `pytest` on Linux and Windows; a second
   job builds the Docker image and starts it (healthy, non-root, pages answer) without
-  publishing, so the Dockerfile cannot rot.
+  publishing, so the Dockerfile cannot rot; it then builds it again with a commit and
+  checks that the Administration page says "development version".
 
 How it is built:
 
@@ -800,7 +808,8 @@ How it is built:
   attached to the GitHub release.
 - `.github/workflows/ci.yml`, job `edge`, on a push to `main` once the tests and the
   container check have passed: the same two-platform image as `…/magic-db:edge`,
-  labelled with the commit it was built from. It never writes `latest` or a version
+  labelled and built with the commit it comes from (`--build-arg REVISION`, which is
+  how the Administration page knows, §7). It never writes `latest` or a version
   tag and makes no GitHub release; `compose.yaml` keeps `latest`, and a server is
   switched by writing `edge` there.
 - The image runs as user `magicdb` (uid 10001) with `/data` as its only volume, and the

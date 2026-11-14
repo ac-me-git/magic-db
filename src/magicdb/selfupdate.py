@@ -39,7 +39,9 @@ HEADERS = {
     "Accept": "application/vnd.github+json",
 }
 
+REVISION_FILE = Path(__file__).parent / "REVISION"  # only in a development image
 _VERSION = re.compile(r"v?(\d+)\.(\d+)\.(\d+)")
+_REVISION = re.compile(r"[0-9a-f]{7,40}")
 _DIGEST = re.compile(r"sha256:([0-9a-f]{64})")
 
 
@@ -94,6 +96,21 @@ def install_kind() -> str:
     if getattr(sys, "frozen", False):
         return "exe" if _on_windows() else "source"
     return "docker" if Path("/.dockerenv").exists() else "source"
+
+
+def development_revision() -> str:
+    """The commit a development build was made from; '' for a release or a checkout.
+
+    The ":edge" Docker image is built from ``main`` between releases, so its version
+    number is still that of the last release. Its build writes the commit into the
+    package (Dockerfile, ``ARG REVISION``) so that the Administration page can say what
+    is really running.
+    """
+    try:
+        text = REVISION_FILE.read_text(encoding="ascii").strip()
+    except (OSError, ValueError):
+        return ""
+    return text if _REVISION.fullmatch(text) else ""
 
 
 def _safe_page(url: str) -> str:

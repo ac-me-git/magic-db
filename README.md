@@ -66,8 +66,9 @@ tells you when there is something to update to.
 To try what is not released yet, use the development image: in `compose.yaml` write
 `magic-db:edge` instead of `magic-db:latest`, then `docker compose pull` and
 `docker compose up -d`. `edge` is rebuilt at every change to the program, so it is newer
-and less tried than a release, and it still shows the number of the last release. Make a
-backup first (Administration). To go back, write `latest` again, pull and up.
+and less tried than a release; the Administration page says that it is the development
+version, and from which commit. Make a backup first (Administration). To go back, write
+`latest` again, pull and up.
 
 ### From source
 
