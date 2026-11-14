@@ -1,6 +1,5 @@
 {
   "app.name": "AMTG",
-  "home.tagline": "Every Magic card, and the ones you own.",
   "home.status": "{count} printings in the catalog, updated {date}.",
   "nocatalog.title": "The card catalog is not here yet",
   "nocatalog.text": "The card catalog has not been downloaded yet. It takes a few minutes the first time; reload this page shortly.",
@@ -372,6 +371,10 @@
   "stats.valuable": "Most valuable",
   "stats.recent": "Added most recently",
   "nav.admin": "Administration",
+  "admin.home": "Home page",
+  "admin.home.hint": "What the home page shows under the search box: a map of the search syntax with the codes of the recent expansions, or the panel that builds a search from filters. It is the same for everyone who uses this server.",
+  "admin.home.map": "Syntax map",
+  "admin.home.filters": "Filters",
   "nocatalog.reloads": "This page reloads by itself.",
   "progress.checking": "asking Scryfall what is new…",
   "progress.downloading": "downloading the card data…",

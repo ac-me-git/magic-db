@@ -3,6 +3,7 @@
 import json
 import re
 import sqlite3
+from contextlib import closing
 from datetime import date
 from itertools import groupby
 from typing import Annotated
@@ -16,7 +17,7 @@ from magicdb import db, search
 from magicdb.catalog import ingest
 from magicdb.catalog.ingest import normalize
 from magicdb.collection import forms, service
-from magicdb.config import LANGS
+from magicdb.config import LANGS, Settings
 from magicdb.decks import service as decks
 from magicdb.search import panel
 from magicdb.search.compiler import LIKE, ORDERS, FilterDef, _contains
@@ -37,6 +38,10 @@ SCOPES = ("all", "collection")  # what the switch beside the search box sends
 FAST_PER_PAGE = 500  # fast input: a whole set on one page
 AUTOCOMPLETE_LIMIT = 15
 SUGGEST_LIMIT = 8
+# What the home page shows under the search box. One choice for the whole server, made
+# in Administration, kept in the ``settings`` table and mirrored in ``app.state.home``.
+HOME_VIEWS = ("map", "filters")
+HOME_KEY = "home"
 RECENT_YEARS = 5  # how far back the home page's list of expansions goes
 today = date.today  # a name of its own, so that a test can choose the day
 
@@ -107,6 +112,22 @@ def panel_options(conn: sqlite3.Connection) -> dict[str, list]:
     }
 
 
+def load_home(settings: Settings) -> str:
+    """The saved choice; the map of the syntax when nothing (or nonsense) was saved."""
+    with closing(db.connect(settings)) as conn:
+        row = conn.execute("SELECT value FROM settings WHERE key = ?", (HOME_KEY,)).fetchone()
+    return row["value"] if row is not None and row["value"] in HOME_VIEWS else HOME_VIEWS[0]
+
+
+def save_home(conn: sqlite3.Connection, view: str) -> None:
+    with conn:
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES (?, ?) "
+            "ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+            (HOME_KEY, view),
+        )
+
+
 def syntax_map() -> list[tuple[str, list[FilterDef]]]:
     """The filters of the search, in the groups the home page shows them in."""
     by_name = {definition.name: definition for definition in search.FILTERS}
@@ -134,11 +155,13 @@ def home(request: Request, conn: Conn) -> HTMLResponse:
         return render(request, "home.html", catalog=None, options=None)
     meta = dict(conn.execute("SELECT key, value FROM cat.meta"))
     catalog = {"count": int(meta["row_count"]), "date": meta["built_at"][:10]}
+    if getattr(request.app.state, "home", HOME_VIEWS[0]) == "filters":
+        return render(request, "home.html", catalog=catalog, options=panel_options(conn))
     return render(
         request,
         "home.html",
         catalog=catalog,
-        options=panel_options(conn),
+        options=None,
         basics=BASICS,
         syntax_map=syntax_map(),
         recent=recent_expansions(conn, today()),

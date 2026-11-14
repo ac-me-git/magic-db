@@ -1,6 +1,5 @@
 {
   "app.name": "AMTG",
-  "home.tagline": "Tutte le carte di Magic, e quelle che possiedi.",
   "home.status": "{count} stampe nel catalogo, aggiornato il {date}.",
   "nocatalog.title": "Il catalogo delle carte non c'è ancora",
   "nocatalog.text": "Il catalogo delle carte non è ancora stato scaricato. La prima volta servono alcuni minuti; ricarica la pagina tra poco.",
@@ -406,6 +405,10 @@
   "stats.valuable": "Le più preziose",
   "stats.recent": "Aggiunte più di recente",
   "nav.admin": "Amministrazione",
+  "admin.home": "Pagina iniziale",
+  "admin.home.hint": "Che cosa mostra la pagina iniziale sotto la casella di ricerca: la mappa della sintassi con i codici delle espansioni recenti, oppure il pannello che costruisce una ricerca dai filtri. Vale per tutti quelli che usano questo server.",
+  "admin.home.map": "Mappa della sintassi",
+  "admin.home.filters": "Filtri",
   "nocatalog.reloads": "Questa pagina si ricarica da sola.",
   "progress.checking": "chiedo a Scryfall che cosa c'è di nuovo…",
   "progress.downloading": "scarico i dati delle carte…",

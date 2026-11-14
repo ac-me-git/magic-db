@@ -19,7 +19,7 @@
 <main class="wrap">
 
 <h1>Search syntax</h1>
-<p class="lead">Type words to search card names, and add filters to narrow the results. The same page is inside the app, under <strong>Syntax</strong>, with every example clickable. The filter panel on the home page writes these queries for you.</p>
+<p class="lead">Type words to search card names, and add filters to narrow the results. The same page is inside the app, under <strong>Syntax</strong>, with every example clickable. The filter panel, which the home page shows if you choose so in Administration, writes these queries for you.</p>
 <h2>The basics</h2>
 <div class="tw"><table><thead><tr><th>You type</th><th>You get</th></tr></thead><tbody><tr><td><code>lightning bolt</code></td><td>Cards whose name contains both words</td></tr><tr><td><code>"serra angel"</code></td><td>Quotes keep words together</td></tr><tr><td><code>!"Lightning Bolt"</code></td><td>An exclamation mark asks for the exact name</td></tr><tr><td><code>t:dragon c:r</code></td><td>Filters are written <code>key:value</code>, and all of them must match</td></tr><tr><td><code>t:elf or t:goblin</code></td><td>Either one or the other</td></tr><tr><td><code>(t:elf or t:goblin) mv&lt;=2</code></td><td>Parentheses group, as in arithmetic</td></tr><tr><td><code>c:r -t:creature</code></td><td>A minus sign excludes</td></tr></tbody></table></div>
 <p>Number filters accept <code>:</code> <code>=</code> <code>!=</code> <code>&lt;</code> <code>&lt;=</code> <code>&gt;</code> <code>&gt;=</code>, as in <code>mv&lt;=3</code> or <code>pow&gt;=5</code>. Upper and lower case do not matter.</p>

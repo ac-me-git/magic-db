@@ -14,7 +14,9 @@ from magicdb.templating import (
     safe_next,
 )
 
-ENGLISH, ITALIAN = "Every Magic card", "Tutte le carte di Magic"
+# what the home page says before there is a catalog, in the two languages
+ENGLISH = "The card catalog has not been downloaded yet"
+ITALIAN = "Il catalogo delle carte non è ancora stato scaricato"
 
 
 @pytest.fixture

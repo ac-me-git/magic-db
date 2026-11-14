@@ -1,8 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="hero">
-  <h1>{{ t("app.name") }}</h1>
-  <p class="tagline">{{ t("home.tagline") }}</p>
   {% if catalog %}
   <p class="status">{{ t("home.status", count=catalog["count"] | count, date=catalog["date"]) }}</p>
   {% else %}
@@ -10,10 +8,11 @@
   {% endif %}
 </section>
 
+{# Administration chooses which of the two the page shows: the filter panel, or the map
+   of the syntax with the recent expansions. #}
 {% if options %}
-<details class="panel fold">
-  <summary>{{ t("panel.title") }}</summary>
-  <form action="/filter" method="get">
+<form class="panel" action="/filter" method="get">
+  <h2>{{ t("panel.title") }}</h2>
   <p class="hint">{{ t("panel.hint") }}</p>
 
   <div class="fields">
@@ -130,9 +129,8 @@
   <datalist id="subtypes">{% for value in options.subtypes %}<option value="{{ value }}">{% endfor %}</datalist>
   <datalist id="keywords">{% for value in options.keywords %}<option value="{{ value }}">{% endfor %}</datalist>
   <datalist id="sets">{% for row in options.sets %}<option value="{{ row.code }}">{{ row.name }}</option>{% endfor %}</datalist>
-  </form>
-</details>
-
+</form>
+{% elif syntax_map %}
 <section class="syntax-map">
   <h2>{{ t("map.title") }}</h2>
   <p class="hint">{{ t("map.hint") }}</p>

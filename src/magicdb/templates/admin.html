@@ -163,6 +163,16 @@ docker compose up -d</pre>
   </p>
 </section>
 
+<section class="chart" id="home">
+  <h2>{{ t("admin.home") }}</h2>
+  <p class="hint">{{ t("admin.home.hint") }}</p>
+  <form class="actions" method="post" action="/admin/home">
+    {% for view in home_views %}
+    <button type="submit" name="view" value="{{ view }}"{% if view == home %} class="primary" aria-pressed="true"{% else %} aria-pressed="false"{% endif %}>{{ t("admin.home." ~ view) }}</button>
+    {% endfor %}
+  </form>
+</section>
+
 <section class="chart">
   <h2>{{ t("admin.settings") }}</h2>
   <dl class="facts">

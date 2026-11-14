@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Annotated
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 
 from magicdb import __version__, db, jobs, selfupdate, web
@@ -69,6 +69,8 @@ def admin_page(request: Request, conn: Conn, started: str = "", failed: str = ""
                 (HISTORY,),
             )
         ],
+        home=request.app.state.home,
+        home_views=web.HOME_VIEWS,
         settings=settings,
         data_dir=settings.data_dir.resolve(),
         backup_dir=settings.backup_dir.resolve(),
@@ -106,6 +108,15 @@ def install_version(request: Request) -> Response:
     except selfupdate.UpdateError as error:
         return RedirectResponse(f"/admin?{urlencode({'failed': str(error)})}", status_code=303)
     return web.render(request, "restarting.html", version=release.version)
+
+
+@router.post("/admin/home")
+def choose_home(request: Request, conn: Conn, view: Annotated[str, Form()] = "") -> Response:
+    """What the home page shows: the map of the syntax, or the filter panel."""
+    if view in web.HOME_VIEWS:
+        web.save_home(conn, view)
+        request.app.state.home = view
+    return RedirectResponse("/admin#home", status_code=303)
 
 
 @router.post("/admin/{job}/run")

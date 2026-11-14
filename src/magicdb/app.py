@@ -67,6 +67,7 @@ def create_app(
     db.migrate(settings)
     publish.cleanup_old(settings)
     app.state.locked = lock.load(settings)
+    app.state.home = web.load_home(settings)
 
     app.mount("/static", StaticFiles(directory=_PKG / "static"), name="static")
 

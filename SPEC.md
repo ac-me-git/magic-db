@@ -418,15 +418,15 @@ most), colour identity, mana value range, type / subtype / keyword pickers fed b
 Submitting it **builds a query string** and goes to `/search?q=…`; the generated query
 is shown in the search box so the syntax teaches itself. The form is a plain `GET` to
 `/filter`, which builds the query (`search/panel.py`) and redirects, so it works without
-JavaScript. The panel is on the home page, folded until its title is pressed (the page
-opens on the map of the syntax, §7), and always starts empty: to refine a search, edit
-the text in the search box.
+JavaScript. The panel is on the home page when Administration says so — by default
+the page shows the map of the syntax instead (§7) — and always starts empty: to refine
+a search, edit the text in the search box.
 
 ## 7. Pages
 
 | Route | Content |
 |---|---|
-| `/` | search box, catalog status line, filter panel (folded), map of the syntax, recent expansions |
+| `/` | search box, catalog status line, and either the map of the syntax with the recent expansions or the filter panel |
 | `/filter?…` | the filter panel's form target: redirects to `/search?q=…` |
 | `/search?q=&page=&view=grid\|list` | results |
 | `/card/{scryfall_id}` | large image (flip for back face), full text, legalities, prices, all printings, my copies of this card, add form |
@@ -539,9 +539,18 @@ number or by name with the column headings, and tick boxes.
   draft innovation, commander) in collector-number order; linked from the collection
   page and from Administration.
 
-**Home page.** Under the catalog status line, in this order:
+**Home page.** The page has no title or tagline of its own: the name is in the header.
+Under the catalog status line it shows one of two things, chosen in Administration
+("Home page": two buttons, `POST /admin/home` with `view=map|filters`). The choice is
+one for the whole server, saved in the `settings` table under `home` and mirrored in
+`app.state.home` (`web.load_home`, `web.save_home`), like the safety lock, and can be
+changed while the collection is locked. Nothing saved, or a value that is not one of
+the two, is the map.
 
-- The filter panel (§6.4), folded: a `<details>` under its title, closed at every visit.
+*The filter panel* (§6.4), open, and nothing else.
+
+*The map* (the default):
+
 - A *map of the syntax*, a summary of the syntax page: its first examples ("the
   basics") and every filter of §6.2 once, under six headings — the card, colours and
   mana, set and printing, formats and prices, my collection, how results are shown
@@ -560,7 +569,7 @@ forward only when it is pointed at. They must not compete with the search box.
 
 Without a catalog the page has only the notice that it is not there yet.
 
-**Header.** On every page: the logo (the way to the home page and its filter panel),
+**Header.** On every page: the logo (the way to the home page),
 the search box, and two links — "My collection", which opens the statistics, and "My
 decks". The statistics page is the collection's landing page and links to the card
 list, fast input, locations, import and export; the administration page links to
@@ -782,7 +791,8 @@ Details (`jobs.py`):
 **`/admin`** shows the live catalog, the backups (each downloadable; only file names
 the app gives to backups are served), the last 20 job runs in local time and the
 settings, and has "Update the catalog now" and "Back up now" (`POST
-/admin/{job}/run`, run in a background thread).
+/admin/{job}/run`, run in a background thread) and the choice of what the home page
+shows (§7, "Home page").
 
 **Password.** `MAGICDB_PASSWORD` turns on HTTP Basic auth for everything except
 `/healthz`: any user name, that password, compared in constant time (`app.py`).

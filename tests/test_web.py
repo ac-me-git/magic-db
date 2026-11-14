@@ -37,22 +37,83 @@ def card_id(fixture_cards, name, set_code=None):
 # --- home and filter panel ------------------------------------------------------------
 
 
-def test_home_shows_catalog_status_and_panel(client, fixture_cards):
+def show_filters(client) -> None:
+    """Choose, in Administration, that the home page shows the filter panel."""
+    response = client.post("/admin/home", data={"view": "filters"}, follow_redirects=False)
+    assert response.status_code == 303 and response.headers["location"] == "/admin#home"
+
+
+def test_home_opens_on_the_map_of_the_syntax(client, fixture_cards):
     page = client.get("/")
     assert page.status_code == 200
     assert f"{len(fixture_cards)} printings in the catalog" in page.text
-    assert 'action="/filter"' in page.text
+    assert "<h2>Syntax map</h2>" in page.text
+    # no title, no tagline, and the filters neither shown nor folded away
+    assert "<h1" not in page.text and "Every Magic card" not in page.text
+    assert 'action="/filter"' not in page.text and "Search by filters" not in page.text
+    assert "<details" not in page.text
+
+
+def test_home_shows_the_filter_panel_when_administration_says_so(client, fixture_cards):
+    show_filters(client)
+    page = client.get("/")
+    assert page.status_code == 200
+    assert f"{len(fixture_cards)} printings in the catalog" in page.text
+    assert '<form class="panel" action="/filter" method="get">' in page.text
+    assert "<h2>Search by filters</h2>" in page.text
     for option in ['<option value="Dragon">', '<option value="Flying">', '<option value="arn">']:
         assert option in page.text
     assert "<option>modern</option>" in page.text
     assert "Kept in" not in page.text  # no locations yet
-    # the panel is there, folded: the page opens on the map of the syntax
-    assert '<details class="panel fold">\n  <summary>Search by filters</summary>' in page.text
-    assert "<details open" not in page.text and 'fold" open' not in page.text
-    assert page.text.index("Search by filters") < page.text.index("Syntax map")
+    # one or the other: the panel takes the place of the map and of the list of sets
+    assert "Syntax map" not in page.text and "Recent expansions" not in page.text
+    assert "<details" not in page.text and "<h1" not in page.text
+
+
+def test_administration_chooses_what_the_home_page_shows(client, catalog):
+    page = client.get("/admin").text
+    assert '<section class="chart" id="home">' in page and "<h2>Home page</h2>" in page
+    chosen = 'class="primary" aria-pressed="true"'
+    assert f'<button type="submit" name="view" value="map" {chosen}>Syntax map</button>' in page
+    assert '<button type="submit" name="view" value="filters" aria-pressed="false">Filters<' in page
+
+    show_filters(client)
+    page = client.get("/admin").text
+    assert f'<button type="submit" name="view" value="filters" {chosen}>Filters</button>' in page
+    assert '<button type="submit" name="view" value="map" aria-pressed="false">Syntax map<' in page
+    # a setting of the server: it is there for another visitor, and after a restart
+    assert web.load_home(catalog) == "filters"
+    assert 'action="/filter"' in TestClient(create_app(catalog)).get("/").text
+
+    client.post("/admin/home", data={"view": "map"})
+    assert web.load_home(catalog) == "map"
+    assert "Syntax map" in client.get("/").text and 'action="/filter"' not in client.get("/").text
+
+
+@pytest.mark.parametrize("view", ["", "both", "MAP", "filters "])
+def test_an_unknown_choice_for_the_home_page_changes_nothing(client, catalog, view):
+    show_filters(client)
+    response = client.post("/admin/home", data={"view": view}, follow_redirects=False)
+    assert response.status_code == 303
+    assert web.load_home(catalog) == "filters" and 'action="/filter"' in client.get("/").text
+
+
+def test_a_saved_choice_that_is_not_one_shows_the_map(catalog):
+    conn = db.connect(catalog)
+    web.save_home(conn, "carousel")
+    conn.close()
+    assert web.load_home(catalog) == "map"
+    assert "Syntax map" in TestClient(create_app(catalog)).get("/").text
+
+
+def test_the_home_page_can_be_chosen_while_the_collection_is_locked(client):
+    client.post("/lock", data={"state": "on"})
+    show_filters(client)  # it changes a page, not the collection
+    assert 'action="/filter"' in client.get("/").text
 
 
 def test_home_lists_locations_once_there_are_some(client, catalog):
+    show_filters(client)
     conn = db.connect(catalog)
     with conn:
         conn.execute("INSERT INTO locations (name, created_at) VALUES ('Blue box', 'now')")
@@ -347,12 +408,16 @@ def test_translations_are_complete():
 def test_italian_interface(italian, fixture_cards, monkeypatch):
     monkeypatch.setattr(web, "today", lambda: date(2025, 6, 1))
     home = italian.get("/").text
-    assert "<summary>Cerca con i filtri</summary>" in home
+    assert "Cerca con i filtri" not in home and "Tutte le carte di Magic" not in home
     assert "<h2>Mappa della sintassi</h2>" in home and "<h3>Colori e mana</h3>" in home
     assert (
         'title="Possiedo proprio questa stampa (yes / no)"><dt>Possiedo questa stampa</dt>' in home
     )
     assert "<h2>Espansioni recenti</h2>" in home and "degli ultimi 5 anni" in home
+    admin = italian.get("/admin").text
+    assert "<h2>Pagina iniziale</h2>" in admin and ">Mappa della sintassi</button>" in admin
+    italian.post("/admin/home", data={"view": "filters"})
+    assert "<h2>Cerca con i filtri</h2>" in italian.get("/").text
     page = italian.get("/search?q=t:dragon")
     assert '<html lang="it">' in page.text and "carte" in page.text
     assert "Sintassi di ricerca" in italian.get("/syntax").text

@@ -7,9 +7,10 @@
   the switch writes `haveprint:yes` into the search box, or takes it out, and searches.
   Typing the filter yourself turns the switch on. Addresses saved with
   `scope=collection` still work.
-- The home page opens on a *map of the syntax* — every filter on one line, with an
-  example to press — and on the codes of the expansions of the last five years. The
-  filter panel is still there, folded under *Search by filters*.
+- The home page is now a quiet *map of the syntax* — every filter on one line, with an
+  example to press — and the codes of the expansions of the last five years; its title
+  and tagline are gone. To have the filter panel there instead, choose *Filters* under
+  *Home page* in Administration.
 - A button in the footer switches between light and dark pages; until you choose, they
   follow your device as before. The browser tab now has an icon, one for each.
 - Docker: a development image, `ghcr.io/ac-me-git/magic-db:edge`, is rebuilt at every
