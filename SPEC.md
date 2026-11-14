@@ -435,7 +435,7 @@ a search, edit the text in the search box.
 | `/locations` | create, rename, reorder, delete; card count and value per location |
 | `/stats` | see §9 |
 | `/import`, `/export` | see §8 |
-| `/admin` | software version (check, and install on Windows), catalog and backup status, last job runs, "update now", "back up now", download latest backup |
+| `/admin` | software version (check, and install on Windows), catalog and backup status, last job runs, "update now", "back up now", download latest backup; link to the syntax page; home page, language and light/dark choices |
 | `/syntax` | search syntax reference, generated from the same table the parser uses |
 | `/healthz` | `{"status":"ok"}`, no auth |
 | `/img/{size}/{scryfall_id}/{face}` | image cache proxy |
@@ -574,7 +574,16 @@ Without a catalog the page has only the notice that it is not there yet.
 the search box, and two links — "My collection", which opens the statistics, and "My
 decks". The statistics page is the collection's landing page and links to the card
 list, fast input, locations, import and export; the administration page links to
-them too. Syntax and Administration are in the footer, with the languages.
+them too. At the top right, after the safety lock, a gear leads to Administration
+(its name is the gear's tooltip); Administration links to the syntax page and holds
+the choice of language.
+
+**Footer.** On every page, and nothing else: the Fan Content Policy notice, its
+copyright line followed by the credit to Scryfall, then "Buy me a coffee". "Wizards"
+in the notice links to `https://company.wizards.com/` and "Scryfall" to
+`https://scryfall.com/`; they, like the coffee, open in a new tab. The two names are
+`{wizards}` and `{scryfall}` in the translated sentences: a template macro makes the
+link, and `t()` escapes the sentence and keeps the link when it is given one.
 
 - **Where to search.** Beside the Search button there is a switch, drawn like the
   safety lock: "search only my collection". Searching the collection is not a mode but
@@ -653,8 +662,9 @@ README says so.
 
 **i18n.** All UI strings come from `i18n/en.json` and `i18n/it.json` through a `t()`
 template function. Card data is always English. The language is chosen **per visitor**:
-the choice made with the selector in the footer (`/lang/{code}?next=…`, stored in the
-`magicdb_lang` cookie for a year), else the first supported language of the browser's
+the choice made in Administration under "Language" (one button per language, each
+sent to `/lang/{code}?next=/admin#language`; stored in the `magicdb_lang` cookie for a
+year), else the first supported language of the browser's
 `Accept-Language`, else `MAGICDB_LANG`. Numbers and prices follow the language. Every
 page gets `t`, `lang`, `languages` and `here` from a template context processor
 (`templating.py`), so routes never deal with language. Messages of `QueryError` are
@@ -791,8 +801,9 @@ Details (`jobs.py`):
 **`/admin`** shows the live catalog, the backups (each downloadable; only file names
 the app gives to backups are served), the last 20 job runs in local time and the
 settings, and has "Update the catalog now" and "Back up now" (`POST
-/admin/{job}/run`, run in a background thread) and two choices: what the home page
-shows (§7, "Home page") and light or dark pages (§7, "Light and dark").
+/admin/{job}/run`, run in a background thread), a link to the syntax page and three
+choices: what the home page shows (§7, "Home page"), the language (§7, "i18n") and
+light or dark pages (§7, "Light and dark").
 
 **Password.** `MAGICDB_PASSWORD` turns on HTTP Basic auth for everything except
 `/healthz`: any user name, that password, compared in constant time (`app.py`).

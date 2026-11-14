@@ -61,21 +61,18 @@
         </span>
       </button>
     </form>
+    <a class="settings-link" href="/admin" title="{{ t('nav.admin') }}" aria-label="{{ t('nav.admin') }}"{% if here.startswith('/admin') %} aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="currentColor" fill-rule="evenodd" d="M10.03 4.66L10.36 1.63A10.5 10.5 0 0 1 13.64 1.63L13.97 4.66A7.6 7.6 0 0 1 15.8 5.42L18.17 3.51A10.5 10.5 0 0 1 20.49 5.83L18.58 8.2A7.6 7.6 0 0 1 19.34 10.03L22.37 10.36A10.5 10.5 0 0 1 22.37 13.64L19.34 13.97A7.6 7.6 0 0 1 18.58 15.8L20.49 18.17A10.5 10.5 0 0 1 18.17 20.49L15.8 18.58A7.6 7.6 0 0 1 13.97 19.34L13.64 22.37A10.5 10.5 0 0 1 10.36 22.37L10.03 19.34A7.6 7.6 0 0 1 8.2 18.58L5.83 20.49A10.5 10.5 0 0 1 3.51 18.17L5.42 15.8A7.6 7.6 0 0 1 4.66 13.97L1.63 13.64A10.5 10.5 0 0 1 1.63 10.36L4.66 10.03A7.6 7.6 0 0 1 5.42 8.2L3.51 5.83A10.5 10.5 0 0 1 5.83 3.51L8.2 5.42A7.6 7.6 0 0 1 10.03 4.66ZM15.2 12A3.2 3.2 0 1 0 8.8 12A3.2 3.2 0 1 0 15.2 12Z"/>
+      </svg>
+    </a>
   </header>
   <main>    {% block content %}{% endblock %}
   </main>
+  {% macro external(url, label) %}<a href="{{ url }}" target="_blank" rel="noopener">{{ label }}</a>{% endmacro %}
   <footer class="site-footer">
-    <p class="languages">
-      {% for code in languages %}
-      {% if code == lang %}<strong>{{ t("language." ~ code) }}</strong>
-      {% else %}<a href="/lang/{{ code }}?next={{ here | urlencode }}" hreflang="{{ code }}" lang="{{ code }}">{{ t("language." ~ code) }}</a>{% endif %}
-      {% if not loop.last %}·{% endif %}
-      {% endfor %}
-    </p>
-    <p><a href="/syntax">{{ t("nav.syntax") }}</a> · <a href="/admin">{{ t("nav.admin") }}</a></p>
+    <p>{{ t("footer.legal", wizards=external("https://company.wizards.com/", "Wizards")) }}<br>{{ t("footer.copyright") }} {{ t("footer.data", scryfall=external("https://scryfall.com/", "Scryfall")) }}</p>
     <p><a class="coffee" href="https://buymeacoffee.com/amtg" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 10h1.5a2.5 2.5 0 0 1 0 5H17M8 2.5v3M12 2.5v3"/></svg>{{ t("footer.coffee") }}</a></p>
-    <p>{{ t("footer.data") }}</p>
-    <p>{{ t("footer.legal") }}<br>{{ t("footer.copyright") }}</p>
   </footer>
 </body>
 </html>

@@ -102,8 +102,7 @@ uv run magicdb
 | **The search box** | On every page. Suggests card names as you type; the switch beside the Search button limits the search to your collection |
 | **My collection** | Statistics, and from there: the card list, fast input, locations, import, export |
 | **My decks** | Deck lists and how complete each one is |
-| **Syntax** (footer) | Every search filter, with examples you can click |
-| **Administration** (footer) | Whether a newer version is out (and, on Windows, install it); catalog and backup status, run them now, download a backup; whether the home page shows the syntax map or the filter panel; light, dark or automatic pages |
+| **Administration** (the gear, top right) | Whether a newer version is out (and, on Windows, install it); catalog and backup status, run them now, download a backup; the syntax page, every search filter with examples you can click; whether the home page shows the syntax map or the filter panel; the language; light, dark or automatic pages |
 
 In the list view, click a column's heading to sort by it; click again to reverse.
 

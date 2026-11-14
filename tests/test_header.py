@@ -56,6 +56,35 @@ def test_menu_has_only_collection_and_decks(client):
     assert '<a class="brand" href="/" title=' in top  # the logo is the way home
 
 
+def gear(page: str) -> str:
+    return header(page).split('<a class="settings-link"')[1].split("</a>")[0]
+
+
+def test_a_gear_at_the_top_right_leads_to_administration(client):
+    for address in ("/", "/syntax", "/search?q=bolt", "/decks"):
+        top = header(client.get(address).text)
+        assert 'href="/admin" title="Administration" aria-label="Administration"' in gear(
+            client.get(address).text
+        ), address
+        assert "aria-current" not in gear(client.get(address).text), address
+        # after the lock, the last thing in the header
+        assert top.index('class="lock-switch') < top.index('class="settings-link"'), address
+        assert links(top)[-1] == "/admin", address
+    assert 'aria-current="page"' in gear(client.get("/admin").text)
+    italian = gear(client.get("/", headers={"Accept-Language": "it"}).text)
+    assert 'title="Amministrazione" aria-label="Amministrazione"' in italian
+
+
+def test_syntax_is_reached_from_administration(client):
+    admin = client.get("/admin").text
+    section = admin.split('<section class="chart" id="syntax">')[1].split("</section>")[0]
+    assert "<h2>Search syntax</h2>" in section
+    assert '<a href="/syntax">Every filter of the search box, with examples to press</a>' in section
+    page = client.get("/search?q=bolt").text
+    assert 'href="/syntax"' not in header(page)
+    assert 'href="/syntax"' not in page.split('<footer class="site-footer">')[1]
+
+
 def test_my_collection_opens_the_statistics_with_the_ways_onward(owned):
     page = owned.get("/stats").text
     assert '<h1 class="page-title">My collection</h1>' in page and "Statistics" in page

@@ -15,6 +15,10 @@
 - Administration has an *Appearance* choice: light, dark or automatic pages. Automatic
   follows your device, as before. The browser tab now has an icon, one for light and
   one for dark.
+- Administration is now the gear at the top right of every page, and it also holds the
+  choice of language and the link to the syntax page. The footer keeps only the Fan
+  Content notice — with links to Wizards of the Coast and to Scryfall, credited on the
+  copyright line — and *Buy me a coffee* at the very bottom.
 - Docker: a development image, `ghcr.io/ac-me-git/magic-db:edge`, is rebuilt at every
   change to the program, to try what is not released yet. `latest` is still the last
   release. The Administration page says when the development version is the one running,

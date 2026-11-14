@@ -782,10 +782,6 @@ code {
   white-space: nowrap;
 }
 
-.languages {
-  font-size: 0.9rem;
-}
-
 
 /* --- collection ---------------------------------------------------------------- */
 
@@ -1133,6 +1129,24 @@ button:disabled {
   order: 1;
   margin-left: auto;
   line-height: 0;
+}
+
+/* beside the lock, at the very top right: the way to Administration */
+
+.settings-link {
+  order: 1;
+  display: grid;
+  place-items: center;
+  margin-left: -0.4rem;
+  padding: 0.2rem;
+  border-radius: 50%;
+  color: var(--muted);
+  line-height: 0;
+}
+
+.settings-link:hover,
+.settings-link[aria-current="page"] {
+  color: var(--text);
 }
 
 .switch {

@@ -18,7 +18,7 @@ def test_home_page(client):
     assert 'title="Another Magic Tracking Gizmo"' in response.text
     # the name is in the header only: the page has no title or tagline of its own
     assert "<h1" not in response.text and "Every Magic card" not in response.text
-    assert "Not approved/endorsed by Wizards" in response.text
+    assert 'Not approved/endorsed by <a href="https://company.wizards.com/"' in response.text
     assert 'action="/search"' in response.text
     # no catalog yet: nothing to search, so no map of the syntax and no filter panel
     assert "The card catalog has not been downloaded yet" in response.text

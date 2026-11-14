@@ -1,11 +1,14 @@
-"""Interface language: per visitor, chosen with the selector (SPEC §7)."""
+"""Interface language: per visitor, chosen in Administration (SPEC §7)."""
 
+import re
 from dataclasses import replace
 
 import pytest
 from fastapi.testclient import TestClient
+from markupsafe import Markup
 
 from magicdb.app import create_app
+from magicdb.i18n import translator
 from magicdb.templating import (
     LANG_COOKIE,
     _accepted,
@@ -74,16 +77,42 @@ def test_unknown_language_changes_nothing(client):
     assert ENGLISH in client.get("/").text
 
 
-def test_every_page_offers_the_other_language(client):
+def language_section(client, **headers) -> str:
+    page = client.get("/admin", headers=headers).text
+    section = page[page.index('<section class="chart" id="language">') :]
+    return section[: section.index("</section>")]
+
+
+def pressed(section: str) -> list[str]:
+    """The languages whose button is drawn as the current one."""
+    return re.findall(r'formaction="/lang/(\w+)" lang="\w+" class="primary"', section)
+
+
+def button(code: str, label: str) -> str:
+    return rf'<button type="submit" formaction="/lang/{code}" lang="{code}"[^>]*>{label}</button>'
+
+
+def test_the_languages_are_in_administration_and_not_in_the_footer(client):
     home = client.get("/").text
     assert '<html lang="en">' in home
-    assert "<strong>English</strong>" in home
-    assert '<a href="/lang/it?next=/" hreflang="it" lang="it">Italiano</a>' in home
-    # the link brings you back to the same page, query included
-    syntax = client.get("/syntax?x=1&y=two words").text
-    assert 'href="/lang/it?next=/syntax%3Fx%3D1%26y%3Dtwo%2520words"' in syntax
-    client.get("/lang/it")
-    assert "<strong>Italiano</strong>" in client.get("/").text
+    assert "/lang/" not in home and "Italiano" not in home
+    section = language_section(client)
+    assert "<h2>Language</h2>" in section and "card names and texts stay in English" in section
+    # a button for each, sent to the address that sets the cookie, which comes back here
+    assert '<form class="actions" method="get">' in section
+    assert '<input type="hidden" name="next" value="/admin#language">' in section
+    assert re.search(button("en", "English"), section)
+    assert re.search(button("it", "Italiano"), section)
+    assert pressed(section) == ["en"] and section.count('aria-pressed="false"') == 1
+
+    response = client.get("/lang/it", params={"next": "/admin#language"})
+    assert response.status_code == 303 and response.headers["location"] == "/admin#language"
+    section = language_section(client)
+    assert "<h2>Lingua</h2>" in section and pressed(section) == ["it"]
+
+
+def test_until_one_is_chosen_the_browser_language_is_shown_as_chosen(client):
+    assert pressed(language_section(client, **{"Accept-Language": "it"})) == ["it"]
 
 
 @pytest.mark.parametrize(
@@ -125,6 +154,14 @@ def test_numbers_on_the_page_follow_the_visitor(catalog, fixture_cards):
     assert "Tutte le stampe" in italian and "All printings" in usd_free
 
 
+def footer(page: str) -> str:
+    return page.split('<footer class="site-footer">')[1].split("</footer>")[0]
+
+
+WIZARDS = '<a href="https://company.wizards.com/" target="_blank" rel="noopener">Wizards</a>'
+SCRYFALL = '<a href="https://scryfall.com/" target="_blank" rel="noopener">Scryfall</a>'
+
+
 def test_footer_links_to_the_coffee_page_in_both_languages(client):
     link = 'href="https://buymeacoffee.com/amtg"'
     english = client.get("/").text
@@ -135,6 +172,35 @@ def test_footer_links_to_the_coffee_page_in_both_languages(client):
 
 def test_footer_breaks_the_legal_notice_before_the_copyright_line(client):
     english = client.get("/").text
-    assert "Not approved/endorsed by Wizards.<br>Portions of the materials" in english
+    assert f"Not approved/endorsed by {WIZARDS}.<br>Portions of the materials" in english
     italian = client.get("/", headers={"Accept-Language": "it"}).text
-    assert "né sostenuto da Wizards.<br>Parte dei materiali" in italian
+    assert f"né sostenuto da {WIZARDS}.<br>Parte dei materiali" in italian
+
+
+def test_footer_credits_scryfall_on_the_copyright_line(client):
+    english = client.get("/").text
+    assert f"©Wizards of the Coast LLC. Card data by {SCRYFALL}.</p>" in english
+    italian = client.get("/", headers={"Accept-Language": "it"}).text
+    assert f"©Wizards of the Coast LLC. Dati delle carte forniti da {SCRYFALL}.</p>" in italian
+
+
+def test_footer_has_only_the_notice_and_then_the_coffee(client):
+    for address in ("/", "/syntax", "/admin"):
+        bottom = footer(client.get(address).text)
+        assert bottom.count("<p>") == 2, address
+        assert bottom.index("Fan Content Policy") < bottom.index("buymeacoffee.com"), address
+        assert re.findall(r'href="([^"]+)"', bottom) == [
+            "https://company.wizards.com/",
+            "https://scryfall.com/",
+            "https://buymeacoffee.com/amtg",
+        ], address
+
+
+def test_a_link_in_a_translated_sentence_is_kept_and_the_rest_escaped():
+    t = translator("en")
+    link = Markup('<a href="/">chips</a>')
+    assert t("no.such.key", default="Fish & {x}", x=link) == 'Fish &amp; <a href="/">chips</a>'
+    assert isinstance(t("no.such.key", default="{x}", x=link), Markup)
+    # a plain value leaves the sentence alone: the template escapes all of it
+    assert t("no.such.key", default="Fish & {x}", x="<b>") == "Fish & <b>"
+    assert not isinstance(t("no.such.key", default="{x}", x="<b>"), Markup)

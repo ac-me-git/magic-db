@@ -546,7 +546,7 @@ def test_admin_page(client, fixture_cards):
     ]:
         assert text in page.text, text
     assert 'http-equiv="refresh"' not in page.text  # nothing is running
-    assert 'href="/admin"' in client.get("/").text  # linked from every page's footer
+    assert 'href="/admin"' in client.get("/").text  # the gear at the top of every page
 
 
 def test_back_up_now_and_download(client, stocked):
