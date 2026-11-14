@@ -4,7 +4,7 @@ import pytest
 
 from magicdb.search.errors import QueryError
 from magicdb.search.parser import MAX_TERMS, And, Filter, Not, Or, Word, parse
-from magicdb.search.tokenizer import MAX_LENGTH, OPERATORS
+from magicdb.search.tokenizer import MAX_LENGTH, OPERATORS, tokenize
 
 
 def f(key: str, value: str, op: str = ":") -> Filter:
@@ -98,3 +98,9 @@ def test_values_keep_symbols():
 def test_errors(text, message):
     with pytest.raises(QueryError, match=message):
         parse(text)
+
+
+def test_filter_tokens_know_where_they_are_in_the_text():
+    text = 'bolt  HavePrint:"yes" (mv<=3 -t:land)'
+    found = [text[slice(*token.span)] for token in tokenize(text) if token.kind == "filter"]
+    assert found == ['HavePrint:"yes"', "mv<=3", "t:land"]

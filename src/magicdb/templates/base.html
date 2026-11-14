@@ -18,21 +18,23 @@
                placeholder="{{ t('search.placeholder') }}" aria-label="{{ t('search.button') }}"
                autocomplete="off" autocapitalize="off" spellcheck="false"
                role="combobox" aria-controls="suggestions" aria-autocomplete="list"
-               hx-get="/search/suggest" hx-trigger="input changed delay:150ms" hx-target="#suggestions"
-               hx-vals='{"scope": "{{ scope }}"}'>
+               hx-get="/search/suggest" hx-trigger="input changed delay:150ms" hx-target="#suggestions">
         <div id="suggestions" class="suggestions" role="listbox"></div>
       </div>
       {% if view is defined and view != "grid" %}<input type="hidden" name="view" value="{{ view }}">{% endif %}
-      <div class="split">
-        <button type="submit" name="scope" value="{{ scope }}">{{ t("search.button.collection") if scope == "collection" else t("search.button") }}</button>
-        <details class="split-menu">
-          <summary aria-label="{{ t('search.scope') }}" title="{{ t('search.scope') }}"></summary>
-          <div class="menu">
-            <button type="submit" name="scope" value="all"{% if scope == "all" %} aria-current="true"{% endif %}>{{ t("search.scope.all") }}</button>
-            <button type="submit" name="scope" value="collection"{% if scope == "collection" %} aria-current="true"{% endif %}>{{ t("search.scope.collection") }}</button>
-          </div>
-        </details>
-      </div>
+      <button type="submit">{{ t("search.button") }}</button>
+      {# After the Search button, so that Enter presses that one. It sends the box with the
+         choice; the server writes it into the search as haveprint:yes, or takes it out. #}
+      <button type="submit" class="switch" name="scope" value="{{ 'all' if mine else 'collection' }}"
+              role="switch" aria-checked="{{ 'true' if mine else 'false' }}"
+              aria-label="{{ t('search.mine') }}" title="{{ t('search.mine') }}">
+        <span class="knob">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            <rect x="9.5" y="2.5" width="11" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+            <rect x="3.5" y="6.5" width="11" height="15" rx="2" fill="currentColor"/>
+          </svg>
+        </span>
+      </button>
     </form>
     <nav class="site-nav">
       <a href="/stats">{{ t("nav.collection") }}</a>
@@ -41,7 +43,7 @@
     <form class="lock-switch {{ 'is-locked' if locked else 'is-unlocked' }}" method="post" action="/lock">
       <input type="hidden" name="next" value="{{ here }}">
       <input type="hidden" name="state" value="{{ 'off' if locked else 'on' }}">
-      <button type="submit" role="switch" aria-checked="{{ 'true' if locked else 'false' }}"
+      <button type="submit" class="switch" role="switch" aria-checked="{{ 'true' if locked else 'false' }}"
               aria-label="{{ t('lock.locked') if locked else t('lock.unlocked') }}"
               title="{{ t('lock.unlock') if locked else t('lock.lock') }}">
         <span class="knob">

@@ -979,7 +979,7 @@ button:disabled {
   color: var(--accent);
 }
 
-/* --- safety lock: a switch in the header, top right ---------------------------- */
+/* --- switches: the safety lock (header, top right) and "only my collection" ------ */
 
 .lock-switch {
   order: 1;
@@ -987,8 +987,9 @@ button:disabled {
   line-height: 0;
 }
 
-.lock-switch button {
+.switch {
   position: relative;
+  flex: none;
   width: 3.25rem;
   height: 1.9rem;
   padding: 0;
@@ -998,7 +999,7 @@ button:disabled {
   transition: background 0.2s;
 }
 
-.lock-switch .knob {
+.switch .knob {
   position: absolute;
   top: 0.2rem;
   left: 0.2rem;
@@ -1013,13 +1014,28 @@ button:disabled {
   transition: left 0.2s;
 }
 
-.lock-switch.is-locked button {
+.switch[aria-checked="true"] {
   background: var(--switch-on);
 }
 
-.lock-switch.is-locked .knob {
+.switch[aria-checked="true"] .knob {
   left: 1.55rem;
   color: var(--switch-on);
+}
+
+/* beside the Search button, and in its colour: search only the collection */
+
+.search-box .switch {
+  align-self: center;
+  background: var(--switch-off);
+}
+
+.search-box .switch[aria-checked="true"] {
+  background: var(--accent);
+}
+
+.search-box .switch[aria-checked="true"] .knob {
+  color: var(--accent);
 }
 
 .locked-notice {
@@ -1205,7 +1221,7 @@ textarea {
   font-weight: 700;
 }
 
-/* --- search box: suggestions and the split Search button ------------------------ */
+/* --- search box: suggestions ----------------------------------------------------- */
 
 .search-field {
   position: relative;
@@ -1245,77 +1261,6 @@ textarea {
 .suggestions a:focus {
   background: var(--row);
   outline: none;
-}
-
-.split {
-  position: relative;
-  display: flex;
-}
-
-.split > button {
-  border-radius: 0.4rem 0 0 0.4rem;
-}
-
-.split-menu > summary {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 100%;
-  list-style: none;
-  cursor: pointer;
-  background: var(--accent);
-  color: var(--accent-text);
-  border: 1px solid var(--accent);
-  border-left-color: var(--accent-text);
-  border-radius: 0 0.4rem 0.4rem 0;
-}
-
-.split-menu > summary::-webkit-details-marker {
-  display: none;
-}
-
-.split-menu > summary::after {
-  content: "";
-  border: 0.3rem solid transparent;
-  border-top-color: currentColor;
-  transform: translateY(0.15rem);
-}
-
-.split-menu .menu {
-  position: absolute;
-  top: calc(100% + 0.2rem);
-  right: 0;
-  z-index: 20;
-  display: grid;
-  min-width: 15rem;
-  overflow: hidden;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
-}
-
-.split-menu .menu button {
-  padding: 0.6rem 0.9rem;
-  border: 0;
-  border-radius: 0;
-  background: none;
-  color: var(--text);
-  font-weight: 400;
-  text-align: left;
-}
-
-.split-menu .menu button:hover,
-.split-menu .menu button:focus-visible {
-  background: var(--row);
-}
-
-.split-menu .menu button[aria-current] {
-  font-weight: 700;
-}
-
-.split-menu .menu button[aria-current]::before {
-  content: "✓ ";
 }
 
 /* --- sortable column headers --------------------------------------------------- */

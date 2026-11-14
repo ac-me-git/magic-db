@@ -1,12 +1,12 @@
 {% macro nav(label, page, target_view, current=false, rel=none) -%}
-<a href="{{ search_url(q, page, target_view, scope) }}" hx-get="{{ search_url(q, page, target_view, scope) }}"
+<a href="{{ search_url(q, page, target_view) }}" hx-get="{{ search_url(q, page, target_view) }}"
    hx-target="#results" hx-swap="innerHTML show:window:top" hx-push-url="true"
    {%- if current %} aria-current="true"{% endif %}{% if rel %} rel="{{ rel }}"{% endif %}>{{ label }}</a>
 {%- endmacro %}
 
 {# A link that sorts by `key`; on the order in use it turns it round and shows which way. #}
 {% macro sorter(label, key) -%}
-<a class="sorter{% if result.order == key %} is-sorted{% endif %}" href="{{ search_url(sort[key], 1, view, scope) }}"
+<a class="sorter{% if result.order == key %} is-sorted{% endif %}" href="{{ search_url(sort[key], 1, view) }}"
    {%- if result.order == key %} title="{{ t('results.sorted.' ~ result.direction) }}"{% endif %}>{{ label }}{% if result.order == key %}<span aria-hidden="true"> {{ "▲" if result.direction == "asc" else "▼" }}</span>{% endif %}</a>
 {%- endmacro %}
 
@@ -35,12 +35,12 @@
 
 {% if not result.rows %}
 <div class="empty">
-  <p>{{ t("results.none.collection") if scope == "collection" else t("results.none") }}</p>
-  {% if scope == "collection" %}<p><a href="{{ search_url(q, 1, view) }}">{{ t("results.try_all") }}</a></p>{% endif %}
+  <p>{{ t("results.none.collection") if mine else t("results.none") }}</p>
+  {% if mine %}<p><a href="{{ search_url(without_collection, 1, view) }}">{{ t("results.try_all") }}</a></p>{% endif %}
   {% if result.suggestions %}
   <p>{{ t("results.did_you_mean") }}
     {% for name in result.suggestions %}
-    <a href="{{ search_url('!"' ~ name ~ '"', 1, view, scope) }}">{{ name }}</a>{% if not loop.last %}, {% endif %}
+    <a href="{{ search_url('!"' ~ name ~ '"', 1, view) }}">{{ name }}</a>{% if not loop.last %}, {% endif %}
     {% endfor %}
   </p>
   {% endif %}

@@ -19,24 +19,13 @@ ONE_YEAR = 365 * 24 * 60 * 60
 _SYMBOL = {"eur": "€", "usd": "$"}
 
 
-SCOPES = ("all", "collection")
-
-
-def search_url(q: str, page: int = 1, view: str = "grid", scope: str = "all") -> str:
+def search_url(q: str, page: int = 1, view: str = "grid") -> str:
     params: dict[str, str | int] = {"q": q}
     if page > 1:
         params["page"] = page
     if view != "grid":
         params["view"] = view
-    if scope != "all":
-        params["scope"] = scope
     return "/search?" + urlencode(params)
-
-
-def scope_of(request: Request) -> str:
-    """Where the visitor is searching: every card, or only their collection."""
-    scope = request.query_params.get("scope", "all")
-    return scope if scope in SCOPES else "all"
 
 
 def safe_next(target: str | None, default: str = "/") -> str:
@@ -114,7 +103,6 @@ def build_templates(settings: Settings) -> Jinja2Templates:
             "languages": LANGS,
             "here": here,
             "locked": getattr(request.app.state, "locked", False),
-            "scope": scope_of(request),
         }
 
     templates = Jinja2Templates(

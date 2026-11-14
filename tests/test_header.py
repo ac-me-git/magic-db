@@ -71,28 +71,76 @@ def test_no_page_links_to_add_cards_any_more(owned):
 
 # --- 2: where to search ---------------------------------------------------------------
 
+BOLT_OR_OTHERS = '!"Lightning Bolt" or !"Serra Angel" or !"Sol Ring" or !"Shivan Dragon"'
 
-def test_search_button_offers_both_scopes(client):
+
+def switch(page: str) -> str:
+    """The attributes of the collection switch in the search box."""
+    return header(page).split('class="switch" name="scope"')[1].split(">")[0]
+
+
+def flip(client, **params) -> str:
+    """Press the switch (or follow an address from before it): where it sends."""
+    response = client.get("/search", params=params)
+    assert response.status_code == 303
+    return response.headers["location"]
+
+
+def test_search_button_is_followed_by_the_collection_switch(client):
     top = header(client.get("/search?q=bolt").text)
-    assert '<button type="submit" name="scope" value="all">Search</button>' in top
-    assert (
-        '<button type="submit" name="scope" value="all" aria-current="true">Search all cards</button>'
-        in top
-    )
-    assert (
-        '<button type="submit" name="scope" value="collection">Search my collection</button>' in top
-    )
+    assert '<button type="submit">Search</button>' in top
     # the plain button comes first: it is the one Enter presses
-    assert top.index('value="all">Search</button>') < top.index("split-menu")
+    assert top.index('<button type="submit">Search</button>') < top.index('name="scope"')
+    assert top.count('name="scope"') == 1
+    assert "split" not in top and "<details" not in top
 
 
-def test_collection_scope_shows_only_what_is_owned(owned, ids):
-    everything = owned.get(
-        '/search?q=!"Lightning Bolt" or !"Serra Angel" or !"Sol Ring" or !"Shivan Dragon"'
+def test_switch_shows_whether_the_search_is_over_the_collection(client):
+    off = switch(client.get("/search?q=bolt").text)
+    assert 'value="collection"' in off and 'role="switch" aria-checked="false"' in off
+    assert 'aria-label="Search only my collection"' in off
+    # the term typed by hand turns the switch on just the same
+    on = switch(client.get("/search?q=haveprint:yes bolt").text)
+    assert 'value="all"' in on and 'role="switch" aria-checked="true"' in on
+    # and on a page that is not a search it is off
+    assert 'aria-checked="false"' in switch(client.get("/syntax").text)
+
+
+def test_the_switch_writes_the_term_into_the_search(owned):
+    on = flip(owned, q="t:instant", scope="collection", view="list")
+    assert on == "/search?q=t%3Ainstant+haveprint%3Ayes&view=list"
+    page = owned.get(on).text
+    assert 'value="t:instant haveprint:yes"' in header(page)  # the box shows the search as it is
+    assert 'aria-checked="true"' in switch(page)
+    assert flip(owned, q="t:instant haveprint:yes", scope="all", view="list") == (
+        "/search?q=t%3Ainstant&view=list"
     )
-    mine = owned.get(
-        '/search?q=!"Lightning Bolt" or !"Serra Angel" or !"Sol Ring" or !"Shivan Dragon"&scope=collection'
+    # nothing to do: the address just loses the parameter
+    assert flip(owned, q="bolt", scope="all") == "/search?q=bolt"
+    assert flip(owned, q="haveprint:yes", scope="collection") == "/search?q=haveprint%3Ayes"
+    # an empty box: the whole collection
+    assert flip(owned, scope="collection") == "/search?q=haveprint%3Ayes"
+    assert "\n    3 cards\n" in owned.get("/search?q=haveprint%3Ayes").text
+
+
+def test_addresses_from_before_the_switch_still_work(owned):
+    assert flip(owned, q="t:instant", scope="collection", page="2") == (
+        "/search?q=t%3Ainstant+haveprint%3Ayes&page=2"
     )
+
+
+def test_switch_leaves_a_search_it_cannot_read_alone(owned):
+    target = flip(owned, q="bolt (", scope="collection")
+    assert target == "/search?q=bolt+%28"
+    page = owned.get(target)
+    assert page.status_code == 200 and "A parenthesis is never closed." in page.text
+
+
+def test_collection_search_shows_only_what_is_owned(owned, ids):
+    everything = owned.get("/search", params={"q": BOLT_OR_OTHERS})
+    target = flip(owned, q=BOLT_OR_OTHERS, scope="collection")
+    assert parse_qs(urlsplit(target).query)["q"] == [f"({BOLT_OR_OTHERS}) haveprint:yes"]
+    mine = owned.get(target)
     assert "\n    3 cards\n" in mine.text and "\n    3 cards\n" not in everything.text
     for name in ("Lightning Bolt", "Serra Angel", "Sol Ring"):
         assert name in mine.text
@@ -104,59 +152,132 @@ def test_collection_scope_shows_only_what_is_owned(owned, ids):
     assert f'href="/card/{ids("Lightning Bolt", "2x2")}"' in everything.text
 
 
-def test_badges_show_in_both_scopes(owned):
-    for scope in ("all", "collection"):
-        page = owned.get(f'/search?q=!"Lightning Bolt"&scope={scope}').text
-        assert '<span class="owned" title="You own 2">×2</span>' in page, scope
+def test_badges_show_with_and_without_the_switch(owned):
+    for query in ('!"Lightning Bolt"', '!"Lightning Bolt" haveprint:yes'):
+        page = owned.get("/search", params={"q": query}).text
+        assert '<span class="owned" title="You own 2">×2</span>' in page, query
 
 
-def test_scope_is_kept_by_the_button_the_views_and_the_sorting(owned):
-    page = owned.get("/search?q=t:instant&scope=collection&view=list").text
-    top = header(page)
-    assert (
-        '<button type="submit" name="scope" value="collection">Search my collection</button>' in top
-    )
-    assert 'value="collection" aria-current="true"' in top
+def test_the_term_is_kept_by_the_box_the_views_and_the_sorting(owned):
+    page = owned.get("/search?q=t:instant haveprint:yes&view=list").text
+    assert 'value="t:instant haveprint:yes"' in header(page)
     body = page.split('id="results"')[1]
-    assert body.count("scope=collection") >= 8  # two view links and six column headers
-    assert all("scope=collection" in link for link in links(body) if link.startswith("/search"))
+    searches = [link for link in links(body) if link.startswith("/search")]
+    assert len(searches) >= 8  # two view links and six column headers
+    assert all("haveprint%3Ayes" in link for link in searches)
+    assert "scope=" not in page  # the collection is in the search, not beside it
 
 
 def test_nothing_owned_matches(owned, client):
-    page = owned.get("/search?q=t:dragon&scope=collection").text
+    page = owned.get("/search?q=t:dragon haveprint:yes").text
     assert "No cards found in your collection." in page
     assert 'href="/search?q=t%3Adragon">Search all cards instead</a>' in page
     assert "No cards found." in owned.get("/search?q=t:nothing").text
 
 
 @pytest.mark.parametrize("scope", ["", "everything", "COLLECTION", "collection' OR 1=1"])
-def test_unknown_scope_means_all_cards(owned, scope):
-    page = owned.get("/search", params={"q": "t:dragon", "scope": scope}).text
-    assert "Shivan Dragon" in page and 'name="scope" value="all">Search</button>' in page
+def test_unknown_scope_is_ignored(owned, scope):
+    response = owned.get("/search", params={"q": "t:dragon", "scope": scope})
+    assert response.status_code == 200
+    assert "Shivan Dragon" in response.text and 'aria-checked="false"' in switch(response.text)
 
 
-def test_owned_only_in_the_engine(catalog, owned, ids):
+def test_the_collection_term_in_the_engine(catalog, owned, ids):
+    def mine(query: str, **options) -> search.Result:
+        return search.run(conn, search.with_collection(query, True), **options)
+
     with closing(db.connect(catalog)) as conn:
-        prints = search.run(conn, "unique:prints", owned_only=True, per_page=500)
+        prints = mine("unique:prints", per_page=500)
         assert {row["id"] for row in prints.rows} == {
             ids("Lightning Bolt", "lea"),
             ids("Serra Angel", "dom"),
             ids("Sol Ring", "c21"),
         }
-        # "or" in the query cannot escape the scope
-        either = search.run(conn, "t:dragon or t:angel", owned_only=True)
+        # "or" in the query cannot escape the collection
+        either = mine("t:dragon or t:angel")
         assert [row["name"] for row in either.rows] == ["Serra Angel"]
-        assert search.run(conn, "-t:angel", owned_only=True).total == 2
-        assert search.run(conn, "lightnig bolt", owned_only=True).total == 0
+        assert search.run(conn, "t:dragon or t:angel").total > 1
+        assert mine("-t:angel").total == 2
+        assert mine("lightnig bolt").total == 0
 
 
-def test_search_url_carries_the_scope():
+@pytest.mark.parametrize(
+    ("query", "on", "expected"),
+    [
+        ("", True, "haveprint:yes"),
+        ("bolt", True, "bolt haveprint:yes"),
+        ("  bolt  c:r ", True, "bolt  c:r haveprint:yes"),
+        ("bolt order:price dir:desc", True, "bolt order:price dir:desc haveprint:yes"),
+        ("bolt or shock", True, "(bolt or shock) haveprint:yes"),
+        ("(bolt or shock)", True, "(bolt or shock) haveprint:yes"),
+        ("bolt OR haveprint:yes", True, "(bolt OR haveprint:yes) haveprint:yes"),
+        ("bolt (t:elf or haveprint:yes)", True, "bolt (t:elf or haveprint:yes) haveprint:yes"),
+        ("bolt -haveprint:yes", True, "bolt -haveprint:yes haveprint:yes"),
+        ("bolt haveprint:no", True, "bolt haveprint:no haveprint:yes"),
+        ("bolt haveprint:yes", True, "bolt haveprint:yes"),  # already there
+        ("haveprint:yes", False, ""),
+        ("bolt haveprint:yes", False, "bolt"),
+        ("haveprint:yes bolt order:price", False, "bolt order:price"),
+        ("bolt HavePrint:YES t:instant", False, "bolt t:instant"),
+        ('bolt haveprint:"yes"', False, "bolt"),
+        ("haveprint:y bolt haveprint:1 haveprint:true", False, "bolt"),
+        ("(bolt or shock) haveprint:yes", False, "(bolt or shock)"),
+        # only the terms that limit the whole search are taken out
+        (
+            "(a or haveprint:yes) -haveprint:yes haveprint:yes",
+            False,
+            "(a or haveprint:yes) -haveprint:yes",
+        ),
+        (
+            'o:"haveprint:yes" !haveprint:yes haveprint:yes',
+            False,
+            'o:"haveprint:yes" !haveprint:yes',
+        ),
+        ("bolt", False, "bolt"),  # nothing to take out
+        ("a or haveprint:yes", False, "a or haveprint:yes"),
+        # a search that cannot be read is left alone
+        ("bolt (", True, "bolt ("),
+        ('haveprint:yes "bolt', False, 'haveprint:yes "bolt'),
+        ("haveprint:yes )", False, "haveprint:yes )"),
+    ],
+)
+def test_with_collection(query, on, expected):
+    assert search.with_collection(query, on) == expected
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ("haveprint:yes", True),
+        ("bolt haveprint:y", True),
+        ("HAVEPRINT:True t:instant", True),
+        ("(bolt or shock) haveprint:1 order:price", True),
+        ("", False),
+        ("bolt", False),
+        ("have:yes", False),  # the card in any printing: another search
+        ("haveprint:no", False),
+        ("-haveprint:yes", False),
+        ("bolt or haveprint:yes", False),
+        ("bolt (shock or haveprint:yes)", False),
+        ("!haveprint:yes", False),
+        ('name:"haveprint:yes"', False),
+        ("haveprint:maybe", False),
+        ("haveprint:yes (", False),
+    ],
+)
+def test_in_collection(query, expected):
+    assert search.in_collection(query) is expected
+
+
+@pytest.mark.parametrize("query", ["", "bolt", "t:dragon c:r order:price", "(bolt or shock)"])
+def test_switch_on_then_off_gives_the_search_back(query):
+    assert search.with_collection(search.with_collection(query, True), False) == query
+
+
+def test_search_url():
     assert search_url("bolt") == "/search?q=bolt"
-    assert (
-        search_url("bolt", 2, "list", "collection")
-        == "/search?q=bolt&page=2&view=list&scope=collection"
-    )
-    assert search_url("bolt", scope="all") == "/search?q=bolt"
+    assert search_url("bolt", 2, "list") == "/search?q=bolt&page=2&view=list"
+    assert search_url("bolt haveprint:yes") == "/search?q=bolt+haveprint%3Ayes"
 
 
 # --- 1: suggestions while typing ------------------------------------------------------
@@ -199,6 +320,12 @@ def test_suggestions_put_names_starting_with_it_first_and_stop_at_eight(client):
         "bolt or shock",
         "<script>alert(1)</script>",
         "zzzzzzzz",
+        "haveprint:yes",
+        "haveprint:yes l",
+        "bolt c:r haveprint:yes",
+        "bolt haveprint:no",
+        "bolt have:yes",
+        "zzzzzzzz haveprint:yes",
     ],
 )
 def test_no_suggestions_for_syntax_or_nonsense(client, typed):
@@ -206,11 +333,14 @@ def test_no_suggestions_for_syntax_or_nonsense(client, typed):
 
 
 def test_suggestions_in_the_collection_are_only_owned_names(owned):
-    fragment = owned.get("/search/suggest?q=li&scope=collection").text
+    fragment = owned.get("/search/suggest?q=li haveprint:yes").text
     assert "<b></b>Li<b>ghtning Bolt</b>" in fragment
     assert fragment.count('role="option"') == 1  # Lightning Helix is not owned
-    assert "scope=collection" in fragment
-    assert owned.get("/search/suggest?q=shiv&scope=collection").text == ""
+    # choosing it stays in the collection
+    assert links(fragment) == ["/search?q=%21%22Lightning+Bolt%22+haveprint%3Ayes"]
+    assert owned.get(links(fragment)[0]).status_code == 200
+    assert owned.get("/search/suggest?q=haveprint:yes li").text == fragment
+    assert owned.get("/search/suggest?q=shiv haveprint:yes").text == ""
     assert "Shivan Dragon" in owned.get("/search/suggest?q=shiv").text.replace("<b>", "").replace(
         "</b>", ""
     )
@@ -224,7 +354,7 @@ def test_suggestion_names_are_escaped(catalog, client):
             " created_at, updated_at) VALUES ('p', 'o', 'Evil <b>\"card\"</b> & co', 'x', '1', 1, 'n', 'n')"
         )
         conn.commit()
-    fragment = client.get("/search/suggest?q=evil&scope=collection").text
+    fragment = client.get("/search/suggest?q=evil haveprint:yes").text
     assert '<b>"card"' not in fragment and "&lt;b&gt;" in fragment and "&amp; co" in fragment
     assert fragment.count("<a ") == 1
 
@@ -237,9 +367,9 @@ def test_highlight():
 
 
 def test_the_box_is_wired_for_suggestions(client):
-    top = header(client.get("/search?q=bolt&scope=collection").text)
+    top = header(client.get("/search?q=bolt haveprint:yes").text)
     assert 'hx-get="/search/suggest"' in top and 'id="suggestions"' in top
-    assert 'hx-vals=\'{"scope": "collection"}\'' in top
+    assert "hx-vals" not in top  # the box's own text says where to look
     assert 'autocomplete="off"' in top
     page = client.get("/").text
     assert "/static/app.js" in page
@@ -354,17 +484,17 @@ def test_collection_columns_sort_the_list(owned):
 
 def test_new_labels_in_italian(owned):
     owned.get("/lang/it")
-    top = header(owned.get("/search?q=bolt&scope=collection").text)
+    top = header(owned.get("/search?q=bolt haveprint:yes").text)
     for expected in [
         "La mia collezione",
         "I miei mazzi",
-        "Cerca in collezione",
-        "Cerca tra tutte le carte",
+        '<button type="submit">Cerca</button>',
+        'aria-label="Cerca solo nella mia collezione"',
     ]:
         assert expected in top, expected
     assert (
         "Nessuna carta trovata nella tua collezione."
-        in owned.get("/search?q=t:dragon&scope=collection").text
+        in owned.get("/search?q=t:dragon haveprint:yes").text
     )
     assert "Elenco delle carte" in owned.get("/stats").text
 

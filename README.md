@@ -79,7 +79,7 @@ uv run magicdb
 | Page | What it is for |
 |---|---|
 | **The logo** (home) | The filter panel: build a search by picking colours, types, sets… |
-| **The search box** | On every page. Suggests card names as you type; the arrow on the Search button chooses between all cards and your collection |
+| **The search box** | On every page. Suggests card names as you type; the switch beside the Search button limits the search to your collection |
 | **My collection** | Statistics, and from there: the card list, fast input, locations, import, export |
 | **My decks** | Deck lists and how complete each one is |
 | **Syntax** (footer) | Every search filter, with examples you can click |

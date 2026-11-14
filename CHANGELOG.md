@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- The menu on the Search button is now a switch, like the safety lock: *search only my
+  collection*. Searching the collection is no longer a separate mode but one more filter:
+  the switch writes `haveprint:yes` into the search box, or takes it out, and searches.
+  Typing the filter yourself turns the switch on. Addresses saved with
+  `scope=collection` still work.
+
 ## 1.2.1 — 2026-11-14
 
 - The *Add cards* page is gone. Copies are added from a card's page (the form under

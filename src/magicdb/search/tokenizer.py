@@ -1,7 +1,7 @@
 """Split a search string into tokens (SPEC §6.1)."""
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from magicdb.search.errors import QueryError
 
@@ -18,6 +18,8 @@ class Token:
     key: str = ""
     op: str = ""
     exact: bool = False  # word only: !name or !"full name"
+    # filter only: where it is in the text, text[span[0]:span[1]]
+    span: tuple[int, int] = field(default=(0, 0), compare=False)
 
 
 def _quoted(text: str, start: int) -> tuple[str, int]:
@@ -73,14 +75,14 @@ def tokenize(text: str) -> list[Token]:
         match = None if exact else _KEY_OP.match(text, i)
         if match:
             key, op = match.group(1).lower(), match.group(2)
-            i = match.end()
+            start, i = i, match.end()
             if i < n and text[i] == '"':
                 value, i = _quoted(text, i)
             else:
                 value, i = _bare(text, i)
             if not value.strip():
                 raise QueryError(f"'{key}{op}' needs a value after it.")
-            tokens.append(Token("filter", value=value.strip(), key=key, op=op))
+            tokens.append(Token("filter", value=value.strip(), key=key, op=op, span=(start, i)))
             continue
 
         value, i = _bare(text, i)

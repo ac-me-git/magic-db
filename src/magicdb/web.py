@@ -18,12 +18,13 @@ from magicdb.config import LANGS
 from magicdb.decks import service as decks
 from magicdb.search import panel
 from magicdb.search.compiler import LIKE, ORDERS, _contains
-from magicdb.templating import LANG_COOKIE, ONE_YEAR, safe_next, scope_of, search_url
+from magicdb.templating import LANG_COOKIE, ONE_YEAR, safe_next, search_url
 
 router = APIRouter()
 Conn = Annotated[sqlite3.Connection, Depends(db.get_conn)]
 
 VIEWS = ("grid", "list", "input")
+SCOPES = ("all", "collection")  # what the switch beside the search box sends
 FAST_PER_PAGE = 500  # fast input: a whole set on one page
 AUTOCOMPLETE_LIMIT = 15
 SUGGEST_LIMIT = 8
@@ -95,7 +96,12 @@ def search_page(
         return no_catalog(request)
     view = view if view in VIEWS else "grid"
     page_number = int(page) if page.isascii() and page.isdigit() and len(page) < 7 else 1
-    scope = scope_of(request)
+    scope = request.query_params.get("scope")
+    if scope in SCOPES:
+        # the switch beside the search box (and addresses saved when the collection was
+        # a place to search, not a term): the choice is written into the search itself
+        mine = search.with_collection(q, scope == "collection")
+        return RedirectResponse(search_url(mine, page_number, view), status_code=303)
     result, error = None, None
     try:
         result = search.run(
@@ -103,7 +109,6 @@ def search_page(
             q,
             page_number,
             currency=request.app.state.settings.currency,
-            owned_only=scope == "collection",
             prints=view == "input",
             per_page=FAST_PER_PAGE if view == "input" else search.PER_PAGE,
         )
@@ -128,6 +133,8 @@ def search_page(
         "_results.html" if partial else "search.html",
         **fast,
         q=q,
+        mine=search.in_collection(q),
+        without_collection=search.with_collection(q, False),
         view=view,
         result=result,
         error=error,
@@ -137,17 +144,18 @@ def search_page(
 
 
 @router.get("/search/suggest", response_class=HTMLResponse)
-def search_suggestions(request: Request, conn: Conn, q: str = "") -> str:
+def search_suggestions(conn: Conn, q: str = "") -> str:
     """Names to offer under the search box while typing, as links.
 
     Only for a plain name: once the text has filter syntax in it there is nothing
-    sensible to complete. In the collection, only names that are in the collection.
+    sensible to complete. The collection switch's term is the exception: beside it a
+    name is still completed, with names that are in the collection.
     """
-    text = q.strip()
+    mine = search.in_collection(q)
+    text = search.with_collection(q, False).strip()
     if len(text) < 2 or _SYNTAX.search(text):
         return ""
-    scope = scope_of(request)
-    if scope == "collection":
+    if mine:
         names = [
             row["name"]
             for row in conn.execute(
@@ -158,8 +166,9 @@ def search_suggestions(request: Request, conn: Conn, q: str = "") -> str:
         ]
     else:
         names = autocomplete(conn, text)[:SUGGEST_LIMIT]
+    rest = f" {search.COLLECTION_TERM}" if mine else ""
     return "".join(
-        f'<a role="option" href="{escape(search_url(exact(name), scope=scope))}">'
+        f'<a role="option" href="{escape(search_url(exact(name) + rest))}">'
         f"{highlight(name, text)}</a>"
         for name in names
     )

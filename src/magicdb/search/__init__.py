@@ -9,6 +9,7 @@ from rapidfuzz import fuzz, process
 from magicdb import db
 from magicdb.catalog.ingest import normalize
 from magicdb.search.compiler import (
+    _YES,
     DESCENDING_BY_DEFAULT,
     FILTERS,
     ORDERS,
@@ -18,17 +19,24 @@ from magicdb.search.compiler import (
 )
 from magicdb.search.errors import CatalogUnavailable, QueryError
 from magicdb.search.parser import parse
+from magicdb.search.tokenizer import Token, tokenize
 
 __all__ = [
+    "COLLECTION_TERM",
     "FILTERS",
     "CatalogUnavailable",
     "QueryError",
     "Result",
+    "in_collection",
     "run",
     "sort_links",
     "suggest",
+    "with_collection",
     "with_order",
 ]
+
+# what the switch beside the search box writes: only printings that are in the collection
+COLLECTION_TERM = "haveprint:yes"
 
 _SORT_DIRECTIVE = re.compile(r"(?<![\w\":])(?:order|dir):[A-Za-z]+\s*", re.IGNORECASE)
 
@@ -93,6 +101,62 @@ def sort_links(query: str, result: "Result") -> dict[str, str]:
     }
 
 
+def _collection_terms(query: str) -> tuple[list[Token], bool] | None:
+    """``(terms, alternatives)``: the ``haveprint:yes`` terms that limit the whole search
+    to the collection (not inside brackets, after a ``-`` or beside an ``or``), and
+    whether the search is alternatives joined by ``or``. ``None`` when the search cannot
+    be read."""
+    try:
+        parse(query)
+    except QueryError:
+        return None
+    found: list[Token] = []
+    depth, negated, alternatives = 0, False, False
+    for token in tokenize(query):
+        if token.kind == "lparen":
+            depth += 1
+        elif token.kind == "rparen":
+            depth -= 1
+        elif depth == 0 and token.kind == "or":
+            alternatives = True
+        elif (
+            depth == 0
+            and not negated
+            and (token.key, token.op) == ("haveprint", ":")
+            and token.value.lower() in _YES
+        ):
+            found.append(token)
+        negated = token.kind == "neg"
+    return ([] if alternatives else found), alternatives
+
+
+def in_collection(query: str) -> bool:
+    """True when the search is limited to the collection (it has ``haveprint:yes``)."""
+    scanned = _collection_terms(query)
+    return scanned is not None and bool(scanned[0])
+
+
+def with_collection(query: str, on: bool) -> str:
+    """The same search over the collection only, or over every card again:
+    ``haveprint:yes`` is added to the text or taken out of it. Used by the switch beside
+    the search box. A search that cannot be read is left as it is."""
+    scanned = _collection_terms(query)
+    if scanned is None or on == bool(scanned[0]):
+        return query
+    terms, alternatives = scanned
+    if on:
+        text = query.strip()
+        if alternatives:  # the term must hold for every side of the "or"
+            text = f"({text})"
+        return f"{text} {COLLECTION_TERM}".strip()
+    pieces, at = [], 0
+    for token in terms:
+        pieces.append(query[at : token.span[0]])
+        at = token.span[1]
+    pieces.append(query[at:])
+    return " ".join(piece.strip() for piece in pieces if piece.strip())
+
+
 def suggest(conn: sqlite3.Connection, text: str) -> list[str]:
     """Card names that look like ``text``, best first ("did you mean…")."""
     names = dict(conn.execute("SELECT name, name_norm FROM cat.names"))
@@ -113,13 +177,9 @@ def run(
     *,
     currency: str = "eur",
     per_page: int = PER_PAGE,
-    owned_only: bool = False,
     prints: bool = False,
 ) -> Result:
     """Run a search and return one page of ``cat.printings`` rows.
-
-    With ``owned_only`` the search is over the collection: only printings that are in
-    it, so a card is shown in a printing you actually have.
 
     With ``prints`` every printing is a row, whatever ``unique:`` the query asks for.
 
@@ -131,8 +191,6 @@ def run(
     where, params, ctx = compile_query(node, currency)
     if prints:
         ctx.unique = "prints"
-    if owned_only:
-        where = f"({where}) AND p.id IN (SELECT scryfall_id FROM entries)"
     page = max(1, page)
 
     keys = _order_keys(ctx)
