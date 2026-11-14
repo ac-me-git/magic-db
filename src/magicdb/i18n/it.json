@@ -216,7 +216,7 @@
   "syntax.filter.order": "Ordina per: name, mv, released, rarity, price, set, type",
   "syntax.filter.dir": "Verso dell'ordinamento: asc oppure desc",
   "syntax.filter.include": "Mostra anche i token e gli altri extra",
-  "nav.collection": "La mia collezione",
+  "nav.my_stats": "Le mie statistiche",
   "results.owned": "Ne possiedi {n}",
   "entry.quantity": "Quantità",
   "entry.qty": "Q.tà",

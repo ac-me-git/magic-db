@@ -138,12 +138,12 @@ button.primary,
   color: var(--text);
 }
 
+/* all the room between the logo and the menu */
 .search-box {
   display: flex;
   flex: 1 1 auto;
   gap: 0.4rem;
   min-width: 0;
-  max-width: 48rem;
 }
 
 .search-box input {
@@ -1108,6 +1108,7 @@ button:disabled {
 }
 
 .menu > summary {
+  position: relative;
   display: grid;
   place-items: center;
   width: 2.4rem;
@@ -1120,6 +1121,21 @@ button:disabled {
 
 .menu > summary::-webkit-details-marker {
   display: none;
+}
+
+/* while the collection is locked: a padlock on the button, in the lock's colour */
+.menu-lock {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--switch-on);
+  color: #ffffff;
 }
 
 .menu > summary:hover,

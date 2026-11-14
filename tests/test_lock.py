@@ -55,6 +55,7 @@ def test_a_new_collection_is_unlocked(client, catalog):
     page = client.get("/").text
     assert 'class="menu-row lock-switch is-unlocked"' in page
     assert '<label for="lock-switch">Lock the collection</label>' in page
+    assert '<summary title="Menu" aria-label="Menu">' in page and "menu-lock" not in page
     assert 'name="state" value="on"' in page
     assert 'title="Collection unlocked: changes allowed"' in page
 
@@ -65,6 +66,11 @@ def test_locking_and_unlocking(client, catalog):
     assert lock.load(catalog) is True
     page = client.get("/collection?sort=name").text
     assert 'class="menu-row lock-switch is-locked"' in page
+    # the lock is in the menu, so the button that opens it says it is on
+    name = "Menu · Collection locked: read only"
+    assert f'<summary title="{name}" aria-label="{name}">' in page
+    button = page.split("<summary")[1].split("</summary>")[0]
+    assert '<span class="menu-lock"><svg' in button
     assert 'name="state" value="off"' in page
     assert 'title="Collection locked: read only"' in page
     assert 'name="next" value="/collection?sort=name"' in page  # comes back to this page

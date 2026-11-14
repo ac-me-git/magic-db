@@ -32,25 +32,13 @@
     </form>
     {# The menu: a <details>, so that it opens and closes without a script. #}
     <details class="menu">
-      <summary title="{{ t('menu.open') }}" aria-label="{{ t('menu.open') }}">
+      {%- set menu_name = t('menu.open') ~ (' · ' ~ t('lock.locked') if locked else '') %}
+      <summary title="{{ menu_name }}" aria-label="{{ menu_name }}">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        {# the lock is inside the menu: while it is on, the button says so #}
+        {% if locked %}<span class="menu-lock"><svg viewBox="0 0 24 24" width="10" height="10" aria-hidden="true"><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/></svg></span>{% endif %}
       </summary>
       <div class="menu-panel">
-        <form class="menu-row lock-switch {{ 'is-locked' if locked else 'is-unlocked' }}" method="post" action="/lock">
-          <input type="hidden" name="next" value="{{ here }}">
-          <input type="hidden" name="state" value="{{ 'off' if locked else 'on' }}">
-          <label for="lock-switch">{{ t("menu.lock") }}</label>
-          <button type="submit" id="lock-switch" class="switch" role="switch" aria-checked="{{ 'true' if locked else 'false' }}"
-                  title="{{ t('lock.locked') if locked else t('lock.unlocked') }}">
-            <span class="knob">
-              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-                {% if locked %}<path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-                {% else %}<path d="M8 11V8a4 4 0 0 1 7.6-1.8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>{% endif %}
-                <rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/>
-              </svg>
-            </span>
-          </button>
-        </form>
         {# It belongs to the search form (form="search-form"), after its Search button, so
            that Enter still presses that one. It sends the box with the choice; the server
            writes it into the search as haveprint:yes, or takes it out. #}
@@ -66,9 +54,24 @@
             </span>
           </button>
         </div>
+        <form class="menu-row lock-switch {{ 'is-locked' if locked else 'is-unlocked' }}" method="post" action="/lock">
+          <input type="hidden" name="next" value="{{ here }}">
+          <input type="hidden" name="state" value="{{ 'off' if locked else 'on' }}">
+          <label for="lock-switch">{{ t("menu.lock") }}</label>
+          <button type="submit" id="lock-switch" class="switch" role="switch" aria-checked="{{ 'true' if locked else 'false' }}"
+                  title="{{ t('lock.locked') if locked else t('lock.unlocked') }}">
+            <span class="knob">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                {% if locked %}<path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+                {% else %}<path d="M8 11V8a4 4 0 0 1 7.6-1.8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>{% endif %}
+                <rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/>
+              </svg>
+            </span>
+          </button>
+        </form>
         <hr>
         <a class="menu-link" href="/stats"{% if here.startswith('/stats') %} aria-current="page"{% endif %}>
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M6 17v-5M11 17V6M16 17v-8M21 17V3"/></svg>{{ t("nav.collection") }}</a>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M6 17v-5M11 17V6M16 17v-8M21 17V3"/></svg>{{ t("nav.my_stats") }}</a>
         <a class="menu-link" href="/decks"{% if here.startswith('/deck') %} aria-current="page"{% endif %}>
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="7" width="12" height="15" rx="2"/><path d="M8 4.5V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-.5"/></svg>{{ t("nav.decks") }}</a>
         <hr>

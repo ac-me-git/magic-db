@@ -182,7 +182,7 @@
   "map.more": "The whole syntax, with every way to write each filter.",
   "sets.recent.title": "Recent expansions",
   "sets.recent.hint": "The codes of the expansions of the last {years} years, to write as set:code. Press one to see its cards.",
-  "nav.collection": "My collection",
+  "nav.my_stats": "My stats",
   "results.owned": "You own {n}",
   "entry.quantity": "Quantity",
   "entry.qty": "Qty",

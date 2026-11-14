@@ -1,6 +1,7 @@
 """The header: suggestions, where to search, the menu; and sortable columns (SPEC §7)."""
 
 from contextlib import closing
+from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -65,12 +66,18 @@ def test_the_header_is_the_logo_the_search_box_and_the_menu(client):
     assert 'href="/add"' not in top and "Filters" not in top
 
 
+def test_the_search_box_takes_all_the_room_between_the_logo_and_the_menu():
+    css = (Path(web.__file__).parent / "static" / "app.css").read_text(encoding="utf-8")
+    rule = css.split("\n.search-box {")[1].split("}")[0]
+    assert "flex: 1 1 auto;" in rule and "max-width" not in rule
+
+
 def test_the_menu_has_the_switches_the_ways_onward_the_choices_and_administration(client):
     inside = menu(client.get("/syntax").text)
     order = [
-        '<label for="lock-switch">Lock the collection</label>',
         '<label for="mine-switch">Search only my collection</label>',
-        ">My collection</a>",
+        '<label for="lock-switch">Lock the collection</label>',
+        ">My stats</a>",
         ">My decks</a>",
         "<span>Language</span>",
         "<span>Appearance</span>",
@@ -550,7 +557,7 @@ def test_new_labels_in_italian(owned):
     owned.get("/lang/it")
     top = header(owned.get("/search?q=bolt haveprint:yes").text)
     for expected in [
-        "La mia collezione",
+        ">Le mie statistiche</a>",
         "I miei mazzi",
         '<button type="submit">Cerca</button>',
         '<label for="mine-switch">Cerca solo nella mia collezione</label>',

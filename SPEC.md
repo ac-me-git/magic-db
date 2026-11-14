@@ -572,13 +572,14 @@ Without a catalog the page has only the notice that it is not there yet.
 
 **Header.** On every page, from the left: the logo (the way to the home page; for now
 the four letters of the name, one day a picture), the search box with its Search
-button, and a button with three lines that opens the menu. The menu is a `<details>`,
+button, which takes all the room between the two, and a button with three lines that
+opens the menu. The menu is a `<details>`,
 so it opens and closes without JavaScript; `app.js` only closes it on a click elsewhere
 or with Escape. It holds, in this order:
 
-- the safety lock, "Lock the collection", with its switch;
 - "Search only my collection", with its switch (see *Where to search*);
-- "My collection", which opens the statistics, and "My decks", each with an icon;
+- the safety lock, "Lock the collection", with its switch;
+- "My stats", which opens the statistics, and "My decks", each with an icon;
 - the language, ENG or ITA (§7, "i18n"), and light, dark or automatic pages (§7,
   "Light and dark"), each a row of small buttons with the current one filled in;
 - "Administration", with a gear.
@@ -645,7 +646,9 @@ table (migration 0002) so that it survives a restart, and mirrored in
   to unlock, except `POST /lock` itself, `POST /theme` and `POST /admin/…`. It denies
   by default, so a
   page added later that changes the collection is locked without anyone remembering.
-- A switch in the menu of every page (first line) shows the state and changes it
+- While locked, the menu button carries a small amber padlock and its name says so
+  ("Menu · Collection locked: read only"), so the state shows with the menu closed.
+- A switch in the menu of every page (second line) shows the state and changes it
   (`POST /lock` with `state=on|off` and `next`): a sliding toggle with a padlock on its
   knob, closed and amber when locked, open and grey when unlocked. It is a form button
   with `role="switch"`, so it works without JavaScript and reads properly to a screen
