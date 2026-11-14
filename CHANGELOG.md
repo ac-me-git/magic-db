@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.3.0 — 2026-11-15
 
 - In the search results the ×N badge of the copies you own sits in the bottom left
   corner of the card image, where it no longer covers the mana cost.
