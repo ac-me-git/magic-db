@@ -9,7 +9,7 @@ from itertools import groupby
 from typing import Annotated
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from markupsafe import Markup, escape
 
@@ -21,7 +21,14 @@ from magicdb.config import LANGS, Settings
 from magicdb.decks import service as decks
 from magicdb.search import panel
 from magicdb.search.compiler import LIKE, ORDERS, FilterDef, _contains
-from magicdb.templating import LANG_COOKIE, ONE_YEAR, safe_next, search_url
+from magicdb.templating import (
+    LANG_COOKIE,
+    ONE_YEAR,
+    THEME_COOKIE,
+    THEMES,
+    safe_next,
+    search_url,
+)
 
 router = APIRouter()
 Conn = Annotated[sqlite3.Connection, Depends(db.get_conn)]
@@ -321,6 +328,19 @@ def set_language(code: str, next: str = "/") -> RedirectResponse:
     response = RedirectResponse(safe_next(next), status_code=303)
     if code in LANGS:
         response.set_cookie(LANG_COOKIE, code, max_age=ONE_YEAR, samesite="lax", path="/")
+    return response
+
+
+@router.post("/theme")
+def choose_theme(
+    theme: Annotated[str, Form()] = "", next: Annotated[str, Form()] = "/"
+) -> RedirectResponse:
+    """Light or dark pages in this browser, or what its device asks for ("auto")."""
+    response = RedirectResponse(safe_next(next), status_code=303)
+    if theme in THEMES:
+        response.set_cookie(THEME_COOKIE, theme, max_age=ONE_YEAR, samesite="lax", path="/")
+    elif theme == "auto":
+        response.delete_cookie(THEME_COOKIE, path="/", samesite="lax")
     return response
 
 

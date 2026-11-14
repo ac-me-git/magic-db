@@ -18,7 +18,7 @@
 <body>
   <header class="site-header">
     <a class="brand" href="/" title="{{ t('app.full_name') }}">{{ t("app.name") }}</a>
-    <form class="search-box" action="/search" method="get" role="search">
+    <form class="search-box" id="search-form" action="/search" method="get" role="search">
       <div class="search-field">
         <input type="search" name="q" id="q" value="{{ q | default('') }}"
                placeholder="{{ t('search.placeholder') }}" aria-label="{{ t('search.button') }}"
@@ -29,43 +29,67 @@
       </div>
       {% if view is defined and view != "grid" %}<input type="hidden" name="view" value="{{ view }}">{% endif %}
       <button type="submit">{{ t("search.button") }}</button>
-      {# After the Search button, so that Enter presses that one. It sends the box with the
-         choice; the server writes it into the search as haveprint:yes, or takes it out. #}
-      <button type="submit" class="switch" name="scope" value="{{ 'all' if mine else 'collection' }}"
-              role="switch" aria-checked="{{ 'true' if mine else 'false' }}"
-              aria-label="{{ t('search.mine') }}" title="{{ t('search.mine') }}">
-        <span class="knob">
-          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-            <rect x="9.5" y="2.5" width="11" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-            <rect x="3.5" y="6.5" width="11" height="15" rx="2" fill="currentColor"/>
-          </svg>
-        </span>
-      </button>
     </form>
-    <nav class="site-nav">
-      <a href="/stats">{{ t("nav.collection") }}</a>
-      <a href="/decks">{{ t("nav.decks") }}</a>
-    </nav>
-    <form class="lock-switch {{ 'is-locked' if locked else 'is-unlocked' }}" method="post" action="/lock">
-      <input type="hidden" name="next" value="{{ here }}">
-      <input type="hidden" name="state" value="{{ 'off' if locked else 'on' }}">
-      <button type="submit" class="switch" role="switch" aria-checked="{{ 'true' if locked else 'false' }}"
-              aria-label="{{ t('lock.locked') if locked else t('lock.unlocked') }}"
-              title="{{ t('lock.unlock') if locked else t('lock.lock') }}">
-        <span class="knob">
-          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-            {% if locked %}<path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-            {% else %}<path d="M8 11V8a4 4 0 0 1 7.6-1.8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>{% endif %}
-            <rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/>
-          </svg>
-        </span>
-      </button>
-    </form>
-    <a class="settings-link" href="/admin" title="{{ t('nav.admin') }}" aria-label="{{ t('nav.admin') }}"{% if here.startswith('/admin') %} aria-current="page"{% endif %}>
-      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-        <path fill="currentColor" fill-rule="evenodd" d="M10.03 4.66L10.36 1.63A10.5 10.5 0 0 1 13.64 1.63L13.97 4.66A7.6 7.6 0 0 1 15.8 5.42L18.17 3.51A10.5 10.5 0 0 1 20.49 5.83L18.58 8.2A7.6 7.6 0 0 1 19.34 10.03L22.37 10.36A10.5 10.5 0 0 1 22.37 13.64L19.34 13.97A7.6 7.6 0 0 1 18.58 15.8L20.49 18.17A10.5 10.5 0 0 1 18.17 20.49L15.8 18.58A7.6 7.6 0 0 1 13.97 19.34L13.64 22.37A10.5 10.5 0 0 1 10.36 22.37L10.03 19.34A7.6 7.6 0 0 1 8.2 18.58L5.83 20.49A10.5 10.5 0 0 1 3.51 18.17L5.42 15.8A7.6 7.6 0 0 1 4.66 13.97L1.63 13.64A10.5 10.5 0 0 1 1.63 10.36L4.66 10.03A7.6 7.6 0 0 1 5.42 8.2L3.51 5.83A10.5 10.5 0 0 1 5.83 3.51L8.2 5.42A7.6 7.6 0 0 1 10.03 4.66ZM15.2 12A3.2 3.2 0 1 0 8.8 12A3.2 3.2 0 1 0 15.2 12Z"/>
-      </svg>
-    </a>
+    {# The menu: a <details>, so that it opens and closes without a script. #}
+    <details class="menu">
+      <summary title="{{ t('menu.open') }}" aria-label="{{ t('menu.open') }}">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </summary>
+      <div class="menu-panel">
+        <form class="menu-row lock-switch {{ 'is-locked' if locked else 'is-unlocked' }}" method="post" action="/lock">
+          <input type="hidden" name="next" value="{{ here }}">
+          <input type="hidden" name="state" value="{{ 'off' if locked else 'on' }}">
+          <label for="lock-switch">{{ t("menu.lock") }}</label>
+          <button type="submit" id="lock-switch" class="switch" role="switch" aria-checked="{{ 'true' if locked else 'false' }}"
+                  title="{{ t('lock.locked') if locked else t('lock.unlocked') }}">
+            <span class="knob">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                {% if locked %}<path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+                {% else %}<path d="M8 11V8a4 4 0 0 1 7.6-1.8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>{% endif %}
+                <rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/>
+              </svg>
+            </span>
+          </button>
+        </form>
+        {# It belongs to the search form (form="search-form"), after its Search button, so
+           that Enter still presses that one. It sends the box with the choice; the server
+           writes it into the search as haveprint:yes, or takes it out. #}
+        <div class="menu-row">
+          <label for="mine-switch">{{ t("search.mine") }}</label>
+          <button type="submit" form="search-form" id="mine-switch" class="switch collection-only" name="scope" value="{{ 'all' if mine else 'collection' }}"
+                  role="switch" aria-checked="{{ 'true' if mine else 'false' }}">
+            <span class="knob">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                <rect x="9.5" y="2.5" width="11" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                <rect x="3.5" y="6.5" width="11" height="15" rx="2" fill="currentColor"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+        <hr>
+        <a class="menu-link" href="/stats"{% if here.startswith('/stats') %} aria-current="page"{% endif %}>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M6 17v-5M11 17V6M16 17v-8M21 17V3"/></svg>{{ t("nav.collection") }}</a>
+        <a class="menu-link" href="/decks"{% if here.startswith('/deck') %} aria-current="page"{% endif %}>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="7" width="12" height="15" rx="2"/><path d="M8 4.5V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-.5"/></svg>{{ t("nav.decks") }}</a>
+        <hr>
+        <div class="menu-row">
+          <span>{{ t("menu.language") }}</span>
+          <span class="segments">
+            {%- for code in languages %}<a href="/lang/{{ code }}?next={{ here | urlencode }}" hreflang="{{ code }}" lang="{{ code }}" title="{{ t('language.' ~ code) }}"{% if code == lang %} aria-current="true"{% endif %}>{{ t("language.short." ~ code) }}</a>{% endfor -%}
+          </span>
+        </div>
+        <form class="menu-row" method="post" action="/theme">
+          <input type="hidden" name="next" value="{{ here }}">
+          <span>{{ t("menu.theme") }}</span>
+          <span class="segments">
+            {%- for name in theme_choices %}<button type="submit" name="theme" value="{{ name }}" aria-pressed="{{ 'true' if name == (theme or 'auto') else 'false' }}">{{ t("menu.theme." ~ name) }}</button>{% endfor -%}
+          </span>
+        </form>
+        <hr>
+        <a class="menu-link" href="/admin"{% if here.startswith('/admin') %} aria-current="page"{% endif %}>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M10.03 4.66L10.36 1.63A10.5 10.5 0 0 1 13.64 1.63L13.97 4.66A7.6 7.6 0 0 1 15.8 5.42L18.17 3.51A10.5 10.5 0 0 1 20.49 5.83L18.58 8.2A7.6 7.6 0 0 1 19.34 10.03L22.37 10.36A10.5 10.5 0 0 1 22.37 13.64L19.34 13.97A7.6 7.6 0 0 1 18.58 15.8L20.49 18.17A10.5 10.5 0 0 1 18.17 20.49L15.8 18.58A7.6 7.6 0 0 1 13.97 19.34L13.64 22.37A10.5 10.5 0 0 1 10.36 22.37L10.03 19.34A7.6 7.6 0 0 1 8.2 18.58L5.83 20.49A10.5 10.5 0 0 1 3.51 18.17L5.42 15.8A7.6 7.6 0 0 1 4.66 13.97L1.63 13.64A10.5 10.5 0 0 1 1.63 10.36L4.66 10.03A7.6 7.6 0 0 1 5.42 8.2L3.51 5.83A10.5 10.5 0 0 1 5.83 3.51L8.2 5.42A7.6 7.6 0 0 1 10.03 4.66ZM15.2 12A3.2 3.2 0 1 0 8.8 12A3.2 3.2 0 1 0 15.2 12Z"/></svg>{{ t("nav.admin") }}</a>
+      </div>
+    </details>
   </header>
   <main>    {% block content %}{% endblock %}
   </main>

@@ -1,4 +1,4 @@
-"""Interface language: per visitor, chosen in Administration (SPEC §7)."""
+"""Interface language: per visitor, chosen in the menu (SPEC §7)."""
 
 import re
 from dataclasses import replace
@@ -77,42 +77,41 @@ def test_unknown_language_changes_nothing(client):
     assert ENGLISH in client.get("/").text
 
 
-def language_section(client, **headers) -> str:
-    page = client.get("/admin", headers=headers).text
-    section = page[page.index('<section class="chart" id="language">') :]
-    return section[: section.index("</section>")]
+def language_choice(page: str) -> str:
+    """The menu's line with the languages."""
+    menu = page.split('<div class="menu-panel">')[1].split("</details>")[0]
+    return menu.split('<span class="segments">')[1].split("</span>")[0]
 
 
-def pressed(section: str) -> list[str]:
-    """The languages whose button is drawn as the current one."""
-    return re.findall(r'formaction="/lang/(\w+)" lang="\w+" class="primary"', section)
+def current(choice: str) -> list[str]:
+    """The languages drawn as the current one."""
+    return re.findall(r'hreflang="(\w+)"[^>]*aria-current="true"', choice)
 
 
-def button(code: str, label: str) -> str:
-    return rf'<button type="submit" formaction="/lang/{code}" lang="{code}"[^>]*>{label}</button>'
-
-
-def test_the_languages_are_in_administration_and_not_in_the_footer(client):
+def test_the_languages_are_in_the_menu_and_not_in_administration(client):
     home = client.get("/").text
     assert '<html lang="en">' in home
-    assert "/lang/" not in home and "Italiano" not in home
-    section = language_section(client)
-    assert "<h2>Language</h2>" in section and "card names and texts stay in English" in section
-    # a button for each, sent to the address that sets the cookie, which comes back here
-    assert '<form class="actions" method="get">' in section
-    assert '<input type="hidden" name="next" value="/admin#language">' in section
-    assert re.search(button("en", "English"), section)
-    assert re.search(button("it", "Italiano"), section)
-    assert pressed(section) == ["en"] and section.count('aria-pressed="false"') == 1
+    choice = language_choice(home)
+    assert (
+        '<a href="/lang/en?next=/" hreflang="en" lang="en" title="English" '
+        'aria-current="true">ENG</a>'
+    ) in choice
+    assert '<a href="/lang/it?next=/" hreflang="it" lang="it" title="Italiano">ITA</a>' in choice
+    assert current(choice) == ["en"]
+    # the link brings you back to the same page, query included
+    syntax = language_choice(client.get("/syntax?x=1&y=two words").text)
+    assert 'href="/lang/it?next=/syntax%3Fx%3D1%26y%3Dtwo%2520words"' in syntax
+    admin = client.get("/admin").text
+    assert 'id="language"' not in admin and "<h2>Language</h2>" not in admin
+    assert "/lang/" not in admin.split("<main>")[1]
 
-    response = client.get("/lang/it", params={"next": "/admin#language"})
-    assert response.status_code == 303 and response.headers["location"] == "/admin#language"
-    section = language_section(client)
-    assert "<h2>Lingua</h2>" in section and pressed(section) == ["it"]
+    client.get("/lang/it")
+    assert current(language_choice(client.get("/").text)) == ["it"]
 
 
 def test_until_one_is_chosen_the_browser_language_is_shown_as_chosen(client):
-    assert pressed(language_section(client, **{"Accept-Language": "it"})) == ["it"]
+    page = client.get("/", headers={"Accept-Language": "it"}).text
+    assert current(language_choice(page)) == ["it"]
 
 
 @pytest.mark.parametrize(

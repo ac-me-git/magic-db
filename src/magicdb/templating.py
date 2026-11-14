@@ -17,6 +17,7 @@ from magicdb.symbols import render_symbols
 LANG_COOKIE = "magicdb_lang"
 THEME_COOKIE = "magicdb_theme"
 THEMES = ("light", "dark")
+THEME_CHOICES = (*THEMES, "auto")  # "auto" is no choice: the pages follow the device
 ONE_YEAR = 365 * 24 * 60 * 60
 _SYMBOL = {"eur": "€", "usd": "$"}
 
@@ -121,6 +122,11 @@ def build_templates(settings: Settings) -> Jinja2Templates:
     def count(context: Context, value: int) -> str:
         return format_count(value, context.get("lang", settings.lang))
 
-    templates.env.globals.update(currency=settings.currency, search_url=search_url, asset=asset)
+    templates.env.globals.update(
+        currency=settings.currency,
+        search_url=search_url,
+        asset=asset,
+        theme_choices=THEME_CHOICES,
+    )
     templates.env.filters.update(money=money, count=count, symbols=render_symbols)
     return templates

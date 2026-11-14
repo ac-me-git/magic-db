@@ -53,7 +53,7 @@ def test_home_opens_on_the_map_of_the_syntax(client, fixture_cards):
     # no title, no tagline, and the filters neither shown nor folded away
     assert "<h1" not in page.text and "Every Magic card" not in page.text
     assert 'action="/filter"' not in page.text and "Search by filters" not in page.text
-    assert "<details" not in page.text
+    assert "<details" not in page.text.split("<main>")[1]  # the header's menu is one
 
 
 def test_home_shows_the_filter_panel_when_administration_says_so(client, fixture_cards):
@@ -69,7 +69,7 @@ def test_home_shows_the_filter_panel_when_administration_says_so(client, fixture
     assert "Kept in" not in page.text  # no locations yet
     # one or the other: the panel takes the place of the map and of the list of sets
     assert "Syntax map" not in page.text and "Recent expansions" not in page.text
-    assert "<details" not in page.text and "<h1" not in page.text
+    assert "<details" not in page.text.split("<main>")[1] and "<h1" not in page.text
 
 
 def test_administration_chooses_what_the_home_page_shows(client, catalog):

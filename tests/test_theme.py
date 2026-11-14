@@ -1,4 +1,4 @@
-"""Light or dark pages: the choice in Administration, the cookie, the favicons (SPEC §7)."""
+"""Light or dark pages: the choice in the menu, the cookie, the favicons (SPEC §7)."""
 
 import re
 from dataclasses import replace
@@ -18,17 +18,22 @@ def icon(name: str, media: str = "") -> str:
     return f'<link rel="icon" type="image/svg+xml" href="{asset(name)}"{media}>'
 
 
-def choose(client, theme: str):
-    return client.post("/admin/theme", data={"theme": theme}, follow_redirects=False)
+def choose(client, theme: str, next: str = "/syntax"):
+    return client.post("/theme", data={"theme": theme, "next": next}, follow_redirects=False)
 
 
-def chosen(client) -> list[str]:
-    """The buttons of Administration's choice that are drawn as the current one."""
-    page = client.get("/admin").text
-    section = page[page.index('<section class="chart" id="theme">') :]
-    section = section[: section.index("</section>")]
-    assert section.count('aria-pressed="false"') == 2
-    return re.findall(r'name="theme" value="(\w+)" class="primary" aria-pressed="true"', section)
+def theme_choice(page: str) -> str:
+    """The menu's form for light or dark pages."""
+    return page.split('<form class="menu-row" method="post" action="/theme">')[1].split("</form>")[
+        0
+    ]
+
+
+def chosen(client, address: str = "/syntax") -> list[str]:
+    """The buttons of the menu's choice that are drawn as the current one."""
+    form = theme_choice(client.get(address).text)
+    assert form.count('aria-pressed="false"') == 2
+    return re.findall(r'name="theme" value="(\w+)" aria-pressed="true"', form)
 
 
 def test_pages_follow_the_device_until_the_visitor_chooses(client):
@@ -41,21 +46,31 @@ def test_pages_follow_the_device_until_the_visitor_chooses(client):
     assert chosen(client) == ["auto"]
 
 
-def test_the_choice_is_in_administration_and_not_in_the_footer(client):
-    page = client.get("/syntax").text
-    assert "/theme" not in page and "Dark mode" not in page and "theme-switch" not in page
-    assert client.get("/theme/dark", follow_redirects=False).status_code == 404
+def test_the_choice_is_in_the_menu_and_not_in_administration(client):
+    form = theme_choice(client.get("/syntax?x=1").text)
+    assert '<input type="hidden" name="next" value="/syntax?x=1">' in form
+    assert "<span>Appearance</span>" in form
+    buttons = re.findall(
+        r'<button type="submit" name="theme" value="(\w+)"[^>]*>(\w+)</button>', form
+    )
+    assert buttons == [("light", "Light"), ("dark", "Dark"), ("auto", "Auto")]
     admin = client.get("/admin").text
-    assert "<h2>Appearance</h2>" in admin
-    assert '<form class="actions" method="post" action="/admin/theme">' in admin
-    for name, label in (("auto", "Automatic"), ("light", "Light"), ("dark", "Dark")):
-        button = rf'<button type="submit" name="theme" value="{name}"[^>]*>{label}</button>'
-        assert re.search(button, admin), name
+    assert 'id="theme"' not in admin and "<h2>Appearance</h2>" not in admin
+    assert "/theme" not in admin.split("<main>")[1]
+    assert client.post("/admin/theme", data={"theme": "dark"}).status_code in (404, 405)
+    assert client.get("/theme/dark", follow_redirects=False).status_code == 404
+
+
+@pytest.mark.parametrize(
+    "target", ["https://evil.example/", "//evil.example/", "/\\evil.example", "evil", ""]
+)
+def test_the_choice_goes_back_only_to_this_site(client, target):
+    assert choose(client, "dark", next=target).headers["location"] == "/"
 
 
 def test_a_choice_is_remembered_and_automatic_forgets_it(client):
-    response = choose(client, "dark")
-    assert response.status_code == 303 and response.headers["location"] == "/admin#theme"
+    response = choose(client, "dark", next="/decks?sort=name")
+    assert response.status_code == 303 and response.headers["location"] == "/decks?sort=name"
     cookie = response.headers["set-cookie"]
     assert f"{THEME_COOKIE}=dark" in cookie and "Max-Age=31536000" in cookie
     for address in ("/", "/syntax", "/admin", "/no/such/page"):
@@ -71,7 +86,7 @@ def test_a_choice_is_remembered_and_automatic_forgets_it(client):
     assert chosen(client) == ["light"]
 
     response = choose(client, "auto")
-    assert response.status_code == 303 and response.headers["location"] == "/admin#theme"
+    assert response.status_code == 303 and response.headers["location"] == "/syntax"
     assert "Max-Age=0" in response.headers["set-cookie"]  # the cookie is thrown away
     page = client.get("/").text
     assert '<html lang="en">' in page and "data-theme" not in page
@@ -102,10 +117,10 @@ def test_the_choice_can_be_made_while_the_collection_is_locked(client):
 
 def test_the_choice_in_italian(settings):
     client = TestClient(create_app(replace(settings, lang="it")))
-    page = client.get("/admin").text
-    assert "<h2>Aspetto</h2>" in page
-    for label in ("Automatico", "Chiaro", "Scuro"):
-        assert f">{label}</button>" in page
+    form = theme_choice(client.get("/").text)
+    assert "<span>Aspetto</span>" in form
+    for label in ("Chiaro", "Scuro", "Auto"):
+        assert f">{label}</button>" in form
 
 
 def test_the_icons_are_vendored_and_differ(client):

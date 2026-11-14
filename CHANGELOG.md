@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- The menu on the Search button is now a switch, like the safety lock: *search only my
-  collection*. Searching the collection is no longer a separate mode but one more filter:
+- *Search only my collection* is now a switch, like the safety lock (both are in the
+  new menu, below). Searching the collection is no longer a separate mode but one more filter:
   the switch writes `haveprint:yes` into the search box, or takes it out, and searches.
   Typing the filter yourself turns the switch on. Addresses saved with
   `scope=collection` still work.
@@ -12,13 +12,13 @@
   title, its tagline and the line with the number of printings are gone (Administration
   has the number). To have the filter panel there instead, choose *Filters* under *Home
   page* in Administration.
-- Administration has an *Appearance* choice: light, dark or automatic pages. Automatic
-  follows your device, as before. The browser tab now has an icon, one for light and
-  one for dark.
-- Administration is now the gear at the top right of every page, and it also holds the
-  choice of language and the link to the syntax page. The footer keeps only the Fan
-  Content notice — with links to Wizards of the Coast and to Scryfall, credited on the
-  copyright line — and *Buy me a coffee* at the very bottom.
+- The header is now just the logo, the search box and a menu (☰). The menu has the
+  safety lock, *Search only my collection*, My collection, My decks, the language, light,
+  dark or automatic pages (*Auto* follows your device, as before) and Administration.
+  The browser tab now has an icon, one for light and one for dark.
+- The footer keeps only the Fan Content notice — with links to Wizards of the Coast and
+  to Scryfall, credited on the copyright line — and *Buy me a coffee* at the very
+  bottom. The link to the syntax page is in Administration.
 - Docker: a development image, `ghcr.io/ac-me-git/magic-db:edge`, is rebuilt at every
   change to the program, to try what is not released yet. `latest` is still the last
   release. The Administration page says when the development version is the one running,

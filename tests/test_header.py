@@ -47,32 +47,63 @@ def links(fragment: str) -> list[str]:
 # --- 3, 4, 5: the menu ----------------------------------------------------------------
 
 
-def test_menu_has_only_collection_and_decks(client):
+def menu(page: str) -> str:
+    return header(page).split('<div class="menu-panel">')[1].split("</details>")[0]
+
+
+def test_the_header_is_the_logo_the_search_box_and_the_menu(client):
     top = header(client.get("/").text)
-    menu = top.split('class="site-nav"')[1].split("</nav>")[0]
-    assert links(menu) == ["/stats", "/decks"]
-    assert ">My collection</a>" in menu and ">My decks</a>" in menu
+    assert top.lstrip().startswith('<a class="brand" href="/" title=')  # the logo is the way home
+    # from the left: the logo, the search box, the button with three lines that opens the menu
+    brand = top.index('class="brand"')
+    box = top.index('<form class="search-box" id="search-form"')
+    button = top.index('<details class="menu">\n      <summary title="Menu" aria-label="Menu">')
+    assert brand < box < button
+    assert '<path d="M4 6h16M4 12h16M4 18h16"/>' in top.split("<summary")[1].split("</summary>")[0]
+    # nothing else in the bar: everything after the search box is in the menu
+    assert top[box:].split("</form>", 1)[1].lstrip().startswith("<details")
     assert 'href="/add"' not in top and "Filters" not in top
-    assert '<a class="brand" href="/" title=' in top  # the logo is the way home
 
 
-def gear(page: str) -> str:
-    return header(page).split('<a class="settings-link"')[1].split("</a>")[0]
+def test_the_menu_has_the_switches_the_ways_onward_the_choices_and_administration(client):
+    inside = menu(client.get("/syntax").text)
+    order = [
+        '<label for="lock-switch">Lock the collection</label>',
+        '<label for="mine-switch">Search only my collection</label>',
+        ">My collection</a>",
+        ">My decks</a>",
+        "<span>Language</span>",
+        "<span>Appearance</span>",
+        ">Administration</a>",
+    ]
+    places = [inside.index(text) for text in order]
+    assert places == sorted(places)
+    assert [link for link in links(inside) if not link.startswith("/lang/")] == [
+        "/stats",
+        "/decks",
+        "/admin",
+    ]
+    # the two ways onward and Administration each have an icon
+    for address in ("/stats", "/decks", "/admin"):
+        assert inside.split(f'href="{address}"')[1].split("</a>")[0].count("<svg") == 1
+    assert inside.count('role="switch"') == 2
 
 
-def test_a_gear_at_the_top_right_leads_to_administration(client):
+def test_the_page_you_are_on_is_marked_in_the_menu(client):
+    assert "aria-current" not in menu(client.get("/syntax").text).replace('aria-current="true"', "")
+    for address, link in (("/stats", "/stats"), ("/decks", "/decks"), ("/admin", "/admin")):
+        inside = menu(client.get(address).text)
+        assert f'href="{link}" aria-current="page"' in inside, address
+
+
+def test_administration_is_the_last_line_of_the_menu_with_a_gear(client):
     for address in ("/", "/syntax", "/search?q=bolt", "/decks"):
-        top = header(client.get(address).text)
-        assert 'href="/admin" title="Administration" aria-label="Administration"' in gear(
-            client.get(address).text
-        ), address
-        assert "aria-current" not in gear(client.get(address).text), address
-        # after the lock, the last thing in the header
-        assert top.index('class="lock-switch') < top.index('class="settings-link"'), address
-        assert links(top)[-1] == "/admin", address
-    assert 'aria-current="page"' in gear(client.get("/admin").text)
-    italian = gear(client.get("/", headers={"Accept-Language": "it"}).text)
-    assert 'title="Amministrazione" aria-label="Amministrazione"' in italian
+        inside = menu(client.get(address).text)
+        assert links(inside)[-1] == "/admin", address
+        gear = inside.split('href="/admin"')[1].split("</a>")[0]
+        assert 'fill-rule="evenodd"' in gear and gear.endswith("</svg>Administration"), address
+    italian = menu(client.get("/", headers={"Accept-Language": "it"}).text)
+    assert "</svg>Amministrazione</a>" in italian
 
 
 def test_syntax_is_reached_from_administration(client):
@@ -104,8 +135,8 @@ BOLT_OR_OTHERS = '!"Lightning Bolt" or !"Serra Angel" or !"Sol Ring" or !"Shivan
 
 
 def switch(page: str) -> str:
-    """The attributes of the collection switch in the search box."""
-    return header(page).split('class="switch" name="scope"')[1].split(">")[0]
+    """The attributes of the collection switch in the menu."""
+    return header(page).split('id="mine-switch"')[1].split(">")[0]
 
 
 def flip(client, **params) -> str:
@@ -117,17 +148,21 @@ def flip(client, **params) -> str:
 
 def test_search_button_is_followed_by_the_collection_switch(client):
     top = header(client.get("/search?q=bolt").text)
-    assert '<button type="submit">Search</button>' in top
-    # the plain button comes first: it is the one Enter presses
+    box = top.split('<form class="search-box" id="search-form"')[1].split("</form>")[0]
+    assert '<button type="submit">Search</button>' in box and 'name="scope"' not in box
+    # the switch is in the menu but belongs to the search form, after its plain button:
+    # that one comes first, so it is the one Enter presses
+    in_menu = top.split('<div class="menu-panel">')[1]
+    assert '<button type="submit" form="search-form" id="mine-switch"' in in_menu
     assert top.index('<button type="submit">Search</button>') < top.index('name="scope"')
-    assert top.count('name="scope"') == 1
-    assert "split" not in top and "<details" not in top
+    assert top.count('name="scope"') == 1 and "split" not in top
 
 
 def test_switch_shows_whether_the_search_is_over_the_collection(client):
     off = switch(client.get("/search?q=bolt").text)
     assert 'value="collection"' in off and 'role="switch" aria-checked="false"' in off
-    assert 'aria-label="Search only my collection"' in off
+    top = header(client.get("/search?q=bolt").text)
+    assert '<label for="mine-switch">Search only my collection</label>' in top
     # the term typed by hand turns the switch on just the same
     on = switch(client.get("/search?q=haveprint:yes bolt").text)
     assert 'value="all"' in on and 'role="switch" aria-checked="true"' in on
@@ -518,7 +553,13 @@ def test_new_labels_in_italian(owned):
         "La mia collezione",
         "I miei mazzi",
         '<button type="submit">Cerca</button>',
-        'aria-label="Cerca solo nella mia collezione"',
+        '<label for="mine-switch">Cerca solo nella mia collezione</label>',
+        '<label for="lock-switch">Blocca la collezione</label>',
+        "<span>Lingua</span>",
+        "<span>Aspetto</span>",
+        ">Chiaro</button>",
+        ">Scuro</button>",
+        "</svg>Amministrazione</a>",
     ]:
         assert expected in top, expected
     assert (

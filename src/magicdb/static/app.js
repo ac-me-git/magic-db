@@ -1,6 +1,7 @@
 // The only script magic-db writes itself. Everything works without it; it adds what
 // HTML alone cannot do for the search suggestions: arrow keys, Escape, closing when
-// you click somewhere else; and waiting for the program to come back after an update.
+// you click somewhere else; the same closing for the menu; and waiting for the program
+// to come back after an update.
 
 (function () {
   "use strict";
@@ -48,8 +49,20 @@
     });
   }
 
+  // The menu is a <details>: it opens and closes by itself, but stays open until its
+  // button is pressed again. Close it on a click elsewhere, or with Escape.
+  var menu = document.querySelector(".site-header .menu");
+
   document.addEventListener("click", function (event) {
     if (list && !event.target.closest(".search-field")) clear();
+    if (menu && menu.open && !menu.contains(event.target)) menu.open = false;
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (menu && menu.open && event.key === "Escape") {
+      menu.open = false;
+      menu.querySelector("summary").focus();
+    }
   });
 
   // After an update the program restarts: wait until it has gone away and come back.

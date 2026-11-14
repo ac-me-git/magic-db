@@ -178,28 +178,6 @@ docker compose up -d</pre>
   </form>
 </section>
 
-<section class="chart" id="language">
-  <h2>{{ t("admin.language") }}</h2>
-  <p class="hint">{{ t("admin.language.hint") }}</p>
-  {# the existing /lang/{code} address, which sets the cookie and comes back here #}
-  <form class="actions" method="get">
-    <input type="hidden" name="next" value="/admin#language">
-    {% for code in languages %}
-    <button type="submit" formaction="/lang/{{ code }}" lang="{{ code }}"{% if code == lang %} class="primary" aria-pressed="true"{% else %} aria-pressed="false"{% endif %}>{{ t("language." ~ code) }}</button>
-    {% endfor %}
-  </form>
-</section>
-
-<section class="chart" id="theme">
-  <h2>{{ t("admin.theme") }}</h2>
-  <p class="hint">{{ t("admin.theme.hint") }}</p>
-  <form class="actions" method="post" action="/admin/theme">
-    {% for name in theme_choices %}
-    <button type="submit" name="theme" value="{{ name }}"{% if name == (theme or "auto") %} class="primary" aria-pressed="true"{% else %} aria-pressed="false"{% endif %}>{{ t("admin.theme." ~ name) }}</button>
-    {% endfor %}
-  </form>
-</section>
-
 <section class="chart">
   <h2>{{ t("admin.settings") }}</h2>
   <dl class="facts">

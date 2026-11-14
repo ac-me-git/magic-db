@@ -53,9 +53,10 @@ def snapshot(settings):
 def test_a_new_collection_is_unlocked(client, catalog):
     assert lock.load(catalog) is False
     page = client.get("/").text
-    assert 'class="lock-switch is-unlocked"' in page
-    assert "Collection unlocked: changes allowed" in page
-    assert 'name="state" value="on"' in page and 'title="Lock"' in page
+    assert 'class="menu-row lock-switch is-unlocked"' in page
+    assert '<label for="lock-switch">Lock the collection</label>' in page
+    assert 'name="state" value="on"' in page
+    assert 'title="Collection unlocked: changes allowed"' in page
 
 
 def test_locking_and_unlocking(client, catalog):
@@ -63,8 +64,9 @@ def test_locking_and_unlocking(client, catalog):
     assert (response.status_code, response.headers["location"]) == (303, "/collection?sort=name")
     assert lock.load(catalog) is True
     page = client.get("/collection?sort=name").text
-    assert 'class="lock-switch is-locked"' in page and "Collection locked: read only" in page
-    assert 'name="state" value="off"' in page and 'title="Unlock"' in page
+    assert 'class="menu-row lock-switch is-locked"' in page
+    assert 'name="state" value="off"' in page
+    assert 'title="Collection locked: read only"' in page
     assert 'name="next" value="/collection?sort=name"' in page  # comes back to this page
 
     assert set_lock(client, "off").headers["location"] == "/collection"

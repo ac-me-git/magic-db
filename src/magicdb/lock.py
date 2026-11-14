@@ -44,10 +44,10 @@ def save(conn: sqlite3.Connection, locked: bool) -> None:
 def allowed_while_locked(path: str) -> bool:
     """Requests that change something, but not the collection.
 
-    The switch itself, and the jobs of the administration page (updating the card
-    catalog, making a backup).
+    The switch itself, the choice of light or dark pages, and the jobs of the
+    administration page (updating the card catalog, making a backup).
     """
-    return path == "/lock" or path.startswith("/admin/")
+    return path in ("/lock", "/theme") or path.startswith("/admin/")
 
 
 @router.post("/lock")

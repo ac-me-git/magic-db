@@ -59,8 +59,9 @@ def selected(html, field):
 
 def test_navigation_links(client):
     home = client.get("/").text
-    menu = home.split('class="site-nav"')[1].split("</nav>")[0]
-    assert 'href="/stats"' in menu and 'href="/decks"' in menu and menu.count("<a ") == 2
+    menu = home.split('<div class="menu-panel">')[1].split("</details>")[0]
+    assert 'href="/stats"' in menu and 'href="/decks"' in menu
+    assert menu.count('<a class="menu-link"') == 3  # and Administration
 
 
 def test_name_suggestions_for_htmx(client):

@@ -20,8 +20,8 @@
 }
 
 /* The dark colours are written twice: for a device that asks for them, unless the
-   visitor chose the light pages, and for a visitor who chose the dark ones (the button
-   in the footer). A test keeps the two lists equal. */
+   visitor chose the light pages, and for a visitor who chose the dark ones (in the
+   menu). A test keeps the two lists equal. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #15141b;
@@ -122,15 +122,16 @@ button.primary,
 
 .site-header {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1rem;
+  gap: 0.75rem;
   padding: 0.6rem 1rem;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
 
+/* the four letters for now; one day the logo's picture */
 .brand {
+  flex: none;
   font-weight: 700;
   font-size: 1.1rem;
   text-decoration: none;
@@ -139,40 +140,15 @@ button.primary,
 
 .search-box {
   display: flex;
-  flex: 1 1 16rem;
+  flex: 1 1 auto;
   gap: 0.4rem;
   min-width: 0;
-  order: 3;
-  flex-basis: 100%;
+  max-width: 48rem;
 }
 
 .search-box input {
   flex: 1;
   min-width: 0;
-}
-
-.site-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  order: 2;
-  flex-basis: 100%;
-}
-
-@media (min-width: 48rem) {
-  .search-box {
-    order: 0;
-    flex-basis: 16rem;
-  }
-
-  .site-nav {
-    order: 0;
-    flex-basis: auto;
-  }
-
-  .lock-switch {
-    margin-left: 0;
-  }
 }
 
 main {
@@ -1123,31 +1099,129 @@ button:disabled {
   color: var(--accent);
 }
 
-/* --- switches: the safety lock (header, top right) and "only my collection" ------ */
+/* --- the menu (header, right): switches, ways onward, choices -------------------- */
 
-.lock-switch {
-  order: 1;
+.menu {
+  position: relative;
+  flex: none;
   margin-left: auto;
-  line-height: 0;
 }
 
-/* beside the lock, at the very top right: the way to Administration */
-
-.settings-link {
-  order: 1;
+.menu > summary {
   display: grid;
   place-items: center;
-  margin-left: -0.4rem;
-  padding: 0.2rem;
-  border-radius: 50%;
-  color: var(--muted);
-  line-height: 0;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.4rem;
+  color: var(--text);
+  list-style: none;
+  cursor: pointer;
 }
 
-.settings-link:hover,
-.settings-link[aria-current="page"] {
-  color: var(--text);
+.menu > summary::-webkit-details-marker {
+  display: none;
 }
+
+.menu > summary:hover,
+.menu[open] > summary {
+  background: var(--row);
+}
+
+.menu-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 30;
+  width: max-content;
+  min-width: 17rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.35rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+}
+
+.menu-panel hr {
+  margin: 0.35rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.menu-row label {
+  cursor: pointer;
+}
+
+.menu-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.35rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.menu-link svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.menu-link:hover,
+.menu-link:focus-visible {
+  background: var(--row);
+}
+
+.menu-link[aria-current="page"] {
+  font-weight: 600;
+}
+
+/* a choice of two or three, side by side: language, light or dark */
+.segments {
+  display: inline-flex;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+}
+
+.segments a,
+.segments button {
+  padding: 0.25rem 0.6rem;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.segments > * + * {
+  border-left: 1px solid var(--border);
+}
+
+.segments a:hover,
+.segments button:hover {
+  background: var(--row);
+}
+
+.segments [aria-current="true"],
+.segments [aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+/* --- switches: the safety lock and "only my collection" (both in the menu) ------- */
 
 .switch {
   position: relative;
@@ -1185,18 +1259,13 @@ button:disabled {
   color: var(--switch-on);
 }
 
-/* beside the Search button, and in its colour: search only the collection */
+/* search only the collection: in the colour of the Search button */
 
-.search-box .switch {
-  align-self: center;
-  background: var(--switch-off);
-}
-
-.search-box .switch[aria-checked="true"] {
+.switch.collection-only[aria-checked="true"] {
   background: var(--accent);
 }
 
-.search-box .switch[aria-checked="true"] .knob {
+.switch.collection-only[aria-checked="true"] .knob {
   color: var(--accent);
 }
 

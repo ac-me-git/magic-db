@@ -435,7 +435,7 @@ a search, edit the text in the search box.
 | `/locations` | create, rename, reorder, delete; card count and value per location |
 | `/stats` | see §9 |
 | `/import`, `/export` | see §8 |
-| `/admin` | software version (check, and install on Windows), catalog and backup status, last job runs, "update now", "back up now", download latest backup; link to the syntax page; home page, language and light/dark choices |
+| `/admin` | software version (check, and install on Windows), catalog and backup status, last job runs, "update now", "back up now", download latest backup; link to the syntax page; what the home page shows |
 | `/syntax` | search syntax reference, generated from the same table the parser uses |
 | `/healthz` | `{"status":"ok"}`, no auth |
 | `/img/{size}/{scryfall_id}/{face}` | image cache proxy |
@@ -570,13 +570,22 @@ forward only when it is pointed at. They must not compete with the search box.
 
 Without a catalog the page has only the notice that it is not there yet.
 
-**Header.** On every page: the logo (the way to the home page),
-the search box, and two links — "My collection", which opens the statistics, and "My
-decks". The statistics page is the collection's landing page and links to the card
-list, fast input, locations, import and export; the administration page links to
-them too. At the top right, after the safety lock, a gear leads to Administration
-(its name is the gear's tooltip); Administration links to the syntax page and holds
-the choice of language.
+**Header.** On every page, from the left: the logo (the way to the home page; for now
+the four letters of the name, one day a picture), the search box with its Search
+button, and a button with three lines that opens the menu. The menu is a `<details>`,
+so it opens and closes without JavaScript; `app.js` only closes it on a click elsewhere
+or with Escape. It holds, in this order:
+
+- the safety lock, "Lock the collection", with its switch;
+- "Search only my collection", with its switch (see *Where to search*);
+- "My collection", which opens the statistics, and "My decks", each with an icon;
+- the language, ENG or ITA (§7, "i18n"), and light, dark or automatic pages (§7,
+  "Light and dark"), each a row of small buttons with the current one filled in;
+- "Administration", with a gear.
+
+The link to the page being shown is marked. The statistics page is the collection's
+landing page and links to the card list, fast input, locations, import and export; the
+administration page links to them too, and to the syntax page.
 
 **Footer.** On every page, and nothing else: the Fan Content Policy notice, its
 copyright line followed by the credit to Scryfall, then "Buy me a coffee". "Wizards"
@@ -585,8 +594,10 @@ in the notice links to `https://company.wizards.com/` and "Scryfall" to
 `{wizards}` and `{scryfall}` in the translated sentences: a template macro makes the
 link, and `t()` escapes the sentence and keeps the link when it is given one.
 
-- **Where to search.** Beside the Search button there is a switch, drawn like the
-  safety lock: "search only my collection". Searching the collection is not a mode but
+- **Where to search.** In the menu there is a switch, drawn like the safety lock:
+  "search only my collection". It belongs to the search form (`form="search-form"`) and
+  comes after the Search button, which is therefore the one Enter presses. Searching
+  the collection is not a mode but
   one more term of the search: the switch writes `haveprint:yes` into the search box,
   or takes it out, and runs the search (`search.with_collection`). The search is
   therefore limited to the *printings* in the collection, so a card is shown in a
@@ -631,9 +642,10 @@ table (migration 0002) so that it survives a restart, and mirrored in
   the collection: adding, editing, moving, removing, importing, managing locations.
 - Enforcement is on the server, in one place: a middleware refuses every request that
   is not a plain read (`GET`, `HEAD`, `OPTIONS`) with status 423 and a page that offers
-  to unlock, except `POST /lock` itself and `POST /admin/…`. It denies by default, so a
+  to unlock, except `POST /lock` itself, `POST /theme` and `POST /admin/…`. It denies
+  by default, so a
   page added later that changes the collection is locked without anyone remembering.
-- A switch in the header of every page, top right, shows the state and changes it
+- A switch in the menu of every page (first line) shows the state and changes it
   (`POST /lock` with `state=on|off` and `next`): a sliding toggle with a padlock on its
   knob, closed and amber when locked, open and grey when unlocked. It is a form button
   with `role="switch"`, so it works without JavaScript and reads properly to a screen
@@ -662,8 +674,8 @@ README says so.
 
 **i18n.** All UI strings come from `i18n/en.json` and `i18n/it.json` through a `t()`
 template function. Card data is always English. The language is chosen **per visitor**:
-the choice made in Administration under "Language" (one button per language, each
-sent to `/lang/{code}?next=/admin#language`; stored in the `magicdb_lang` cookie for a
+the choice made in the menu under "Language" (a link per language,
+`/lang/{code}?next=…` back to the same page; stored in the `magicdb_lang` cookie for a
 year), else the first supported language of the browser's
 `Accept-Language`, else `MAGICDB_LANG`. Numbers and prices follow the language. Every
 page gets `t`, `lang`, `languages` and `here` from a template context processor
@@ -671,11 +683,12 @@ page gets `t`, `lang`, `languages` and `here` from a template context processor
 English only.
 
 **Light and dark.** The pages follow the device (`prefers-color-scheme`) unless the
-visitor chooses otherwise in Administration, under "Appearance": three buttons,
-Automatic, Light and Dark (`POST /admin/theme` with `theme=auto|light|dark`). Light and
+visitor chooses otherwise in the menu, under "Appearance": three buttons, Light, Dark
+and Auto (`POST /theme` with `theme=light|dark|auto` and `next`, back to the same
+page). Light and
 Dark are stored in the `magicdb_theme` cookie for a year — so the choice is **per
 browser**, not one for the whole server — and written as `data-theme` on `<html>`,
-which wins over the device; Automatic throws the cookie away. It can be changed while
+which wins over the device; Auto throws the cookie away. It can be changed while
 the collection is locked. Without a choice the server does not know what the device
 asked for, so the dark colours are listed twice in `app.css` (for the device, for the
 choice), and a test keeps the lists equal. The browser-tab icon has a version for each
@@ -801,9 +814,9 @@ Details (`jobs.py`):
 **`/admin`** shows the live catalog, the backups (each downloadable; only file names
 the app gives to backups are served), the last 20 job runs in local time and the
 settings, and has "Update the catalog now" and "Back up now" (`POST
-/admin/{job}/run`, run in a background thread), a link to the syntax page and three
-choices: what the home page shows (§7, "Home page"), the language (§7, "i18n") and
-light or dark pages (§7, "Light and dark").
+/admin/{job}/run`, run in a background thread), a link to the syntax page and the
+choice of what the home page shows (§7, "Home page"). The language and light or dark
+pages are chosen in the menu.
 
 **Password.** `MAGICDB_PASSWORD` turns on HTTP Basic auth for everything except
 `/healthz`: any user name, that password, compared in constant time (`app.py`).
