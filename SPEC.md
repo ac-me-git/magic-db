@@ -775,7 +775,8 @@ while building it:
 
 - **Docker**: `python:3.12-slim`, non-root user, volume `/data`, `HEALTHCHECK` on
   `/healthz`, image published to `ghcr.io` on every tag. `compose.yaml` with one service
-  and one volume.
+  and one volume. Between releases, every change on `main` that passes CI is published
+  as the `edge` image: the development version, to try on a real server.
 - **Windows**: a single `magic-db.exe` built with PyInstaller by GitHub Actions on every
   tag and attached to the release. Double-click starts the server, keeps `data/` next to
   the executable, and opens the browser. Alternative documented path: `uv run magicdb`.
@@ -797,6 +798,11 @@ How it is built:
   `linux/amd64` and `linux/arm64` to `ghcr.io/<owner>/magic-db` (`latest`, `X.Y`,
   `X.Y.Z`), and the executable — started once and checked on `/healthz` before it is
   attached to the GitHub release.
+- `.github/workflows/ci.yml`, job `edge`, on a push to `main` once the tests and the
+  container check have passed: the same two-platform image as `…/magic-db:edge`,
+  labelled with the commit it was built from. It never writes `latest` or a version
+  tag and makes no GitHub release; `compose.yaml` keeps `latest`, and a server is
+  switched by writing `edge` there.
 - The image runs as user `magicdb` (uid 10001) with `/data` as its only volume, and the
   nightly jobs follow the container's `TZ`.
 - The whole package folder goes into the wheel (and so the image) and the executable:

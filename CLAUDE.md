@@ -11,7 +11,7 @@ You are implementing the project described in `SPEC.md`, following `PLAN.md`.
    All three must pass. If something fails and you cannot fix it, say so plainly; never
    weaken, skip or delete a test to get a green run.
 4. Update the status table in `PLAN.md` (status, date, anything the reviewer should
-   know), commit, and stop. Do not start the next milestone.
+   know), commit, push to `origin` (`main`), and stop. Do not start the next milestone.
 
 ## Hard rules
 
@@ -26,8 +26,9 @@ You are implementing the project described in `SPEC.md`, following `PLAN.md`.
 - **Never touch a real `data/` directory in tests** — use `tmp_path`.
 - The code must run on Windows and Linux: use `pathlib`, never hard-code `/` paths,
   never assume an open file can be replaced or deleted.
-- Do not push, create the GitHub repository, tag or publish releases unless the owner
-  asks in that session.
+- Push every commit to `origin` (`main`) without asking: the owner asked for this once
+  and for all (2026-11-14). A push publishes the `edge` Docker image, never a release.
+  Do not tag or publish releases unless the owner asks in that session.
 - Do not commit card images, the Scryfall bulk file, any `data/` content, or a real
   collection export. The TopDecked sample in `tests/fixtures/` must be trimmed and must
   not contain personal notes.

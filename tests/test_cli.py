@@ -159,6 +159,22 @@ def test_packaging_files_agree_with_the_code():
     assert "magic-db-data:/data" in compose and "8080:8080" in compose
 
 
+def test_changes_are_published_as_edge_and_only_releases_as_latest():
+    workflows = ROOT / ".github" / "workflows"
+    job = (workflows / "ci.yml").read_text(encoding="utf-8").split("\n  edge:\n")[1]
+    steps = "\n".join(line for line in job.splitlines() if not line.lstrip().startswith("#"))
+    assert "if: github.event_name == 'push' && github.ref == 'refs/heads/main'" in steps
+    assert "needs: [test, docker]" in steps  # nothing that fails the tests is published
+    assert "tags: ghcr.io/${{ github.repository }}:edge" in steps
+    assert steps.count("tags:") == 1  # and that is the only name it is published under
+    assert ":latest" not in steps and "value=latest" not in steps and "semver" not in steps
+    release = (workflows / "release.yml").read_text(encoding="utf-8")
+    assert 'tags: ["v*"]' in release and "type=raw,value=latest" in release
+    assert "branches" not in release
+    compose = (ROOT / "compose.yaml").read_text(encoding="utf-8")
+    assert "\n    image: ghcr.io/ac-me-git/magic-db:latest\n" in compose
+
+
 def test_wheel_contents_helper_understands_a_wheel(tmp_path):
     """wheel_data_files() is what the release checklist uses to inspect a built wheel."""
     wheel = tmp_path / "x.whl"

@@ -6,6 +6,8 @@
 
 services:
   magic-db:
+    # ":latest" is the last release. To try what is not released yet, write ":edge"
+    # instead (rebuilt at every change: newer, less tried), then pull and up again.
     image: ghcr.io/ac-me-git/magic-db:latest
     build: .
     restart: unless-stopped

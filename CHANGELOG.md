@@ -7,6 +7,9 @@
   the switch writes `haveprint:yes` into the search box, or takes it out, and searches.
   Typing the filter yourself turns the switch on. Addresses saved with
   `scope=collection` still work.
+- Docker: a development image, `ghcr.io/ac-me-git/magic-db:edge`, is rebuilt at every
+  change to the program, to try what is not released yet. `latest` is still the last
+  release.
 
 ## 1.2.1 — 2026-11-14
 
