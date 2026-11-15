@@ -277,6 +277,14 @@ main {
   vertical-align: -0.2em;
 }
 
+/* on a phone each sentence of the notice keeps to two lines, in both languages */
+@media (max-width: 30rem) {
+  .site-footer {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.68rem;
+  }
+}
+
 /* --- home and messages --------------------------------------------------------- */
 
 .hero {
