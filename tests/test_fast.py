@@ -84,7 +84,7 @@ def switch_of(page):
 def test_fast_input_follows_the_switch(client):
     page = client.get("/search?q=bolt").text
     assert switch_of(page) == {"locked": False, "input": True, "deck": False}
-    assert "bigcheck" in page and ">Collection input</button>" in page
+    assert "bigcheck" in page and ">Collection input</span></button>" in page
     editing(client, "locked")
     page = client.get("/search?q=bolt").text
     assert switch_of(page) == {"locked": True, "input": False, "deck": False}
@@ -305,5 +305,5 @@ def test_copies_by_finish_and_take_one(catalog, both):
 def test_in_italian(client, both):
     client.get("/lang/it")
     page = client.get(f"/search?q=set:{both['set']}&view=input").text
-    assert ">Inserimento collezione</button>" in page and "Spunta una casella" in page
+    assert ">Inserimento collezione</span></button>" in page and "Spunta una casella" in page
     assert ">Normale</th>" in page

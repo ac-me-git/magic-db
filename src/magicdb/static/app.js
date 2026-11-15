@@ -1,7 +1,7 @@
 // The only script magic-db writes itself. Everything works without it; it adds what
 // HTML alone cannot do for the search suggestions: arrow keys, Escape, closing when
-// you click somewhere else; the same closing for the menu and the (i) panels; and
-// waiting for the program to come back after an update.
+// you click somewhere else; the same closing for the menu, the (i) and the dropdown
+// beside Search; and waiting for the program to come back after an update.
 
 (function () {
   "use strict";
@@ -53,9 +53,11 @@
   // button is pressed again. Close it on a click elsewhere, or with Escape.
   var menu = document.querySelector(".site-header .menu");
 
-  // The (i) beside a mode is a <details> too, and comes and goes with the results.
+  // The (i) above the results and the dropdown beside Search are <details> too.
   function infos() {
-    return Array.prototype.slice.call(document.querySelectorAll("details.info[open]"));
+    return Array.prototype.slice.call(
+      document.querySelectorAll("details.info[open], details.search-scope[open]")
+    );
   }
 
   document.addEventListener("click", function (event) {

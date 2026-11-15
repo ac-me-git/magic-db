@@ -27,10 +27,17 @@
   at the top or takes it out. A switch *Only cards in this deck* writes `deck:"name"`
   into the search, or takes it out; picking another deck while it is on moves the
   search to it.
-- Images or List is now a slider beside the switch, and both modes work in both. On
+- Images or List is now a slider beside the switch, and both modes work in both. Each
+  position of both has an icon; on a phone only the icons show, so the number of
+  results, the two sliders and the *i* fit on one line. On
   images the controls lie over the card art, faint until you point at it, so the grid
   looks like a plain search; in the list − N + sits where fast input's boxes are. One
   *i* beside them explains each position.
+- *Search only my collection* leaves the menu: the Search button has a ▾ beside it,
+  with *Search all cards* and *Search my collection*. As before, the choice writes
+  `haveprint:yes` into the search, or takes it out.
+- The *Sort by* line above the images keeps three orders: name, set and number, price.
+  The list's column headings still sort by every column.
 - The header has a background of its own, a shade apart from the page.
 - The footer has a *Contact me* link with the Reddit icon, beside *Buy me a coffee*.
 

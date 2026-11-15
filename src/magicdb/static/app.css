@@ -109,7 +109,7 @@ button,
 }
 
 button.primary,
-.search-box button {
+.search-go > button {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-text);
@@ -161,6 +161,76 @@ button.primary,
   .logo {
     width: calc(1.75rem * 10 / 12);
   }
+}
+
+/* Search and its dropdown, joined into one button */
+.search-go {
+  position: relative;
+  display: flex;
+  flex: none;
+}
+
+.search-go > button {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.search-scope > summary {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 0 0.45rem;
+  border: 1px solid var(--accent);
+  border-left-color: rgb(255 255 255 / 35%);
+  border-radius: 0 0.4rem 0.4rem 0;
+  background: var(--accent);
+  color: var(--accent-text);
+  list-style: none;
+  cursor: pointer;
+}
+
+.search-scope > summary::-webkit-details-marker {
+  display: none;
+}
+
+.scope-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  padding: 0.35rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+}
+
+.scope-panel button {
+  padding: 0.5rem 0.75rem 0.5rem 2rem;
+  border: 0;
+  background: none;
+  text-align: left;
+  position: relative;
+}
+
+.scope-panel button:hover,
+.scope-panel button:focus-visible {
+  background: var(--row);
+}
+
+/* the choice in use, ticked */
+.scope-panel button[aria-pressed="true"] {
+  font-weight: 600;
+}
+
+.scope-panel button[aria-pressed="true"]::before {
+  content: "✓";
+  position: absolute;
+  left: 0.75rem;
+  color: var(--accent);
 }
 
 /* all the room between the logo and the menu */
@@ -471,7 +541,7 @@ main {
 .results-bar {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 0.25rem 1rem;
   margin-bottom: 0.75rem;
@@ -492,10 +562,6 @@ main {
   gap: 0.5rem 0.75rem;
 }
 
-/* the same room as the count beside it, a <p> */
-.results-bar .views {
-  margin: 1em 0;
-}
 
 /* sliders: Images or List, and the switch of what may change (locked, collection
    input, deck building). A track, and the choice in use raised on it like a knob; both
@@ -513,8 +579,10 @@ main {
 
 .slider a,
 .slider button {
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   padding: 0 0.8rem;
   border: 0;
   border-radius: 0.85rem;
@@ -546,6 +614,47 @@ main {
 .edit-switch [value="locked"][aria-pressed="true"] {
   background: var(--switch-on);
   color: #ffffff;
+}
+
+.slider-icon {
+  flex: none;
+}
+
+/* on a phone the sliders show their icons only, so that the count, both sliders and the
+   (i) share one line; the menu has room for the names */
+@media (max-width: 40rem) {
+  .results-bar,
+  .views {
+    flex-wrap: nowrap;
+  }
+
+  .results-bar {
+    gap: 0.5rem;
+  }
+
+  .views {
+    gap: 0.4rem;
+  }
+
+  .count {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .views .slider-label {
+    display: none;
+  }
+
+  .views .slider a,
+  .views .slider button {
+    padding: 0 0.6rem;
+  }
+}
+
+.info-item .slider-icon {
+  vertical-align: -0.15em;
 }
 
 /* in the menu the switch fills the row */
@@ -1297,7 +1406,7 @@ button:disabled {
   font-weight: 600;
 }
 
-/* --- switches: "only my collection" (in the menu) and "only cards in this deck" -- */
+/* --- switches: "only cards in this deck" ------------------------------------------ */
 
 .switch {
   position: relative;

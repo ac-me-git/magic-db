@@ -1,15 +1,32 @@
+{# The small drawings of the two sliders above the search results. On a phone they stand
+   alone, so that the whole bar fits on one line; on a wider screen the name follows. #}
+{% macro icon(name) -%}
+<svg class="slider-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+{%- if name == "locked" -%}
+<path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/>
+{%- elif name == "input" -%}
+<rect x="5" y="2.5" width="14" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 8v8M8 12h8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+{%- elif name == "deck" -%}
+<rect x="3" y="7" width="12" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8 4.5V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+{%- elif name == "grid" -%}
+<rect x="3" y="3" width="8" height="8" rx="1.5" fill="currentColor"/><rect x="13" y="3" width="8" height="8" rx="1.5" fill="currentColor"/><rect x="3" y="13" width="8" height="8" rx="1.5" fill="currentColor"/><rect x="13" y="13" width="8" height="8" rx="1.5" fill="currentColor"/>
+{%- elif name == "list" -%}
+<path d="M9 6h12M9 12h12M9 18h12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="4" cy="6" r="1.6" fill="currentColor"/><circle cx="4" cy="12" r="1.6" fill="currentColor"/><circle cx="4" cy="18" r="1.6" fill="currentColor"/>
+{%- endif -%}
+</svg>
+{%- endmacro %}
+
 {# The three-way switch of what may change (lock.py): locked, collection input, deck
    building. Three buttons of one form, the one in use pressed: it works without a
-   script, and a whole page comes back, since the search results follow it. #}
+   script, and a whole page comes back, since the search results follow it. Each button
+   is named by aria-label, since its visible name may be hidden. #}
 {% macro edit_switch(next) -%}
 <form class="slider edit-switch" method="post" action="/mode" role="group" aria-label="{{ t('mode.switch') }}">
   <input type="hidden" name="next" value="{{ next }}">
   {%- for state in ("locked", "input", "deck") %}
   <button type="submit" name="state" value="{{ state }}" aria-pressed="{{ 'true' if edit_mode == state else 'false' }}"
-          title="{{ t('mode.' ~ state ~ '.title') }}"{% if state == "locked" %} aria-label="{{ t('mode.locked') }}"{% endif %}>
-    {%- if state == "locked" -%}
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/></svg>
-    {%- else %}{{ t("mode." ~ state) }}{% endif -%}
+          title="{{ t('mode.' ~ state ~ '.title') }}" aria-label="{{ t('mode.' ~ state) }}">
+    {{- icon(state) }}{% if state != "locked" %}<span class="slider-label">{{ t("mode." ~ state) }}</span>{% endif -%}
   </button>
   {%- endfor %}
 </form>

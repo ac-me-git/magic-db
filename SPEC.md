@@ -516,7 +516,10 @@ mode is not chosen in the address: it is the position of the edit switch (*Edit
 switch*, below) — Collection input gives fast input, Deck building gives deck mode,
 Locked gives neither. Above the results, on the right: a slider Images | List (two
 links, the one in use raised on the track), the edit switch drawn the same way and the
-same height (a padlock, *Collection input*, *Deck building*), and one *i* in a circle,
+same height (a padlock, *Collection input*, *Deck building*), each position with an
+icon (a grid, lines, a padlock, a card with +, two cards) and its name — on a screen
+narrower than 40rem only the icon, named for screen readers by `aria-label`, so that
+the count, the two sliders and the *i* stay on one line — and one *i* in a circle,
 always there, whose panel (a `<details>`, closed by a click elsewhere or Escape) says
 in a line what each position does. Addresses saved when `view=` also named the mode
 (`input`, `input-grid`, `deck`, `deck-list`) keep their layout (`web.OLD_VIEWS`).
@@ -575,11 +578,11 @@ white and green humans, press + on the ones you want.
   A link opens the chosen deck.
 - Beside the picker, a switch *Only cards in this deck* (a link drawn as a switch)
   reloads the search with `deck:"<name>"` written in, or taken out — the same rules as
-  the collection switch (`search.with_named`). Choosing another deck while it is on
+  collection dropdown (`search.with_named`). Choosing another deck while it is on
   rewrites the term to the new one; with HTMX the answer is then `HX-Redirect`, so the
   search box shows the new search. The picker stays when the search finds nothing.
   `deck:` matches names that *contain* the text (§6.2). With
-  the collection switch on as well, the search shows the cards of the deck that are in
+  "Search my collection" as well, the search shows the cards of the deck that are in
   the collection; without the deck switch, any card can be added.
 - `POST /deckmode/card` (`deck`, `printing`, `action=add|remove`, `next`): with
   HTMX it answers with the card's − N + only; without, it redirects to `next`. Clicks on
@@ -622,12 +625,12 @@ Without a catalog the page has only the notice that it is not there yet.
 **Header.** On every page, from the left: the logo (the way to the home page: the
 binder and the letters AMTG in the page's colours, the binder alone on a screen
 narrower than 30rem), the search box with its Search
-button, which takes all the room between the two, and a button with three lines that
+button and its dropdown (see *Where to search*), which take all the room between the
+two, and a button with three lines that
 opens the menu. The menu is a `<details>`,
 so it opens and closes without JavaScript; `app.js` only closes it on a click elsewhere
 or with Escape. It holds, in this order:
 
-- "Search only my collection", with its switch (see *Where to search*);
 - the edit switch (*Edit switch*, below), the whole width of the menu;
 - "My collection", which opens the statistics, and "My decks", each with an icon;
 - the language, ENG or ITA (§7, "i18n"), and light, dark or automatic pages (§7,
@@ -645,36 +648,37 @@ in the notice links to `https://company.wizards.com/` and "Scryfall" to
 `{wizards}` and `{scryfall}` in the translated sentences: a template macro makes the
 link, and `t()` escapes the sentence and keeps the link when it is given one.
 
-- **Where to search.** In the menu there is a switch:
-  "search only my collection". It belongs to the search form (`form="search-form"`) and
-  comes after the Search button, which is therefore the one Enter presses. Searching
+- **Where to search.** The Search button has a dropdown joined to it (a `<details>`
+  with a ▾, closed by a click elsewhere or Escape): "Search all cards" and "Search my
+  collection", the one in use ticked. Its buttons come after the plain Search button,
+  which is therefore the one Enter presses. Searching
   the collection is not a mode but
-  one more term of the search: the switch writes `haveprint:yes` into the search box,
+  one more term of the search: the choice writes `haveprint:yes` into the search box,
   or takes it out, and runs the search (`search.with_collection`). The search is
   therefore limited to the *printings* in the collection, so a card is shown in a
   printing that is owned, and paging, views and sorting keep it because it is part of
   the text. Nothing else differs from a search over every card; the badge with the
   copies owned is shown either way.
-  - The switch is on whenever the search has that term at its top level — not inside
-    brackets, after a `-` or beside an `or` (`search.in_collection`) — whether the
-    switch wrote it or it was typed.
+  - "Search my collection" is ticked whenever the search has that term at its top
+    level — not inside brackets, after a `-` or beside an `or` (`search.in_collection`)
+    — whether the dropdown wrote it or it was typed.
   - Turning it on puts alternatives joined by `or` in brackets first, so the term
     holds for all of them; turning it off takes out only the top-level terms. A search
     that cannot be read is left as it is.
-  - It is a submit button placed after the Search button (so Enter presses Search)
-    that sends `scope=collection|all` with the box; `/search` answers with a redirect
+  - Each choice is a submit button of the search form that sends
+    `scope=collection|all` with the box; `/search` answers with a redirect
     to the rewritten search. It needs no JavaScript, and addresses saved when the
     scope was a parameter of its own still work.
 - **Suggestions.** While a name is typed, up to 8 card names appear under the box
   (`GET /search/suggest`, loaded by HTMX), names starting with the text first, the
   typed part in normal weight and the rest in bold. Choosing one searches for exactly
   that card. Nothing is suggested once the text contains filter syntax, except the
-  switch's `haveprint:yes`: beside it a name is still completed, only with names that
+  dropdown's `haveprint:yes`: beside it a name is still completed, only with names that
   are in the collection, and choosing one keeps the term.
 - **Sorting by column.** In the list view the column headers sort the results (name,
   cost, type, set, rarity, price); the header of the order in use shows its direction
-  and turns it round. Above the image view there is a line with the same orders plus
-  release date. The links rewrite the `order:` and `dir:` of the query
+  and turns it round. Above the image view there is a shorter line: name, set and
+  number, price. The links rewrite the `order:` and `dir:` of the query
   (`search.with_order`), so the search box always shows the search as it is. `type`
   was added to the orders for this. The collection list's headers sort it too.
 - `static/app.js` is the one script the project writes itself: arrow keys and Escape

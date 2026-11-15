@@ -30,7 +30,21 @@
         <div id="suggestions" class="suggestions" role="listbox"></div>
       </div>
       {% if view is defined and view != "grid" %}<input type="hidden" name="view" value="{{ view }}">{% endif %}
-      <button type="submit">{{ t("search.button") }}</button>
+      {# Search, and beside it a dropdown: search all cards or only my collection. The
+         plain button comes first, so it is the one Enter presses. The two choices send
+         scope=all|collection with the box; the server writes haveprint:yes into the
+         search, or takes it out. A <details>, so it opens without a script. #}
+      <span class="search-go">
+        <button type="submit">{{ t("search.button") }}</button>
+        <details class="search-scope">
+          <summary title="{{ t('search.scope') }}" aria-label="{{ t('search.scope') }}"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+          <span class="scope-panel">
+            {%- for scope in ("all", "collection") %}
+            <button type="submit" name="scope" value="{{ scope }}" aria-pressed="{{ 'true' if (scope == 'collection') == (mine | default(false)) else 'false' }}">{{ t("search.scope." ~ scope) }}</button>
+            {%- endfor %}
+          </span>
+        </details>
+      </span>
     </form>
     {# The menu: a <details>, so that it opens and closes without a script. #}
     <details class="menu">
@@ -41,21 +55,6 @@
         {% if edit_mode == "locked" %}<span class="menu-lock"><svg viewBox="0 0 24 24" width="10" height="10" aria-hidden="true"><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/></svg></span>{% endif %}
       </summary>
       <div class="menu-panel">
-        {# It belongs to the search form (form="search-form"), after its Search button, so
-           that Enter still presses that one. It sends the box with the choice; the server
-           writes it into the search as haveprint:yes, or takes it out. #}
-        <div class="menu-row">
-          <label for="mine-switch">{{ t("search.mine") }}</label>
-          <button type="submit" form="search-form" id="mine-switch" class="switch collection-only" name="scope" value="{{ 'all' if mine else 'collection' }}"
-                  role="switch" aria-checked="{{ 'true' if mine else 'false' }}">
-            <span class="knob">
-              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-                <rect x="9.5" y="2.5" width="11" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-                <rect x="3.5" y="6.5" width="11" height="15" rx="2" fill="currentColor"/>
-              </svg>
-            </span>
-          </button>
-        </div>
         <div class="menu-row menu-switch">{{ edit_switch(here) }}</div>
         <hr>
         <a class="menu-link" href="/stats"{% if here.startswith('/stats') %} aria-current="page"{% endif %}>

@@ -1,5 +1,6 @@
 """The header: suggestions, where to search, the menu; and sortable columns (SPEC §7)."""
 
+import re
 from contextlib import closing
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -62,7 +63,8 @@ def test_the_header_is_the_logo_the_search_box_and_the_menu(client):
     box = top.index('<form class="search-box" id="search-form"')
     button = top.index('<details class="menu">\n      <summary title="Menu · Locked"')
     assert brand < box < button
-    assert '<path d="M4 6h16M4 12h16M4 18h16"/>' in top.split("<summary")[1].split("</summary>")[0]
+    menu_button = top.split('<details class="menu">')[1].split("</summary>")[0]
+    assert '<path d="M4 6h16M4 12h16M4 18h16"/>' in menu_button
     # nothing else in the bar: everything after the search box is in the menu
     assert top[box:].split("</form>", 1)[1].lstrip().startswith("<details")
     assert 'href="/add"' not in top and "Filters" not in top
@@ -77,7 +79,6 @@ def test_the_search_box_takes_all_the_room_between_the_logo_and_the_menu():
 def test_the_menu_has_the_switches_the_ways_onward_the_choices_and_administration(client):
     inside = menu(client.get("/syntax").text)
     order = [
-        '<label for="mine-switch">Search only my collection</label>',
         'aria-label="What may change"',
         ">My collection</a>",
         ">My decks</a>",
@@ -97,7 +98,7 @@ def test_the_menu_has_the_switches_the_ways_onward_the_choices_and_administratio
     # the ways onward, the syntax and Administration each have an icon
     for address in ("/stats", "/decks", "/syntax", "/admin"):
         assert inside.split(f'href="{address}"')[1].split("</a>")[0].count("<svg") == 1
-    assert inside.count('role="switch"') == 1  # only my collection; the other has three
+    assert 'role="switch"' not in inside  # where to search is beside the Search button
 
 
 def test_the_page_you_are_on_is_marked_in_the_menu(client):
@@ -155,8 +156,10 @@ BOLT_OR_OTHERS = '!"Lightning Bolt" or !"Serra Angel" or !"Sol Ring" or !"Shivan
 
 
 def switch(page: str) -> str:
-    """The attributes of the collection switch in the menu."""
-    return header(page).split('id="mine-switch"')[1].split(">")[0]
+    """Where the dropdown beside Search says the search is: "all" or "collection"."""
+    panel = header(page).split('<span class="scope-panel">')[1].split("</span>")[0]
+    (pressed,) = re.findall(r'name="scope" value="(\w+)" aria-pressed="true"', panel)
+    return pressed
 
 
 def flip(client, **params) -> str:
@@ -166,28 +169,26 @@ def flip(client, **params) -> str:
     return response.headers["location"]
 
 
-def test_search_button_is_followed_by_the_collection_switch(client):
+def test_search_button_has_a_dropdown_of_where_to_search(client):
     top = header(client.get("/search?q=bolt").text)
     box = top.split('<form class="search-box" id="search-form"')[1].split("</form>")[0]
-    assert '<button type="submit">Search</button>' in box and 'name="scope"' not in box
-    # the switch is in the menu but belongs to the search form, after its plain button:
-    # that one comes first, so it is the one Enter presses
-    in_menu = top.split('<div class="menu-panel">')[1]
-    assert '<button type="submit" form="search-form" id="mine-switch"' in in_menu
-    assert top.index('<button type="submit">Search</button>') < top.index('name="scope"')
-    assert top.count('name="scope"') == 1 and "split" not in top
+    # the plain button comes first, so it is the one Enter presses
+    assert box.index('<button type="submit">Search</button>') < box.index('name="scope"')
+    drop = box.split('<details class="search-scope">')[1].split("</details>")[0]
+    assert 'aria-label="Where to search"' in drop
+    assert ">Search all cards</button>" in drop and ">Search my collection</button>" in drop
+    assert drop.count('name="scope"') == 2
+    # the menu no longer has a switch for it
+    assert 'name="scope"' not in menu(client.get("/search?q=bolt").text)
+    assert "mine-switch" not in top
 
 
-def test_switch_shows_whether_the_search_is_over_the_collection(client):
-    off = switch(client.get("/search?q=bolt").text)
-    assert 'value="collection"' in off and 'role="switch" aria-checked="false"' in off
-    top = header(client.get("/search?q=bolt").text)
-    assert '<label for="mine-switch">Search only my collection</label>' in top
-    # the term typed by hand turns the switch on just the same
-    on = switch(client.get("/search?q=haveprint:yes bolt").text)
-    assert 'value="all"' in on and 'role="switch" aria-checked="true"' in on
-    # and on a page that is not a search it is off
-    assert 'aria-checked="false"' in switch(client.get("/syntax").text)
+def test_dropdown_shows_whether_the_search_is_over_the_collection(client):
+    assert switch(client.get("/search?q=bolt").text) == "all"
+    # the term typed by hand ticks the collection just the same
+    assert switch(client.get("/search?q=haveprint:yes bolt").text) == "collection"
+    # and on a page that is not a search it is all cards
+    assert switch(client.get("/syntax").text) == "all"
 
 
 def test_the_switch_writes_the_term_into_the_search(owned):
@@ -195,7 +196,7 @@ def test_the_switch_writes_the_term_into_the_search(owned):
     assert on == "/search?q=t%3Ainstant+haveprint%3Ayes&view=list"
     page = owned.get(on).text
     assert 'value="t:instant haveprint:yes"' in header(page)  # the box shows the search as it is
-    assert 'aria-checked="true"' in switch(page)
+    assert switch(page) == "collection"
     assert flip(owned, q="t:instant haveprint:yes", scope="all", view="list") == (
         "/search?q=t%3Ainstant&view=list"
     )
@@ -263,7 +264,7 @@ def test_nothing_owned_matches(owned, client):
 def test_unknown_scope_is_ignored(owned, scope):
     response = owned.get("/search", params={"q": "t:dragon", "scope": scope})
     assert response.status_code == 200
-    assert "Shivan Dragon" in response.text and 'aria-checked="false"' in switch(response.text)
+    assert "Shivan Dragon" in response.text and switch(response.text) == "all"
 
 
 def test_the_collection_term_in_the_engine(catalog, owned, ids):
@@ -544,7 +545,9 @@ def test_list_headers_sort_the_results(client):
 def test_grid_has_a_sort_line(client):
     page = client.get("/search?q=t:dragon").text
     line = page.split('<p class="sort-line">')[1].split("</p>")[0]
-    assert line.count('class="sorter') == 7 and "Release date" in line and "is-sorted" in line
+    assert line.count('class="sorter') == 3 and "is-sorted" in line
+    labels = re.findall(r'class="sorter[^"]*" href="[^"]*"[^>]*>([^<]+)<', line)
+    assert labels == ["Name", "Set and number", "Price"]
     assert "sort-line" not in client.get("/search?q=t:dragon&view=list").text
 
 
@@ -556,10 +559,11 @@ def test_new_labels_in_italian(owned):
         ">Sintassi di ricerca</a>",
         "I miei mazzi",
         '<button type="submit">Cerca</button>',
-        '<label for="mine-switch">Cerca solo nella mia collezione</label>',
+        ">Cerca tra tutte le carte</button>",
+        ">Cerca nella mia collezione</button>",
         'aria-label="Cosa si può modificare"',
-        ">Inserimento collezione</button>",
-        ">Costruzione mazzi</button>",
+        ">Inserimento collezione</span>",
+        ">Costruzione mazzi</span>",
         "<span>Lingua</span>",
         "<span>Aspetto</span>",
         ">Chiaro</button>",

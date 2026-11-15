@@ -62,12 +62,13 @@ def test_a_new_database_starts_locked(client, catalog):
     page = client.get("/").text
     assert pressed(page) == ["locked"]
     assert 'aria-label="What may change"' in page
-    for label in ('aria-label="Locked"', ">Collection input</button>", ">Deck building</button>"):
+    for label in ('aria-label="Locked"', ">Collection input</span>", ">Deck building</span>"):
         assert label in page, label
     # the switch is in the menu, so the button that opens it says it is locked
     name = "Menu · Locked"
     assert f'<summary title="{name}" aria-label="{name}">' in page
-    assert '<span class="menu-lock"><svg' in page.split("<summary")[1].split("</summary>")[0]
+    button = page.split('<details class="menu">')[1].split("</summary>")[0]
+    assert '<span class="menu-lock"><svg' in button
 
 
 @pytest.mark.parametrize("state", ["input", "deck", "locked"])

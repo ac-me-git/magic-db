@@ -12,7 +12,7 @@
 
 {% from "_deck_box.html" import deck_form, only_switch with context %}
 {% from "_fast_box.html" import fast_form, fast_badge with context %}
-{% from "_edit_switch.html" import edit_switch with context %}
+{% from "_edit_switch.html" import edit_switch, icon with context %}
 
 {% macro badge(card) -%}
 {% set have = owned.get(card.id if result.unique == "prints" else card.oracle_id) %}
@@ -33,15 +33,19 @@
   {# a <div>: the (i) is a <details>, which a <p> cannot hold #}
   <div class="views">
     <span class="slider layout-switch">
-      {{- nav(t("results.view.grid"), result.page, "grid", current=(layout == "grid")) -}}
-      {{- nav(t("results.view.list"), result.page, "list", current=(layout == "list")) -}}
+      {%- for name in ("grid", "list") %}
+      <a href="{{ search_url(q, result.page, name) }}" hx-get="{{ search_url(q, result.page, name) }}"
+         hx-target="#results" hx-swap="innerHTML show:window:top" hx-push-url="true"
+         {%- if layout == name %} aria-current="true"{% endif %} aria-label="{{ t('results.view.' ~ name) }}" title="{{ t('results.view.' ~ name) }}">
+        {{- icon(name) }}<span class="slider-label">{{ t("results.view." ~ name) }}</span></a>
+      {%- endfor %}
     </span>
     {{ edit_switch(here) }}
     <details class="info">
       <summary title="{{ t('results.mode.help') }}" aria-label="{{ t('results.mode.help') }}">i</summary>
       <span class="info-panel">
         {%- for state, hint in (("locked", "mode.locked.hint"), ("input", "fast.hint"), ("deck", "deckmode.hint")) %}
-        <span class="info-item"><strong>{{ t("mode." ~ state) }}</strong> {{ t(hint) }}</span>
+        <span class="info-item">{{ icon(state) }} <strong>{{ t("mode." ~ state) }}</strong> {{ t(hint) }}</span>
         {%- endfor %}
       </span>
     </details>
@@ -153,7 +157,7 @@
 </div>
 {% else %}
 <p class="sort-line">{{ t("panel.order") }}:
-  {% for key in ("name", "mv", "type", "released", "rarity", "price", "set") %}{{ sorter(t("order." ~ key), key) }}{% if not loop.last %} · {% endif %}{% endfor %}
+  {% for key in ("name", "set", "price") %}{{ sorter(t("order." ~ key), key) }}{% if not loop.last %} · {% endif %}{% endfor %}
 </p>
 <ul class="card-grid">
   {% for card in result.rows %}

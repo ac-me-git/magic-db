@@ -75,7 +75,7 @@ def query_of(address):
 def test_deck_mode_follows_the_switch(client):
     make_deck(client, "Humans")
     page = client.get("/search?q=bolt").text
-    assert ">Deck building</button>" in page and "deck-count" in page
+    assert ">Deck building</span></button>" in page and "deck-count" in page
     assert re.search(r'value="deck" aria-pressed="true"', page)
     editing(client, "locked")
     page = client.get("/search?q=bolt").text
@@ -329,7 +329,8 @@ def views_links(page):
     """{label: (view in the address, is current)} of the links above the results."""
     bar = page.split('<div class="views">')[1].split("</div>")[0]
     found = {}
-    for tag, label in re.findall(r"(<a [^>]*>)([^<]+)</a>", bar):
+    for tag in re.findall(r"<a [^>]*>", bar):
+        label = re.search(r'aria-label="([^"]+)"', tag).group(1)
         href = re.search(r'href="([^"]+)"', tag).group(1).replace("&amp;", "&")
         view = parse_qs(urlsplit(href).query).get("view", ["grid"])[0]
         found[label] = (view, 'aria-current="true"' in tag)
@@ -360,6 +361,24 @@ def test_the_switch_and_the_slider_are_the_same_height():
     css = (Path(magicdb.__file__).parent / "static" / "app.css").read_text(encoding="utf-8")
     slider = re.search(r"\n\.slider \{([^}]*)\}", css).group(1)
     assert "height: 2rem;" in slider
+
+
+def test_on_a_phone_the_sliders_are_icons_on_one_line(client):
+    page = search_page(client, "bolt")
+    bar = page.split('<div class="views">')[1].split('<details class="info">')[0]
+    # five controls, each a drawing with its name for screen readers
+    controls = re.findall(r"<(?:a|button) [^>]*>.*?</(?:a|button)>", bar, re.DOTALL)
+    assert len(controls) == 5
+    for control in controls:
+        assert 'class="slider-icon"' in control and 'aria-label="' in control, control
+    from pathlib import Path
+
+    import magicdb
+
+    css = (Path(magicdb.__file__).parent / "static" / "app.css").read_text(encoding="utf-8")
+    phone = css.split("@media (max-width: 40rem) {", 1)[1].split("\n}\n", 1)[0]
+    assert ".views .slider-label {\n    display: none;" in phone
+    assert "flex-wrap: nowrap;" in phone
 
 
 def test_fast_input_as_images_lays_the_boxes_over_the_cards(client, card):

@@ -104,8 +104,8 @@ uv run magicdb
 | Page | What it is for |
 |---|---|
 | **The logo** (home) | A map of the search syntax with examples to press, and the codes of the last five years' expansions. Or, if you choose so in Administration, the filter panel: build a search by picking colours, types, sets… |
-| **The search box** | On every page. Suggests card names as you type |
-| **The menu** (☰, top right) | *Search only my collection*; the switch of what may change (a padlock on the ☰ says when it is locked); My collection; My decks; the language; light, dark or automatic pages; Search syntax, every filter with examples you can click; Administration |
+| **The search box** | On every page. Suggests card names as you type; the ▾ beside *Search* chooses between all cards and your collection |
+| **The menu** (☰, top right) | The switch of what may change (a padlock on the ☰ says when it is locked); My collection; My decks; the language; light, dark or automatic pages; Search syntax, every filter with examples you can click; Administration |
 | **My collection** | Statistics, and from there: import, export |
 | **My decks** | Deck lists and how complete each one is |
 | **Administration** | Whether a newer version is out (and, on Windows, install it); catalog and backup status, run them now, download a backup; whether the home page shows the syntax map or the filter panel |

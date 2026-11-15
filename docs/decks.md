@@ -25,7 +25,7 @@ and, if you like, a note, then *Save*. They stay at the top of the deck's page, 
   the deck at the top; on every card, + puts one more copy in it and − takes one out.
   On images the buttons are faint until you point at the card. The switch *Only cards in this deck* limits the
   search to the cards already there (it writes `deck:"name"` into the search box); with
-  *Search only my collection* on as well, you see only cards you own.
+  *Search my collection* (the ▾ beside Search) as well, you see only cards you own.
 - **By pasting a list**, on the deck's page.
 
 ### Deck lists
