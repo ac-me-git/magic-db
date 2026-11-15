@@ -534,8 +534,12 @@ had both layouts, so saved addresses still work (`web.VIEW_NAMES`).
 - In **List** layout a mode uses fast input's table: set and number, name with the type
   under it, then the mode's controls (two boxes, or − N +) in the last columns.
 - In **Images** layout a mode keeps the plain grid exactly — sort line, image, owned
-  badge bottom left, name, set and number — and lays its controls *over* the image, in
-  the middle (`.card-tools`). They are faint (opacity 0.35) and come forward when the
+  badge bottom left, name, set and number — and lays its controls *over* the image,
+  centred on the art box, a third of the way down the card (`.card-tools`). Fast input's
+  boxes are a little wider there, and the finish's name under each is never wider than
+  its box (cut with an ellipsis rather than spilling out). In deck mode the number is
+  white on dark while the card is not in the deck, and on the accent colour (with the
+  accent's text colour) once it is. They are faint (opacity 0.35) and come forward when the
   pointer is on the card or a control has the focus; a ticked box or a card already in
   the deck is a little clearer (0.7). On a device without hover (`@media (hover:
   none)`) they start clearer (0.75). The image and the name stay links to the card; the

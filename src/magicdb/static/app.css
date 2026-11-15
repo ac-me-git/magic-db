@@ -1781,14 +1781,17 @@ a.switch {
   display: block;
 }
 
+/* centred on the art box: on every card frame it runs from about 11% to 55% of the
+   height, so its middle is a third of the way down */
 .card-tools {
   position: absolute;
-  top: 40%;
-  left: 0;
-  right: 0;
+  top: 33%;
+  left: 0.3rem;
+  right: 0.3rem;
   display: flex;
   justify-content: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
+  transform: translateY(-50%);
   pointer-events: none; /* the image under the gaps still opens the card */
 }
 
@@ -1797,6 +1800,7 @@ a.switch {
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
+  min-width: 0;
   margin: 0;
   pointer-events: auto;
   opacity: 0.35;
@@ -1829,6 +1833,11 @@ a.switch {
   background: rgb(15 15 25 / 55%);
 }
 
+/* a little wider than in the list, so that the finish's name fits under it */
+.card-tools .bigcheck {
+  width: 3.3rem;
+}
+
 .card-tools .bigcheck:not(.is-on):disabled {
   background: rgb(15 15 25 / 25%);
 }
@@ -1837,7 +1846,10 @@ a.switch {
   color: #ffffff;
 }
 
-.card-tools .deck-n {
+/* the copies in the deck: white on dark while there are none, then on the accent colour
+   (with the text colour the accent's buttons use), so it reads on any card and theme */
+.card-tools .deck-n,
+.card-tools .deck-n.is-in {
   min-width: 2rem;
   padding: 0.1rem 0.3rem;
   border-radius: 0.5rem;
@@ -1845,13 +1857,24 @@ a.switch {
   color: #ffffff;
 }
 
+.card-tools .deck-n.is-in {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+/* the finish under a box: never wider than the box, cut short rather than spill out */
 .tool-label {
-  padding: 0 0.35rem;
+  box-sizing: border-box;
+  max-width: 3.3rem;
+  padding: 0 0.2rem;
+  overflow: hidden;
   border-radius: 0.4rem;
   background: rgb(15 15 25 / 70%);
   color: #ffffff;
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   line-height: 1.5;
+  text-align: center;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

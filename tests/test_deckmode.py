@@ -428,3 +428,16 @@ def test_the_controls_on_images_are_faint_until_pointed_at():
     assert faint and float(faint.group(1)) < 0.5
     assert re.search(r"\.card-face:hover \.card-tools form,[^{]*\{\s*opacity: 1;", css)
     assert "@media (hover: none)" in css
+    # centred on the art box, a third of the way down the card
+    tools = re.search(r"\n\.card-tools \{([^}]*)\}", css).group(1)
+    assert "top: 33%;" in tools and "translateY(-50%)" in tools
+    # the finish's name is never wider than its box, and is cut rather than spilling out
+    label = re.search(r"\n\.tool-label \{([^}]*)\}", css).group(1)
+    box = re.search(r"\n\.card-tools \.bigcheck \{([^}]*)\}", css).group(1)
+    width = re.search(r"width: ([\d.]+rem)", box).group(1)
+    assert f"max-width: {width};" in label and "overflow: hidden;" in label
+    assert "text-overflow: ellipsis;" in label
+    # a card already in the deck: its number on the accent colour, with the accent's text
+    # colour, not the page's (which is black on light pages)
+    in_deck = re.search(r"\n\n\.card-tools \.deck-n\.is-in \{([^}]*)\}", css).group(1)
+    assert "background: var(--accent);" in in_deck and "color: var(--accent-text);" in in_deck
