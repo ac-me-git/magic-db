@@ -409,9 +409,10 @@ def syntax_page(request: Request) -> HTMLResponse:
     return render(request, "syntax.html", filters=search.FILTERS, basics=BASICS)
 
 
-@router.get("/api/autocomplete")
-def autocomplete(conn: Conn, q: str = "") -> list[str]:
-    """Up to 15 card names containing ``q``; names starting with it come first."""
+def autocomplete(conn: sqlite3.Connection, q: str = "") -> list[str]:
+    """Up to 15 card names containing ``q``; names starting with it come first. For the
+    suggestions under the search box and the deck page's name field (there is no
+    address of its own: /api/autocomplete was removed on 2026-11-15)."""
     text = normalize(q.strip())
     if len(text) < 2 or not db.has_catalog(conn):
         return []

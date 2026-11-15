@@ -208,7 +208,7 @@
   "import.file": "File",
   "import.preview": "Read the file",
   "import.formats": "Formats understood",
-  "import.format.native": "the CSV and JSON files made by Export.",
+  "import.format.native": "the CSV and JSON files made by Export (a JSON file also brings back the decks you do not have yet).",
   "import.format.topdecked": "the CSV export of a binder.",
   "import.format.others": "their CSV collection exports.",
   "import.format.generic": "Any CSV with a Name column, and optionally Set code, Collector number, Quantity, Finish.",

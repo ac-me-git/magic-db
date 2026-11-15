@@ -79,13 +79,15 @@ marked **owner**.
 
 **Half-finished**
 
-- [ ] `history` is written by every change and read by nothing; there is no undo.
-  **owner**: keep, show (latest changes on My collection) or drop later.
-- [ ] Notes and purchase price are only on the edit page and in the export; not on the
+- [x] `history` is written by every change and read by nothing; there is no undo.
+  Owner (2026-11-15): left as it is for 2.0.0; decided after the release.
+- [x] Notes and purchase price are only on the edit page and in the export; not on the
   card page or in the statistics. **owner**, with the item above.
-- [ ] Importing a JSON dump recreates decks while the switch is on Collection input,
-  which is meant to keep the decks unchanged.
-- [ ] `/api/autocomplete` is called by no page any more (its function is used inside).
+- [x] Importing a JSON dump recreates decks while the switch is on Collection input,
+  which is meant to keep the decks unchanged. Owner (2026-11-15): allowed, as a whole
+  backup; written in SPEC §7, the import page and the guides.
+- [x] `/api/autocomplete` is called by no page any more (its function is used inside).
+  Owner (2026-11-15): removed; `web.autocomplete` stays as a function.
 - [x] The entry edit page is still a table row with `colspan=7`, left from the removed
   collection list.
 
@@ -123,9 +125,10 @@ marked **owner**.
 
 **Release** (**owner**)
 
-- [ ] What "open to the public" means: the repository and the website (ready), or an
+- [x] What "open to the public" means: the repository and the website (ready), or an
   instance anyone can reach (needs `MAGICDB_PASSWORD` or a gateway: without it anyone
-  can move the switch, change the collection and download backups).
+  can move the switch, change the collection and download backups). Owner: the
+  repository and the website.
 - [x] Version number: 2.0.0 tonight, then 2.0.1 with the link to the Reddit post (owner,
   2026-11-15).
 - [ ] Branch: `CLAUDE.md` says `main`, this session was set up on

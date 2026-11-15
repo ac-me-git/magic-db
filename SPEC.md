@@ -428,7 +428,6 @@ a search, edit the text in the search box.
 | `/syntax` | search syntax reference, generated from the same table the parser uses |
 | `/healthz` | `{"status":"ok"}`, no auth |
 | `/img/{size}/{scryfall_id}/{face}` | image cache proxy |
-| `/api/autocomplete?q=` | up to 15 card names, prefix matches first |
 
 HTMX is used for partial updates (results paging, inline edits, fast input). Every page
 must also work as a plain full-page load. Usable on a phone: fast input and the card
@@ -707,6 +706,9 @@ with three positions, which replaced the old safety lock.
   the card page's form and its Edit links, the edit page, import. The decks cannot.
 - *Deck building*: the decks can change — deck mode in the search results, the deck
   pages, "Add to the deck" on a card's page. The collection cannot.
+- One exception, chosen by the owner (2026-11-15): importing this app's JSON dump on
+  Collection input also recreates its decks. A dump is a whole backup; it only creates
+  decks whose names are not there yet and never changes an existing one.
 - In every position cards, the collection and the decks can be searched, browsed,
   exported, counted in the statistics and backed up; the card catalog can be updated.
 - It is one state for the whole server, saved in the `settings` table under

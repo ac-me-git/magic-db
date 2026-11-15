@@ -25,6 +25,9 @@ Rows that cannot be imported are listed with the reason, and can be downloaded a
 to fix and import again. They never stop the other rows.
 
 Importing the same file twice adds the cards twice. The switch must be on *Collection input*.
+A JSON export also brings back its decks, even though that position otherwise keeps the
+decks unchanged: it only creates the decks whose names are not there yet, and never
+changes one you have.
 
 ### Formats understood
 

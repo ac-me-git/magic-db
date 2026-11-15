@@ -422,20 +422,31 @@ def test_italian_interface(italian, fixture_cards, monkeypatch):
 # --- autocomplete ---------------------------------------------------------------------
 
 
-def test_autocomplete(client):
-    names = client.get("/api/autocomplete?q=light").json()
+@pytest.fixture
+def conn(catalog):
+    connection = db.connect(catalog)
+    yield connection
+    connection.close()
+
+
+def test_autocomplete(conn):
+    names = web.autocomplete(conn, "light")
     assert names[0].startswith("Light") and "Lightning Bolt" in names
-    assert "Lightning Bolt" in client.get("/api/autocomplete?q=bolt").json()
-    assert client.get("/api/autocomplete?q=LIGHTNING BO").json() == ["Lightning Bolt"]
-    prefixed = client.get("/api/autocomplete?q=an").json()
+    assert "Lightning Bolt" in web.autocomplete(conn, "bolt")
+    assert web.autocomplete(conn, "LIGHTNING BO") == ["Lightning Bolt"]
+    prefixed = web.autocomplete(conn, "an")
     starts = [name.lower().startswith("an") for name in prefixed]
     assert starts == sorted(starts, reverse=True)  # names starting with it come first
-    assert len(client.get("/api/autocomplete?q=er").json()) == 15
+    assert len(web.autocomplete(conn, "er")) == 15
 
 
 @pytest.mark.parametrize("q", ["", "l", " ", "%", "__", "zzzzzz"])
-def test_autocomplete_with_nothing_to_offer(client, q):
-    assert client.get("/api/autocomplete", params={"q": q}).json() == []
+def test_autocomplete_with_nothing_to_offer(conn, q):
+    assert web.autocomplete(conn, q) == []
+
+
+def test_autocomplete_has_no_address_of_its_own(client):
+    assert client.get("/api/autocomplete?q=bolt").status_code == 404
 
 
 # --- no catalog yet -------------------------------------------------------------------
@@ -450,4 +461,4 @@ def test_pages_without_a_catalog(settings):
         page = client.get(path)
         assert page.status_code == 503 and "The card catalog is not here yet" in page.text
     assert client.get("/syntax").status_code == 200
-    assert client.get("/api/autocomplete?q=bolt").json() == []
+    assert client.get("/search/suggest?q=bolt").text == ""

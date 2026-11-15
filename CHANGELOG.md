@@ -51,6 +51,7 @@
 - Fixed: on a phone the switch at the bottom of a card's page was wider than the
   screen; it now shows its icons only, like the one above the search results.
 - A card's page offers only the finishes that printing was made in.
+- `/api/autocomplete` is gone: no page used it any more.
 
 ## 1.3.0 — 2026-11-15
 

@@ -196,7 +196,7 @@ def test_reading_works_while_locked(stocked, bolt):
         "/export",
         "/admin",
         "/syntax",
-        "/api/autocomplete?q=bolt",
+        "/search/suggest?q=bolt",
         "/filter?name=bolt",
         f"/img/small/{bolt}/back",
     ):

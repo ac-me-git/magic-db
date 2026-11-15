@@ -239,7 +239,7 @@
   "import.file": "File",
   "import.preview": "Leggi il file",
   "import.formats": "Formati riconosciuti",
-  "import.format.native": "i file CSV e JSON prodotti da Esporta.",
+  "import.format.native": "i file CSV e JSON prodotti da Esporta (un file JSON riporta anche i mazzi che non hai ancora).",
   "import.format.topdecked": "l'esportazione CSV di un raccoglitore.",
   "import.format.others": "le loro esportazioni CSV della collezione.",
   "import.format.generic": "Qualsiasi CSV con una colonna Name e, se vuoi, Set code, Collector number, Quantity, Finish.",
