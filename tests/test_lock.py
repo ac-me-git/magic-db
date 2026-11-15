@@ -40,9 +40,9 @@ def set_mode(client, state, next_page=""):
 
 
 def pressed(page):
-    """The position of the switch in the menu."""
-    menu = page.split('<div class="menu-row menu-switch">')[1].split("</form>")[0]
-    return re.findall(r'value="(\w+)" aria-pressed="true"', menu)
+    """The position of the switch above the search results."""
+    bar = page.split('<div class="views">')[1].split("</form>")[0]
+    return re.findall(r'value="(\w+)" aria-pressed="true"', bar)
 
 
 def snapshot(settings):
@@ -59,12 +59,12 @@ def snapshot(settings):
 
 def test_a_new_database_starts_locked(client, catalog):
     assert lock.load(catalog) == "locked"
-    page = client.get("/").text
+    page = client.get("/search?q=bolt").text
     assert pressed(page) == ["locked"]
     assert 'aria-label="What may change"' in page
     for label in ('aria-label="Locked"', ">Collection input</span>", ">Deck building</span>"):
         assert label in page, label
-    # the switch is in the menu, so the button that opens it says it is locked
+    # the button that opens the menu says it is locked, on every page
     name = "Menu · Locked"
     assert f'<summary title="{name}" aria-label="{name}">' in page
     button = page.split('<details class="menu">')[1].split("</summary>")[0]
@@ -73,20 +73,21 @@ def test_a_new_database_starts_locked(client, catalog):
 
 @pytest.mark.parametrize("state", ["input", "deck", "locked"])
 def test_moving_the_switch(client, catalog, state):
-    response = set_mode(client, state, "/stats?sets=name")
-    assert (response.status_code, response.headers["location"]) == (303, "/stats?sets=name")
+    response = set_mode(client, state, "/search?q=bolt&view=list")
+    assert response.status_code == 303
+    assert response.headers["location"] == "/search?q=bolt&view=list"
     assert lock.load(catalog) == state
-    page = client.get("/stats?sets=name").text
+    page = client.get("/search?q=bolt&view=list").text
     assert pressed(page) == [state]
-    assert 'name="next" value="/stats?sets=name"' in page  # comes back to this page
-    assert ("menu-lock" in page) == (state == "locked")
+    assert 'name="next" value="/search?q=bolt&amp;view=list"' in page  # comes back here
+    assert ("menu-lock" in client.get("/stats").text) == (state == "locked")
 
 
 def test_the_switch_survives_a_restart(client, catalog):
     set_mode(client, "deck")
     restarted = TestClient(create_app(catalog))  # a new process reads the saved state
     assert restarted.app.state.edit_mode == "deck"
-    assert pressed(restarted.get("/").text) == ["deck"]
+    assert pressed(restarted.get("/search?q=bolt").text) == ["deck"]
 
 
 @pytest.mark.parametrize("state", ["", "maybe", "INPUT", "1", "on", "off"])
@@ -100,23 +101,13 @@ def test_switch_redirect_stays_on_this_site(client):
     assert set_mode(client, "input", "https://evil.example/").headers["location"] == "/"
 
 
-def test_the_switch_is_on_every_page(stocked, bolt):
-    for path in (
-        "/",
-        "/search?q=bolt",
-        f"/card/{bolt}",
-        "/decks",
-        "/import",
-        "/export",
-        "/stats",
-        "/admin",
-        "/syntax",
-        "/nothing-here",
-    ):
-        assert 'action="/mode"' in stocked.get(path).text, path
+def test_the_switch_is_above_the_search_results_only(stocked, bolt):
+    assert stocked.get("/search?q=bolt").text.count('class="slider edit-switch"') == 1
     partial = stocked.get("/search?q=bolt", headers={"HX-Request": "true"}).text
     assert 'class="menu' not in partial  # a fragment has no page chrome
-    assert partial.count('action="/mode"') == 1  # but the results bar has the switch
+    assert partial.count('class="slider edit-switch"') == 1  # but the results bar has it
+    for path in ("/", f"/card/{bolt}", "/stats", "/admin", "/syntax"):
+        assert "edit-switch" not in stocked.get(path).text, path
 
 
 def test_the_old_lock_is_gone(client):
@@ -216,8 +207,9 @@ def test_reading_works_while_locked(stocked, bolt):
 
 def test_changing_the_language_works_while_locked(stocked):
     assert stocked.get("/lang/it").status_code == 303
-    page = stocked.get("/stats").text
-    assert 'aria-label="Cosa si può modificare"' in page and "Bloccato" in page
+    page = stocked.get("/search?q=bolt").text
+    assert 'aria-label="Cosa si può modificare"' in page and 'aria-label="Bloccato"' in page
+    assert ">Inserimento collezione</span>" in page and ">Costruzione mazzi</span>" in page
 
 
 def test_backups_and_catalog_updates_work_while_locked(stocked, catalog, monkeypatch):

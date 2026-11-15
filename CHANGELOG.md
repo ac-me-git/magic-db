@@ -16,7 +16,7 @@
   importing an old export). The colour identity is now the one of the deck's widest
   legendary creature — in practice the commander — or, without one, of all its cards.
 - **What may change: a switch with three positions** replaces the safety lock, above
-  the search results and in the menu. *Locked* (a padlock): nothing can change. A new
+  the search results (a padlock on the ☰ says when it is locked). *Locked* (a padlock): nothing can change. A new
   database starts here, and so does one that had the old lock, on or off.
   *Collection input*: the collection can change, the decks cannot, and the search
   results become fast input. *Deck building*: the decks can change, the collection

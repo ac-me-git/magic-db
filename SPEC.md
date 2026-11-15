@@ -631,7 +631,6 @@ opens the menu. The menu is a `<details>`,
 so it opens and closes without JavaScript; `app.js` only closes it on a click elsewhere
 or with Escape. It holds, in this order:
 
-- the edit switch (*Edit switch*, below), the whole width of the menu;
 - "My collection", which opens the statistics, and "My decks", each with an icon;
 - the language, ENG or ITA (§7, "i18n"), and light, dark or automatic pages (§7,
   "Light and dark"), each a row of small buttons with the current one filled in;
@@ -712,8 +711,8 @@ with three positions, which replaced the old safety lock.
   would allow it.
 - The switch is three buttons of one form (`POST /mode` with `state` and `next`), the
   one in use pressed (`aria-pressed`): it works without JavaScript and loads the whole
-  page again, since the search results follow it. It is in the menu of every page and
-  above the search results. Locked is drawn in amber, the others in the accent colour.
+  page again, since the search results follow it. It is above the search results only
+  (not in the menu). Locked is drawn in amber, the others in the accent colour.
 - While locked, the menu button carries a small amber padlock and its name says so
   ("Menu · Locked"), so the state shows with the menu closed.
 - Pages do not show the forms and links the switch would refuse. The import, edit and

@@ -15,7 +15,6 @@
   <script src="{{ asset('app.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
-{% from "_edit_switch.html" import edit_switch with context %}
 <body>
   <header class="site-header">
     {# the binder and the letters AMTG, drawn by scripts/make_logo.py #}
@@ -51,12 +50,10 @@
       {%- set menu_name = t('menu.open') ~ (' · ' ~ t('mode.locked') if edit_mode == 'locked' else '') %}
       <summary title="{{ menu_name }}" aria-label="{{ menu_name }}">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-        {# the switch is inside the menu: while it is locked, the button says so #}
+        {# while nothing may change (the switch above the search results), the button says so #}
         {% if edit_mode == "locked" %}<span class="menu-lock"><svg viewBox="0 0 24 24" width="10" height="10" aria-hidden="true"><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/></svg></span>{% endif %}
       </summary>
       <div class="menu-panel">
-        <div class="menu-row menu-switch">{{ edit_switch(here) }}</div>
-        <hr>
         <a class="menu-link" href="/stats"{% if here.startswith('/stats') %} aria-current="page"{% endif %}>
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M6 17v-5M11 17V6M16 17v-8M21 17V3"/></svg>{{ t("collection.title") }}</a>
         <a class="menu-link" href="/decks"{% if here.startswith('/deck') %} aria-current="page"{% endif %}>

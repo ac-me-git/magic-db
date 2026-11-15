@@ -79,7 +79,6 @@ def test_the_search_box_takes_all_the_room_between_the_logo_and_the_menu():
 def test_the_menu_has_the_switches_the_ways_onward_the_choices_and_administration(client):
     inside = menu(client.get("/syntax").text)
     order = [
-        'aria-label="What may change"',
         ">My collection</a>",
         ">My decks</a>",
         "<span>Language</span>",
@@ -561,9 +560,6 @@ def test_new_labels_in_italian(owned):
         '<button type="submit">Cerca</button>',
         ">Cerca tra tutte le carte</button>",
         ">Cerca nella mia collezione</button>",
-        'aria-label="Cosa si può modificare"',
-        ">Inserimento collezione</span>",
-        ">Costruzione mazzi</span>",
         "<span>Lingua</span>",
         "<span>Aspetto</span>",
         ">Chiaro</button>",

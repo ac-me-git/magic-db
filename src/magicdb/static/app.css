@@ -657,15 +657,6 @@ main {
   vertical-align: -0.15em;
 }
 
-/* in the menu the switch fills the row */
-.menu-switch .slider {
-  width: 100%;
-}
-
-.menu-switch .slider button {
-  flex: 1 1 auto;
-  padding: 0 0.5rem;
-}
 
 .card-grid {
   display: grid;

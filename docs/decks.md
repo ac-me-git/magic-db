@@ -8,8 +8,8 @@ you own.
 
 ## Making a deck
 
-Decks change only while the switch of what may change (above the search results, and
-in the ☰ menu) is on **Deck building**; in the other positions the deck pages show a
+Decks change only while the switch of what may change (above the search results) is
+on **Deck building**; in the other positions the deck pages show a
 button to move it there.
 
 On the **Decks** page, press **New deck** (top right). The deck is called "Deck 1",
