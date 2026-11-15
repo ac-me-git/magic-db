@@ -34,7 +34,19 @@ from magicdb.templating import (
 router = APIRouter()
 Conn = Annotated[sqlite3.Connection, Depends(db.get_conn)]
 
-VIEWS = ("grid", "list", "input", "deck")
+# A view of the search results is a layout (images or a list) and a mode: none, fast
+# input (boxes to tick) or deck mode (+ and −). The names are what ``view=`` says in the
+# address; "input" and "deck" keep the meaning they had before modes had both layouts.
+VIEW_NAMES: dict[tuple[str, str], str] = {
+    ("grid", ""): "grid",
+    ("list", ""): "list",
+    ("list", "input"): "input",
+    ("grid", "input"): "input-grid",
+    ("grid", "deck"): "deck",
+    ("list", "deck"): "deck-list",
+}
+VIEW_PARTS = {name: parts for parts, name in VIEW_NAMES.items()}
+VIEWS = tuple(VIEW_PARTS)
 SCOPES = ("all", "collection")  # what the switch beside the search box sends
 FAST_PER_PAGE = 500  # fast input: a whole set on one page
 AUTOCOMPLETE_LIMIT = 15
@@ -206,6 +218,7 @@ def search_page(
     if not db.has_catalog(conn):
         return no_catalog(request)
     view = view if view in VIEWS else "grid"
+    layout, mode_name = VIEW_PARTS[view]
     page_number = int(page) if page.isascii() and page.isdigit() and len(page) < 7 else 1
     scope = request.query_params.get("scope")
     if scope in SCOPES:
@@ -220,9 +233,9 @@ def search_page(
             q,
             page_number,
             currency=request.app.state.settings.currency,
-            prints=view == "input",
-            cards=view == "deck",
-            per_page=FAST_PER_PAGE if view == "input" else search.PER_PAGE,
+            prints=mode_name == "input",
+            cards=mode_name == "deck",
+            per_page=FAST_PER_PAGE if mode_name == "input" else search.PER_PAGE,
         )
     except search.QueryError as exc:
         error = str(exc)
@@ -232,10 +245,10 @@ def search_page(
         key = "id" if result.unique == "prints" else "oracle_id"
         owned = service.owned_counts(conn, [row[key] for row in result.rows], result.unique)
     extra: dict[str, object] = {}
-    if result is not None and view == "input":
-        extra = fast_input_context(request, conn, q, result)
-    elif result is not None and view == "deck":
-        extra = deck_mode_context(request, conn, q, result)
+    if result is not None and mode_name == "input":
+        extra = fast_input_context(request, conn, q, result, view)
+    elif result is not None and mode_name == "deck":
+        extra = deck_mode_context(request, conn, q, result, view)
     partial = request.headers.get("HX-Request") == "true"
     return render(
         request,
@@ -245,6 +258,9 @@ def search_page(
         mine=search.in_collection(q),
         without_collection=search.with_collection(q, False),
         view=view,
+        layout=layout,
+        mode=mode_name,
+        views=VIEW_NAMES,
         result=result,
         error=error,
         owned=owned,
@@ -263,7 +279,7 @@ def only_switch(q: str, view: str, kind: str, name: str | None) -> dict[str, obj
 
 
 def fast_input_context(
-    request: Request, conn: sqlite3.Connection, q: str, result: search.Result
+    request: Request, conn: sqlite3.Connection, q: str, result: search.Result, view: str
 ) -> dict[str, object]:
     key = forms.copy_key(request, conn)
     options = forms.options(conn)
@@ -272,12 +288,12 @@ def fast_input_context(
         "fast_counts": service.copies_like(conn, [row["id"] for row in result.rows], **key),
         "fast_key": key,
         "options": options,
-        "only": only_switch(q, "input", "loc", place),
+        "only": only_switch(q, view, "loc", place),
     }
 
 
 def deck_mode_context(
-    request: Request, conn: sqlite3.Connection, q: str, result: search.Result
+    request: Request, conn: sqlite3.Connection, q: str, result: search.Result, view: str
 ) -> dict[str, object]:
     chosen = mode.choice(request, conn)
     counts: dict[tuple[str, str], int] = {}
@@ -287,7 +303,7 @@ def deck_mode_context(
     return {
         "deck_choice": chosen,
         "deck_counts": counts,
-        "only": only_switch(q, "deck", "deck", chosen.deck["name"] if chosen.deck else None),
+        "only": only_switch(q, view, "deck", chosen.deck["name"] if chosen.deck else None),
     }
 
 

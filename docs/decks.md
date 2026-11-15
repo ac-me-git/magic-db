@@ -18,8 +18,9 @@ page, under *Name, format and notes*. Then add cards in any of these ways:
   quantity, and whether it goes in the main deck or the sideboard.
 - **From a card's page**: "Add to the deck".
 - **From a search, in deck mode**: search as usual (say `t:human c:wg`), then choose
-  **Deck** beside Images, List and Fast input. Pick the deck and the board at the top;
-  under every card, + puts one more copy in it and − takes one out. The switch *Only
+  **Deck** above the results (as Images or as a List). Pick the deck and the board at
+  the top; on every card, + puts one more copy in it and − takes one out. On images the
+  buttons are faint until you point at the card. The switch *Only
   cards in this deck* limits the search to the cards already there (it writes
   `deck:"name"` into the search box); with *Search only my collection* on as well, you
   see only cards you own.

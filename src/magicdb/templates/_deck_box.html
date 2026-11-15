@@ -11,6 +11,19 @@
 </span>
 {%- endmacro %}
 
+{# The form around − N +: the deck and board chosen above the results. Clicks are one more
+   or one less, so a queued click needs nothing from the answer before it. #}
+{% macro deck_form(card) -%}
+<form class="deck-form" method="post" action="/deckmode/card" hx-post="/deckmode/card"
+      hx-target="find .deck-count" hx-swap="outerHTML" hx-sync="this:queue all">
+  <input type="hidden" name="deck" value="{{ deck_choice.deck.id }}">
+  <input type="hidden" name="board" value="{{ deck_choice.board }}">
+  <input type="hidden" name="printing" value="{{ card.id }}">
+  <input type="hidden" name="next" value="{{ here }}">
+  {{ deck_count(card, deck_counts.get((card.oracle_id, deck_choice.board), 0)) }}
+</form>
+{%- endmacro %}
+
 {# A link drawn as a switch: it reloads the search with the filter written in or taken out,
    so the search box shows it. #}
 {% macro only_switch(only, label) -%}

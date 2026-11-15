@@ -345,3 +345,86 @@ def test_the_collection_switch_still_works(client):
     assert search.with_collection("t:elf", True) == f"t:elf {search.COLLECTION_TERM}"
     assert search.with_collection(f"t:elf {search.COLLECTION_TERM}", False) == "t:elf"
     assert search.in_collection(f"(t:elf) {search.COLLECTION_TERM}")
+
+
+# --- both modes in both layouts -------------------------------------------------------
+
+
+def views_links(page):
+    """{label: (view in the address, is current)} of the links above the results."""
+    bar = page.split('<p class="views">')[1].split("</p>")[0]
+    found = {}
+    for tag, label in re.findall(r"(<a [^>]*>)([^<]+)</a>", bar):
+        href = re.search(r'href="([^"]+)"', tag).group(1).replace("&amp;", "&")
+        view = parse_qs(urlsplit(href).query).get("view", ["grid"])[0]
+        found[label] = (view, 'aria-current="true"' in tag)
+    return found
+
+
+def test_a_mode_keeps_the_layout_and_turns_off_with_its_own_link(client):
+    links = views_links(search_page(client, "bolt", view="grid"))
+    assert links["Fast input"] == ("input-grid", False) and links["Deck"] == ("deck", False)
+    links = views_links(search_page(client, "bolt", view="list"))
+    assert links["Fast input"] == ("input", False) and links["Deck"] == ("deck-list", False)
+    links = views_links(search_page(client, "bolt", view="input-grid"))
+    assert links["Images"] == ("input-grid", True) and links["List"] == ("input", False)
+    assert links["Fast input"] == ("grid", True)  # pressed again: off, still images
+    assert links["Deck"] == ("deck", False)  # one mode at a time
+    links = views_links(search_page(client, "bolt", view="deck-list"))
+    assert links["Deck"] == ("list", True) and links["Images"] == ("deck", False)
+
+
+def test_fast_input_as_images_lays_the_boxes_over_the_cards(client, card):
+    page = search_page(client, f"set:{card['set']}", view="input-grid")
+    assert 'class="sort-line"' in page and 'class="card-grid"' in page  # as a plain search
+    assert "fast-list" not in page
+    items = page.split('<ul class="card-grid">')[1].split("</ul>")[0].split("<li>")[1:]
+    first = items[0]
+    face = first.split('<div class="card-face">')[1].split("</div>\n    </div>")[0]
+    assert '<div class="card-tools fast-tools">' in face  # over the image, not under it
+    assert face.count('class="bigcheck') == 2 and 'class="tool-label"' in face
+    assert 'hx-sync="closest li:queue all"' in face
+    assert 'id="owned-' in face  # the badge a click redraws
+    assert len(items) == page.count('name="finish" value="foil"')  # one card per printing
+
+
+def test_a_box_on_an_image_ticks_like_one_in_the_list(client, card, fixture_cards):
+    paper = next(c for c in fixture_cards if "nonfoil" in c["finishes"] and not c["digital"])
+    data = {"printing": paper["id"], "finish": "nonfoil", "action": "add"}
+    answer = client.post("/fast/toggle", data=data, headers=HTMX)
+    assert 'aria-checked="true"' in answer.text
+    page = search_page(client, f'!"{paper["name"]}" set:{paper["set"]}', view="input-grid")
+    assert 'class="bigcheck is-on"' in page
+
+
+def test_deck_mode_as_a_list_puts_the_buttons_where_the_boxes_are(client, card):
+    deck = make_deck(client, "Humans")
+    click(client, deck, card)
+    page = search_page(client, f'!"{card["name"]}" unique:prints', view="deck-list")
+    assert 'class="card-list fast-list deck-list"' in page and "card-grid" not in page
+    row = page.split("<tbody>")[1].split("</tbody>")[0]
+    assert row.count("<tr>") == 1  # one row per card
+    cells = row.split("<td")
+    assert 'class="deck-count"' in cells[-1] and shown(row) == 1  # the last column
+    assert ">Main deck</th>" in page
+    assert 'class="sorter' in page.split("<thead>")[1].split("</thead>")[0]
+
+
+def test_deck_mode_as_images_lays_the_buttons_over_the_card(client, card):
+    make_deck(client, "Humans")
+    page = search_page(client, f'!"{card["name"]}"', view="deck")
+    face = page.split('<div class="card-face">')[1].split('<span class="caption">')[0]
+    assert '<div class="card-tools deck-tools">' in face and 'class="deck-count"' in face
+    assert f'<span class="set-code">{card["set"]}</span>' in page.split("card-grid")[1]
+
+
+def test_the_controls_on_images_are_faint_until_pointed_at():
+    from pathlib import Path
+
+    import magicdb
+
+    css = (Path(magicdb.__file__).parent / "static" / "app.css").read_text(encoding="utf-8")
+    faint = re.search(r"\.card-tools form \{[^}]*opacity: ([\d.]+)", css)
+    assert faint and float(faint.group(1)) < 0.5
+    assert re.search(r"\.card-face:hover \.card-tools form,[^{]*\{\s*opacity: 1;", css)
+    assert "@media (hover: none)" in css

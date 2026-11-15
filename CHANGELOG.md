@@ -2,10 +2,13 @@
 
 ## Unreleased
 
-- **Deck mode**, a fourth view of the search results beside Images, List and Fast
-  input: one image per card with − N + under it. A picker at the top chooses the deck
-  and the board (main deck or sideboard); + puts one more copy there, − takes one out.
-  The number is the copies already in that board.
+- **Deck mode** in the search results: − N + on every card. A picker at the top
+  chooses the deck and the board (main deck or sideboard); + puts one more copy there,
+  − takes one out. The number is the copies already in that board.
+- Fast input and deck mode are now modes, each shown as Images or as a List. On
+  images their controls lie over the card, faint until you point at it, so the grid
+  looks like a plain search; in the list − N + sits where fast input's boxes are.
+  Pressing a mode's link again turns it off.
 - Beside the deck picker, a switch *Only cards in this deck* writes `deck:"name"` into
   the search, or takes it out; fast input has the same switch beside its location,
   *Only cards in this location*, which writes `loc:"name"`. Picking another deck or

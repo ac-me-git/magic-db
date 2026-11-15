@@ -1748,13 +1748,120 @@ a.switch {
   display: inline-block;
 }
 
-/* Deck mode: − N + under every card of the image grid */
+/* Deck mode: − N + beside every card */
 .deck-settings .deck-open {
   align-self: center;
 }
 
-.deck-grid form {
-  margin: 0.3rem 0 0;
+.deck-form {
+  margin: 0;
+}
+
+.deck-cell {
+  width: 9rem;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .deck-cell {
+    width: 8rem;
+  }
+}
+
+.deck-list td {
+  vertical-align: middle;
+}
+
+/* Fast input and deck mode on the image grid: the controls lie over the image, faint so
+   that the card stays readable, and come forward when the pointer is on the card or a
+   control has the focus. Ticked boxes and cards already in the deck stay a little
+   clearer, so what is done can be seen at a glance. Without a mouse (a phone) there is
+   no hovering: they are drawn clearer from the start. */
+.card-face > a {
+  display: block;
+}
+
+.card-tools {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  pointer-events: none; /* the image under the gaps still opens the card */
+}
+
+.card-tools form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  margin: 0;
+  pointer-events: auto;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+}
+
+.card-tools form:has(.is-on),
+.card-tools form:has(.deck-n.is-in) {
+  opacity: 0.7;
+}
+
+.card-face:hover .card-tools form,
+.card-tools form:focus-within {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .card-tools form {
+    opacity: 0.75;
+  }
+
+  .card-tools form:has(.is-on),
+  .card-tools form:has(.deck-n.is-in) {
+    opacity: 0.95;
+  }
+}
+
+.card-tools .bigcheck:not(.is-on),
+.card-tools .deck-step {
+  background: rgb(15 15 25 / 55%);
+}
+
+.card-tools .bigcheck:not(.is-on):disabled {
+  background: rgb(15 15 25 / 25%);
+}
+
+.card-tools .deck-step:not(:disabled) {
+  color: #ffffff;
+}
+
+.card-tools .deck-n {
+  min-width: 2rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.5rem;
+  background: rgb(15 15 25 / 70%);
+  color: #ffffff;
+}
+
+.tool-label {
+  padding: 0 0.35rem;
+  border-radius: 0.4rem;
+  background: rgb(15 15 25 / 70%);
+  color: #ffffff;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.views-gap {
+  display: inline-block;
+  width: 0.75rem;
+}
+
+.views a {
+  white-space: nowrap;
 }
 
 .deck-count {

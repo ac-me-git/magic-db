@@ -13,6 +13,19 @@
 </span>
 {%- endmacro %}
 
+{# The form around a box. `queue` is the element whose clicks wait for each other (the row
+   of a list, the card of the image grid); `label` writes the finish beside the box. #}
+{% macro fast_form(card, finish, back, queue, label=false) -%}
+<form method="post" action="/fast/toggle" hx-post="/fast/toggle"
+      hx-target="find .fast-box" hx-swap="outerHTML" hx-sync="closest {{ queue }}:queue all">
+  <input type="hidden" name="printing" value="{{ card.id }}">
+  <input type="hidden" name="finish" value="{{ finish }}">
+  <input type="hidden" name="next" value="{{ back }}">
+  {{ fast_box(card, finish, fast_counts.get((card.id, finish), 0)) }}
+  {%- if label %}<span class="tool-label" aria-hidden="true">{{ t("finish." ~ finish) }}</span>{% endif %}
+</form>
+{%- endmacro %}
+
 {% macro fast_badge(card, total, oob=false) -%}
 <span id="owned-{{ card.id }}"{% if oob %} hx-swap-oob="true"{% endif %}>
   {%- if total %}<span class="owned" title="{{ t('results.owned', n=total) }}">×{{ total }}</span>{% endif -%}

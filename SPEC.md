@@ -523,13 +523,32 @@ released one and when that was last asked.
 - The safety lock does not block these (`/admin/…` is exempt); the same-origin check
   and the optional password do apply.
 
-**Fast input** (`view=input`, a third view of the search results beside Images and
-List). For entering a new set quickly: search as usual (`set:xyz`), sort by collector
-number or by name with the column headings, and tick boxes.
+**Layouts and modes of the results.** A view is a layout — Images or List — and a mode:
+none, Fast input or Deck mode. The links above the results show both: Images · List,
+then Fast input · Deck. A mode's link turns it on, keeping the layout; pressed again
+(it says so in its tooltip) it turns it off. One mode at a time. `view=` names the
+pair: `grid`, `list`, `input` (fast input as a list), `input-grid`, `deck` (deck mode
+as images), `deck-list` — `input` and `deck` keep the meaning they had before modes
+had both layouts, so saved addresses still work (`web.VIEW_NAMES`).
 
-- Always one row per *printing* (as `unique:prints`), up to 500 rows per page so that a
-  whole set is one page. Columns: set and number, name, and one big box each for
-  non-foil and foil. No images.
+- In **List** layout a mode uses fast input's table: set and number, name with the type
+  under it, then the mode's controls (two boxes, or − N +) in the last columns.
+- In **Images** layout a mode keeps the plain grid exactly — sort line, image, owned
+  badge bottom left, name, set and number — and lays its controls *over* the image, in
+  the middle (`.card-tools`). They are faint (opacity 0.35) and come forward when the
+  pointer is on the card or a control has the focus; a ticked box or a card already in
+  the deck is a little clearer (0.7). On a device without hover (`@media (hover:
+  none)`) they start clearer (0.75). The image and the name stay links to the card; the
+  controls are forms beside the link, not inside it, and the gaps between them let a
+  click through to the image.
+
+**Fast input** (`view=input` or `input-grid`). For entering a new set quickly: search as
+usual (`set:xyz`), sort by collector number or by name, and tick boxes.
+
+- Always one row (or image) per *printing* (as `unique:prints`), up to 500 per page so
+  that a whole set is one page. In the list: set and number, name, and one big box each
+  for non-foil and foil; on an image the two boxes carry the finish's name under them.
+  Clicks on one card are queued per row or per image.
 - A box is ticked when the collection has at least one copy of that printing in that
   finish *with the condition, language and location shown above the table*. Ticking
   adds one copy with those traits; unticking takes one back. A cell holds the box and
@@ -559,11 +578,12 @@ number or by name with the column headings, and tick boxes.
   to the new one; with HTMX the answer is then `HX-Redirect`, so the search box shows
   the new search. `loc:` matches names that *contain* the text (§6.2), unchanged.
 
-**Deck mode** (`view=deck`, a fourth view of the search results). For building a deck
-from a search: look for white and green humans, press + under the ones you want.
+**Deck mode** (`view=deck` or `deck-list`). For building a deck from a search: look for
+white and green humans, press + on the ones you want.
 
-- One image per *card* (as `unique:cards`, whatever the query says): a deck names
-  cards, not printings (§14). Under each image, − N +: N is the copies of the card in
+- One image or row per *card* (as `unique:cards`, whatever the query says): a deck
+  names cards, not printings (§14). On each, − N + (over the image, or in the last
+  column of the list, whose heading names the board): N is the copies of the card in
   the chosen board of the chosen deck. + adds one copy (`decks.service.add_card`), −
   takes one out and the last one takes the row away (`take_card`); − is disabled at 0.
   The owned badge on the image is the usual one.

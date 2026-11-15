@@ -1,7 +1,7 @@
-{% macro nav(label, page, target_view, current=false, rel=none) -%}
+{% macro nav(label, page, target_view, current=false, rel=none, title=none) -%}
 <a href="{{ search_url(q, page, target_view) }}" hx-get="{{ search_url(q, page, target_view) }}"
    hx-target="#results" hx-swap="innerHTML show:window:top" hx-push-url="true"
-   {%- if current %} aria-current="true"{% endif %}{% if rel %} rel="{{ rel }}"{% endif %}>{{ label }}</a>
+   {%- if current %} aria-current="true"{% endif %}{% if rel %} rel="{{ rel }}"{% endif %}{% if title %} title="{{ title }}"{% endif %}>{{ label }}</a>
 {%- endmacro %}
 
 {# A link that sorts by `key`; on the order in use it turns it round and shows which way. #}
@@ -10,7 +10,8 @@
    {%- if result.order == key %} title="{{ t('results.sorted.' ~ result.direction) }}"{% endif %}>{{ label }}{% if result.order == key %}<span aria-hidden="true"> {{ "▲" if result.direction == "asc" else "▼" }}</span>{% endif %}</a>
 {%- endmacro %}
 
-{% from "_deck_box.html" import deck_count, only_switch with context %}
+{% from "_deck_box.html" import deck_form, only_switch with context %}
+{% from "_fast_box.html" import fast_form, fast_badge with context %}
 
 {% macro badge(card) -%}
 {% set have = owned.get(card.id if result.unique == "prints" else card.oracle_id) %}
@@ -29,14 +30,17 @@
     {{ t("results.count." ~ result.unique ~ (".one" if result.total == 1 else ""), n=result.total | count) }}
   </p>
   <p class="views">
-    {{ nav(t("results.view.grid"), result.page, "grid", current=(view == "grid")) }}
-    {{ nav(t("results.view.list"), result.page, "list", current=(view == "list")) }}
-    {{ nav(t("results.view.input"), 1, "input", current=(view == "input")) }}
-    {{ nav(t("results.view.deck"), 1, "deck", current=(view == "deck")) }}
+    {{ nav(t("results.view.grid"), result.page, views[("grid", mode)], current=(layout == "grid")) }}
+    {{ nav(t("results.view.list"), result.page, views[("list", mode)], current=(layout == "list")) }}
+    <span class="views-gap" aria-hidden="true"></span>
+    {# a mode is turned on and off by its own link; the layout stays as it is #}
+    {% for name in ("input", "deck") %}
+    {{ nav(t("results.view." ~ name), 1, views[(layout, "" if mode == name else name)], current=(mode == name), title=(t("results.mode.off") if mode == name else none)) }}
+    {% endfor %}
   </p>
 </div>
 
-{% if view == "deck" %}
+{% if mode == "deck" %}
 {% if locked %}{% include "_locked_notice.html" %}{% endif %}
 {% if deck_choice.deck is none %}
 <p class="hint">{{ t("deckmode.no_decks") }} <a href="/decks">{{ t("nav.decks") }}</a></p>
@@ -64,7 +68,7 @@
 </form>
 <p class="hint">{{ t("deckmode.hint") }}</p>
 {% endif %}
-{% elif view == "input" %}
+{% elif mode == "input" %}
 {% if locked %}{% include "_locked_notice.html" %}{% endif %}
 <form class="filters fast-settings" method="get" action="/fast/settings"
       hx-get="/fast/settings" hx-trigger="change" hx-target="#results" hx-swap="innerHTML">
@@ -109,7 +113,7 @@
   </p>
   {% endif %}
 </div>
-{% elif view == "input" %}
+{% elif layout == "list" and mode == "input" %}
 <div class="table-wrap">
 <table class="card-list fast-list">
   <thead>
@@ -128,31 +132,30 @@
   </tbody>
 </table>
 </div>
-{% elif view == "deck" %}
-<ul class="card-grid deck-grid">
-  {% for card in result.rows %}
-  <li>
-    <a href="/card/{{ card.id }}">
-      <span class="card-face">
-        <img src="/img/normal/{{ card.id }}/front" alt="" width="488" height="680" loading="lazy">
-        {{- badge(card) }}
-      </span>
-      <span class="caption">{{ card.name }}</span>
-    </a>
-    {% if deck_choice.deck is not none %}
-    <form method="post" action="/deckmode/card" hx-post="/deckmode/card"
-          hx-target="find .deck-count" hx-swap="outerHTML" hx-sync="this:queue all">
-      <input type="hidden" name="deck" value="{{ deck_choice.deck.id }}">
-      <input type="hidden" name="board" value="{{ deck_choice.board }}">
-      <input type="hidden" name="printing" value="{{ card.id }}">
-      <input type="hidden" name="next" value="{{ here }}">
-      {{ deck_count(card, deck_counts.get((card.oracle_id, deck_choice.board), 0)) }}
-    </form>
-    {% endif %}
-  </li>
-  {% endfor %}
-</ul>
-{% elif view == "list" %}
+{% elif layout == "list" and mode == "deck" %}
+{# as fast input's list: − N + where the two boxes are #}
+<div class="table-wrap">
+<table class="card-list fast-list deck-list">
+  <thead>
+    <tr>
+      <th>{{ sorter(t("card.set"), "set") }}</th>
+      <th>{{ sorter(t("card.name"), "name") }}</th>
+      <th class="deck-cell">{{ t("deck.board." ~ deck_choice.board) if deck_choice.deck is not none else "" }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for card in result.rows %}
+    <tr>
+      <td class="nowrap"><span class="set-code">{{ card.set_code }}</span> {{ card.collector_number }}</td>
+      <td><a href="/card/{{ card.id }}">{{ card.name }}</a>{{ badge(card) }}
+          <span class="sub">{{ card.type_line }}</span></td>
+      <td class="deck-cell">{% if deck_choice.deck is not none %}{{ deck_form(card) }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% elif layout == "list" %}
 <div class="table-wrap">
 <table class="card-list">
   <thead>
@@ -186,6 +189,25 @@
 </p>
 <ul class="card-grid">
   {% for card in result.rows %}
+  {% if mode %}
+  {# the same card as below, with the mode's controls laid over the image: the image and
+     the name stay links, the controls are forms beside them, not inside #}
+  <li>
+    <div class="card-face">
+      <a href="/card/{{ card.id }}" tabindex="-1"><img src="/img/normal/{{ card.id }}/front" alt="" width="488" height="680" loading="lazy"></a>
+      {%- if mode == "input" %}{{ fast_badge(card, owned.get(card.id)) }}{% else %}{{ badge(card) }}{% endif %}
+      <div class="card-tools{% if mode == 'input' %} fast-tools{% else %} deck-tools{% endif %}">
+        {%- if mode == "input" %}
+        {% for finish in ("nonfoil", "foil") %}{{ fast_form(card, finish, here, "li", label=true) }}{% endfor %}
+        {%- elif deck_choice.deck is not none %}{{ deck_form(card) }}{% endif %}
+      </div>
+    </div>
+    <a href="/card/{{ card.id }}">
+      <span class="caption">{{ card.name }}</span>
+      <span class="sub"><span class="set-code">{{ card.set_code }}</span> {{ card.collector_number }}</span>
+    </a>
+  </li>
+  {% else %}
   <li>
     <a href="/card/{{ card.id }}">
       <span class="card-face">
@@ -196,6 +218,7 @@
       <span class="sub"><span class="set-code">{{ card.set_code }}</span> {{ card.collector_number }}</span>
     </a>
   </li>
+  {% endif %}
   {% endfor %}
 </ul>
 {% endif %}
