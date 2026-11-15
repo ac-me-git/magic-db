@@ -481,6 +481,7 @@
   "results.view.input": "Inserimento rapido",
   "results.view.deck": "Mazzo",
   "results.mode.off": "Premi di nuovo per spegnerla",
+  "results.mode.help": "Come funziona?",
   "fast.apply": "Applica",
   "fast.hint": "Spunta una casella per aggiungere una copia di quella carta alla collezione; togli la spunta per toglierla. Qui una copia per finitura: per averne di più usa la pagina della carta. Il numero accanto al nome conta tutte le copie che hai di quella stampa.",
   "fast.not_printed": "Questa stampa non esiste con questa finitura",

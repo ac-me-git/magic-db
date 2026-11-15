@@ -22,7 +22,9 @@
 - Fast input and deck mode are modes, each shown as Images or as a List. On images
   their controls lie over the card art, faint until you point at it, so the grid looks
   like a plain search; in the list − N + sits where fast input's boxes are. Pressing a
-  mode's link again turns it off.
+  mode's link again turns it off. What a mode does is explained by the (i) beside its
+  link, no longer in a paragraph above the results.
+- The header has a background of its own, a shade apart from the page.
 - The footer has a *Contact me* link with the Reddit icon, beside *Buy me a coffee*.
 
 ## 1.3.0 — 2026-11-15

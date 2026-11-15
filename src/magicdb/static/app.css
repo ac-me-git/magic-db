@@ -12,6 +12,7 @@
   --switch-on: #c8881a;
   --switch-off: #cdc9dc;
   --switch-off-icon: #86829c;
+  --header: #e9e6f4;
   color-scheme: light dark;
 }
 
@@ -37,6 +38,7 @@
     --switch-on: #e0a030;
     --switch-off: #45425a;
     --switch-off-icon: #7a7794;
+    --header: #0d0c12;
   }
 }
 
@@ -54,6 +56,7 @@
   --switch-on: #e0a030;
   --switch-off: #45425a;
   --switch-off-icon: #7a7794;
+  --header: #0d0c12;
   color-scheme: dark;
 }
 
@@ -125,7 +128,7 @@ button.primary,
   align-items: center;
   gap: 0.75rem;
   padding: 0.6rem 1rem;
-  background: var(--surface);
+  background: var(--header);
   border-bottom: 1px solid var(--border);
 }
 
@@ -484,7 +487,13 @@ main {
 
 .views {
   display: flex;
+  align-items: baseline;
   gap: 0.75rem;
+}
+
+/* the same room as the count beside it, a <p> */
+.results-bar .views {
+  margin: 1em 0;
 }
 
 .views a[aria-current] {
@@ -1889,4 +1898,52 @@ a.switch {
 .deck-n.is-in {
   color: var(--text);
   font-weight: 700;
+}
+
+/* the (i) beside a mode in use: its explanation in a small panel, open until pressed
+   again, a click elsewhere or Escape (app.js) */
+.info {
+  position: relative;
+  align-self: center;
+}
+
+.info > summary {
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 1px solid var(--muted);
+  border-radius: 50%;
+  color: var(--muted);
+  font: italic 600 0.75rem/1 Georgia, serif;
+  list-style: none;
+  cursor: pointer;
+}
+
+.info > summary::-webkit-details-marker {
+  display: none;
+}
+
+.info > summary:hover,
+.info[open] > summary {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.info-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 30;
+  width: 20rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 400;
+  white-space: normal;
 }

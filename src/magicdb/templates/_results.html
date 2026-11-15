@@ -29,15 +29,22 @@
   <p class="count">
     {{ t("results.count." ~ result.unique ~ (".one" if result.total == 1 else ""), n=result.total | count) }}
   </p>
-  <p class="views">
+  {# a <div>: the (i) is a <details>, which a <p> cannot hold #}
+  <div class="views">
     {{ nav(t("results.view.grid"), result.page, views[("grid", mode)], current=(layout == "grid")) }}
     {{ nav(t("results.view.list"), result.page, views[("list", mode)], current=(layout == "list")) }}
     <span class="views-gap" aria-hidden="true"></span>
     {# a mode is turned on and off by its own link; the layout stays as it is #}
     {% for name in ("input", "deck") %}
     {{ nav(t("results.view." ~ name), 1, views[(layout, "" if mode == name else name)], current=(mode == name), title=(t("results.mode.off") if mode == name else none)) }}
+    {%- if mode == name and not (name == "deck" and deck_choice.deck is none) %}
+    <details class="info">
+      <summary title="{{ t('results.mode.help') }}" aria-label="{{ t('results.mode.help') }}">i</summary>
+      <span class="info-panel">{{ t("deckmode.hint" if name == "deck" else "fast.hint") }}</span>
+    </details>
+    {%- endif %}
     {% endfor %}
-  </p>
+  </div>
 </div>
 
 {% if mode == "deck" %}
@@ -59,11 +66,9 @@
   {% if only %}{{ only_switch(only, t("deckmode.only")) }}{% endif %}
   <a class="deck-open" href="/decks/{{ deck_choice.deck.id }}">{{ t("deckmode.open") }}</a>
 </form>
-<p class="hint">{{ t("deckmode.hint") }}</p>
 {% endif %}
 {% elif mode == "input" %}
 {% if locked %}{% include "_locked_notice.html" %}{% endif %}
-<p class="hint">{{ t("fast.hint") }}</p>
 {% endif %}
 
 {% if not result.rows %}

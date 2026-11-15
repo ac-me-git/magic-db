@@ -79,6 +79,7 @@ def test_without_decks_the_view_says_so_and_links_to_the_decks(client):
     page = search_page(client, "bolt")
     assert "You have no decks yet" in page and 'href="/decks"' in page
     assert "deck-count" not in page and 'action="/deckmode/settings"' not in page
+    assert 'class="info"' not in page  # nothing to explain yet
 
 
 def test_the_view_shows_the_deck_picker_and_buttons_per_card(client, card):
@@ -90,6 +91,14 @@ def test_the_view_shows_the_deck_picker_and_buttons_per_card(client, card):
     assert page.count('class="deck-count"') == 1
     assert shown(page) == 0
     assert re.search(r'value="remove" class="deck-step"[^>]*disabled', page)  # nothing to take
+
+
+def test_the_explanation_is_behind_an_info_button(client, card):
+    make_deck(client, "Humans")
+    page = search_page(client, "bolt")
+    info = page.split('<details class="info">', 1)[1].split("</details>", 1)[0]
+    assert "Press + to put one more copy" in info
+    assert page.count("Press + to put one more copy") == 1
 
 
 def test_plus_and_minus_change_the_copies_in_the_deck(client, catalog, card):
@@ -311,7 +320,7 @@ def test_the_collection_switch_still_works(client):
 
 def views_links(page):
     """{label: (view in the address, is current)} of the links above the results."""
-    bar = page.split('<p class="views">')[1].split("</p>")[0]
+    bar = page.split('<div class="views">')[1].split("</div>")[0]
     found = {}
     for tag, label in re.findall(r"(<a [^>]*>)([^<]+)</a>", bar):
         href = re.search(r'href="([^"]+)"', tag).group(1).replace("&amp;", "&")

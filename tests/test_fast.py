@@ -73,6 +73,15 @@ def test_results_offer_fast_input_as_a_third_view(client):
     page = client.get("/search?q=bolt").text
     assert ">Fast input</a>" in page and "view=input" in page
     assert "bigcheck" not in page  # the boxes are only in that view
+    assert 'class="info"' not in page  # nor the (i) that explains them
+
+
+def test_the_explanation_is_behind_an_info_button(client, both):
+    page = client.get(f"/search?q=set:{both['set']}&view=input").text
+    info = page.split('<details class="info">', 1)[1].split("</details>", 1)[0]
+    assert 'aria-label="How does it work?"' in info
+    assert "Tick a box to add one copy" in info
+    assert page.count("Tick a box to add one copy") == 1
 
 
 def test_input_view_has_two_boxes_per_printing(client, both):

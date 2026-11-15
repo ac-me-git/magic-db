@@ -449,6 +449,7 @@
   "results.view.input": "Fast input",
   "results.view.deck": "Deck",
   "results.mode.off": "Press again to turn it off",
+  "results.mode.help": "How does it work?",
   "fast.apply": "Apply",
   "fast.hint": "Tick a box to add one copy of that card to your collection; untick it to take the copy back. One copy per finish here: for more, use the card's page. The number beside the name counts every copy you own of that printing.",
   "fast.not_printed": "This printing does not exist in this finish",

@@ -1,7 +1,7 @@
 // The only script magic-db writes itself. Everything works without it; it adds what
 // HTML alone cannot do for the search suggestions: arrow keys, Escape, closing when
-// you click somewhere else; the same closing for the menu; and waiting for the program
-// to come back after an update.
+// you click somewhere else; the same closing for the menu and the (i) panels; and
+// waiting for the program to come back after an update.
 
 (function () {
   "use strict";
@@ -53,16 +53,29 @@
   // button is pressed again. Close it on a click elsewhere, or with Escape.
   var menu = document.querySelector(".site-header .menu");
 
+  // The (i) beside a mode is a <details> too, and comes and goes with the results.
+  function infos() {
+    return Array.prototype.slice.call(document.querySelectorAll("details.info[open]"));
+  }
+
   document.addEventListener("click", function (event) {
     if (list && !event.target.closest(".search-field")) clear();
     if (menu && menu.open && !menu.contains(event.target)) menu.open = false;
+    infos().forEach(function (info) {
+      if (!info.contains(event.target)) info.open = false;
+    });
   });
 
   document.addEventListener("keydown", function (event) {
-    if (menu && menu.open && event.key === "Escape") {
+    if (event.key !== "Escape") return;
+    if (menu && menu.open) {
       menu.open = false;
       menu.querySelector("summary").focus();
     }
+    infos().forEach(function (info) {
+      info.open = false;
+      info.querySelector("summary").focus();
+    });
   });
 
   // A field marked to be typed over (the name of a deck just made): ready to type.
