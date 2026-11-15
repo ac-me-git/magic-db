@@ -620,6 +620,20 @@ main {
   flex: none;
 }
 
+/* the card page's last section: its title, and the switch on the right */
+.card-add-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.card-add-head h2 {
+  margin: 0;
+}
+
 /* on a phone the sliders show their icons only, so that the count, both sliders and the
    (i) share one line; the menu has room for the names */
 @media (max-width: 40rem) {

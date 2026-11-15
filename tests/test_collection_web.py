@@ -68,7 +68,7 @@ def test_name_suggestions_for_htmx(client):
 def test_add_then_the_finish_sticks(client, catalog, ids):
     bolt = ids("Lightning Bolt", "m10")
     response = add(client, bolt, quantity="2", finish="foil")
-    assert (response.status_code, response.headers["location"]) == (303, f"/card/{bolt}#mine")
+    assert (response.status_code, response.headers["location"]) == (303, f"/card/{bolt}#add")
     assert f"{forms.STICKY_COOKIE}=" in response.headers["set-cookie"]
     assert rows(catalog) == [("Lightning Bolt", "m10", 2, "foil")]
 
@@ -152,7 +152,7 @@ def test_card_page_add_form_and_my_copies(client, catalog, ids):
 def test_redirect_after_add_stays_on_this_site(client, ids):
     sol = ids("Sol Ring", "c21")
     response = add(client, sol, next="https://evil.example/")
-    assert response.headers["location"] == f"/card/{sol}#mine"
+    assert response.headers["location"] == f"/card/{sol}#add"
 
 
 # --- badges in search results ---------------------------------------------------------

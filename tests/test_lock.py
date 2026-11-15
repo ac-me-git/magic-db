@@ -101,13 +101,14 @@ def test_switch_redirect_stays_on_this_site(client):
     assert set_mode(client, "input", "https://evil.example/").headers["location"] == "/"
 
 
-def test_the_switch_is_above_the_search_results_only(stocked, bolt):
+def test_the_switch_is_above_the_search_results_and_on_the_card_page(stocked, bolt):
     assert stocked.get("/search?q=bolt").text.count('class="slider edit-switch"') == 1
     partial = stocked.get("/search?q=bolt", headers={"HX-Request": "true"}).text
     assert 'class="menu' not in partial  # a fragment has no page chrome
     assert partial.count('class="slider edit-switch"') == 1  # but the results bar has it
-    for path in ("/", f"/card/{bolt}", "/stats", "/admin", "/syntax"):
+    for path in ("/", "/stats", "/admin", "/syntax"):
         assert "edit-switch" not in stocked.get(path).text, path
+    assert stocked.get(f"/card/{bolt}").text.count('class="slider edit-switch"') == 1
 
 
 def test_the_old_lock_is_gone(client):

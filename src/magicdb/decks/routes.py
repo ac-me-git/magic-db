@@ -162,8 +162,12 @@ def add_card_to(
     quantity: Field = "1",
     next: Field = "",
 ) -> Response:
-    """The card page's form: the deck is one of its fields, not part of the address."""
-    return add_card(request, conn, deck, "", printing, quantity, next)
+    """The card page's form: the deck is one of its fields, not part of the address.
+    The deck is remembered, as deck mode's picker does, so both offer it next time."""
+    response = add_card(request, conn, deck, "", printing, quantity, next)
+    if response.status_code == 303:
+        mode.remember(response, as_id(deck))
+    return response
 
 
 # --- deck mode: + and − beside the cards of a search ------------------------------------

@@ -56,7 +56,7 @@ def add(
         service.add_entry(conn, printing, quantity, finish=finish)
     except CollectionError as error:
         return web.card_view(request, conn, printing, error)
-    response = redirect(safe_next(next, f"/card/{printing}#mine"))
+    response = redirect(safe_next(next, f"/card/{printing}#add"))
     forms.write_sticky(response, finish)
     return response
 

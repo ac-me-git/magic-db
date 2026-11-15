@@ -435,6 +435,8 @@
   "card.decks": "Nei miei mazzi",
   "card.decks.none": "Questa carta non è in nessuno dei tuoi mazzi.",
   "card.decks.add": "Aggiungi al mazzo",
+  "card.add.title": "Aggiungi",
+  "card.add.locked": "Bloccato: scegli Inserimento collezione per aggiungere copie di questa stampa, o Costruzione mazzi per mettere la carta in un mazzo.",
   "error.bad_deck_name": "Un mazzo deve avere un nome di al massimo 80 caratteri.",
   "error.deck_exists": "Esiste già un mazzo chiamato {name}.",
   "error.unknown_deck": "Questo mazzo non esiste.",

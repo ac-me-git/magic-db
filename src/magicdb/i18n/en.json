@@ -404,6 +404,8 @@
   "card.decks": "In my decks",
   "card.decks.none": "This card is in none of your decks.",
   "card.decks.add": "Add to the deck",
+  "card.add.title": "Add",
+  "card.add.locked": "Locked: choose Collection input to add copies of this printing, or Deck building to put the card in a deck.",
   "error.bad_deck_name": "A deck needs a name of at most 80 characters.",
   "error.deck_exists": "There is already a deck called {name}.",
   "error.unknown_deck": "That deck does not exist.",

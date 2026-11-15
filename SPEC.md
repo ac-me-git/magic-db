@@ -435,7 +435,7 @@ page are the ones most used while sorting physical cards.
 on this site (`safe_next`), so a reload never repeats it. Copies enter the collection
 from a card's page, from fast input or by importing a file, and only as printings the
 catalog has: a card Scryfall does not list cannot be added. The card page's add form
-(`POST /add`) goes back to `/card/{id}#mine`; a refused add shows the card page again,
+(`POST /add`) goes back to `/card/{id}#add`; a refused add shows the card page again,
 status 400, with the reason above the form, and a printing the catalog does not have
 gets 404. The form asks for a quantity and a finish, and keeps the finish of the last
 add in the `magicdb_add` cookie. There are no locations, conditions or languages (§5):
@@ -443,7 +443,13 @@ add in the `magicdb_add` cookie. There are no locations, conditions or languages
 fast input); all of it also works as plain page loads. Without a `next`, a change to
 an entry goes back to `/stats`. Search results show a
 badge with the copies owned: of every printing in card mode, of that printing in print
-mode. On a card image it sits in the bottom left corner, clear of the mana cost. The card page lists every copy of the card and adds the printing shown.
+mode. On a card image it sits in the bottom left corner, clear of the mana cost. The card page lists every copy of the card and the decks that hold it. Its last
+section, *Add*, has the edit switch beside its title (coming back to `#add`) and
+below it what the switch allows: on Collection input the form that adds copies of
+the printing shown; on Deck building a form with every deck in a list and a quantity
+(`POST /deck-cards`), the deck deck mode fills chosen first, and the deck used is
+remembered in the same cookie; without decks, a link to `/decks`; on Locked, a line
+that says which position does what.
 
 **Images.** `/img/small|normal/{id}/{front|back}` serves the file from
 `data/images/`; on a miss it downloads from the URL stored in the catalog, saves it,
@@ -711,8 +717,8 @@ with three positions, which replaced the old safety lock.
   would allow it.
 - The switch is three buttons of one form (`POST /mode` with `state` and `next`), the
   one in use pressed (`aria-pressed`): it works without JavaScript and loads the whole
-  page again, since the search results follow it. It is above the search results only
-  (not in the menu). Locked is drawn in amber, the others in the accent colour.
+  page again, since the search results follow it. It is above the search results and
+  at the bottom of the card page (not in the menu). Locked is drawn in amber, the others in the accent colour.
 - While locked, the menu button carries a small amber padlock and its name says so
   ("Menu · Locked"), so the state shows with the menu closed.
 - Pages do not show the forms and links the switch would refuse. The import, edit and

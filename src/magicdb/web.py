@@ -372,9 +372,8 @@ def card_view(
         printings=printings,
         copies=service.copies_of_card(conn, card["oracle_id"]),
         in_decks=decks.decks_with_card(conn, card["oracle_id"]),
-        all_decks=conn.execute(
-            "SELECT id, name FROM decks ORDER BY name COLLATE NOCASE"
-        ).fetchall(),
+        # the deck the form at the bottom offers first: the one deck mode fills
+        deck_choice=mode.choice(request, conn),
         sticky=forms.read_sticky(request),
         options=forms.options(),
         error=error,

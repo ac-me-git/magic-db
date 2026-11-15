@@ -14,6 +14,7 @@
 {% endmacro %}
 
 {% from "_forms.html" import copy_fields, problem, traits with context %}
+{% from "_edit_switch.html" import edit_switch with context %}
 
 {% block content %}
 <article class="card-page">
@@ -88,21 +89,6 @@
   {% else %}
   <p class="hint">{{ t("copies.none") }}</p>
   {% endif %}
-
-  {% if not locked_collection %}
-  <form class="panel" method="post" action="/add">
-    <h3>{{ t("copies.add_title", set=card.set_code | upper, number=card.collector_number) }}</h3>
-    {{ problem(error) }}
-    <input type="hidden" name="printing" value="{{ card.id }}">
-    <input type="hidden" name="next" value="/card/{{ card.id }}#mine">
-    <div class="fields">
-      {{ copy_fields(sticky, options, 1) }}
-    </div>
-    <div class="actions">
-      <button type="submit" class="primary">{{ t("copies.add") }}</button>
-    </div>
-  </form>
-  {% endif %}
 </section>
 
 <section class="mine" id="decks">
@@ -116,20 +102,52 @@
   {% else %}
   <p class="hint">{{ t("card.decks.none") }}</p>
   {% endif %}
-  {% if not locked_decks and all_decks %}
-  <form class="inline-form" method="post" action="/deck-cards">
+</section>
+
+{# At the bottom: the switch of what may change, and the form it allows here — copies of
+   this printing for the collection, or the card for a deck picked from a list. #}
+<section class="mine card-add" id="add">
+  <div class="card-add-head">
+    <h2>{{ t("card.add.title") }}</h2>
+    {{ edit_switch("/card/" ~ card.id ~ "#add") }}
+  </div>
+  {% if edit_mode == "input" %}
+  <form class="panel" method="post" action="/add">
+    <h3>{{ t("copies.add_title", set=card.set_code | upper, number=card.collector_number) }}</h3>
+    {{ problem(error) }}
     <input type="hidden" name="printing" value="{{ card.id }}">
-    <input type="hidden" name="next" value="/card/{{ card.id }}#decks">
-    <label>{{ t("card.decks.add") }}
-      <select name="deck">
-        {% for deck in all_decks %}<option value="{{ deck.id }}">{{ deck.name }}</option>{% endfor %}
-      </select>
-    </label>
-    <label>{{ t("entry.quantity") }}
-      <input type="number" name="quantity" value="1" min="1" max="999" inputmode="numeric" required>
-    </label>
-    <button type="submit">{{ t("deck.add_submit") }}</button>
+    <input type="hidden" name="next" value="/card/{{ card.id }}#add">
+    <div class="fields">
+      {{ copy_fields(sticky, options, 1) }}
+    </div>
+    <div class="actions">
+      <button type="submit" class="primary">{{ t("copies.add") }}</button>
+    </div>
   </form>
+  {% elif edit_mode == "deck" %}
+  {% if deck_choice.deck is none %}
+  <p class="hint">{{ t("deckmode.no_decks") }} <a href="/decks">{{ t("nav.decks") }}</a></p>
+  {% else %}
+  <form class="panel" method="post" action="/deck-cards">
+    <input type="hidden" name="printing" value="{{ card.id }}">
+    <input type="hidden" name="next" value="/card/{{ card.id }}#add">
+    <div class="fields">
+      <label>{{ t("card.decks.add") }}
+        <select name="deck">
+          {% for deck in deck_choice.decks %}<option value="{{ deck.id }}"{% if deck.id == deck_choice.deck.id %} selected{% endif %}>{{ deck.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>{{ t("entry.quantity") }}
+        <input type="number" name="quantity" value="1" min="1" max="999" inputmode="numeric" required>
+      </label>
+    </div>
+    <div class="actions">
+      <button type="submit" class="primary">{{ t("deck.add_submit") }}</button>
+    </div>
+  </form>
+  {% endif %}
+  {% else %}
+  <p class="hint">{{ t("card.add.locked") }}</p>
   {% endif %}
 </section>
 

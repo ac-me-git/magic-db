@@ -38,6 +38,9 @@
   `haveprint:yes` into the search, or takes it out.
 - The *Sort by* line above the images keeps three orders: name, set and number, price.
   The list's column headings still sort by every column.
+- A card's page ends with *Add*: the same switch, and below it the form it allows —
+  copies of this printing for the collection, or the card for a deck chosen from a
+  list (the deck used last comes first).
 - The header has a background of its own, a shade apart from the page.
 - The footer has a *Contact me* link with the Reddit icon, beside *Buy me a coffee*.
 

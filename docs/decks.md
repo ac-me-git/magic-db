@@ -19,7 +19,8 @@ and, if you like, a note, then *Save*. They stay at the top of the deck's page, 
 
 - **One at a time**, on the deck's page: type the card's name (suggestions appear) and
   the quantity.
-- **From a card's page**: "Add to the deck".
+- **From a card's page**: at the bottom, set the switch to *Deck building*, pick the
+  deck from the list and press "Add to the deck".
 - **From a search, in deck mode**: set the switch above the results to **Deck
   building**, then search as usual (say `t:human c:wg`), as Images or as a List. Pick
   the deck at the top; on every card, + puts one more copy in it and − takes one out.

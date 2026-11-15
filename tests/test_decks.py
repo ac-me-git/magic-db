@@ -807,13 +807,22 @@ def test_add_a_card_from_its_page(site, ids):
     dragon = ids("Shivan Dragon", "m20")
     page = site.get(f"/card/{dragon}").text
     assert "In my decks" in page and "This card is in none of your decks." in page
-    assert 'action="/deck-cards"' in page and '<option value="2">Control</option>' in page
+    # at the bottom, with the switch on Deck building: the decks in a list
+    add = page.split('<section class="mine card-add" id="add">')[1].split("</section>")[0]
+    assert 'class="slider edit-switch"' in add and 'action="/deck-cards"' in add
+    assert '<option value="1">Burn</option>' in add
+    assert '<option value="2" selected>Control</option>' in add  # changed last
+    assert 'action="/add"' not in add  # the collection's form is for Collection input
 
     response = site.post(
         "/deck-cards",
-        data={"deck": "2", "printing": dragon, "quantity": "3", "next": f"/card/{dragon}#decks"},
+        data={"deck": "1", "printing": dragon, "quantity": "3", "next": f"/card/{dragon}#add"},
     )
-    assert (response.status_code, response.headers["location"]) == (303, f"/card/{dragon}#decks")
+    assert (response.status_code, response.headers["location"]) == (303, f"/card/{dragon}#add")
+    # the deck is remembered: the card page and deck mode offer it next time
+    again = site.get(f"/card/{dragon}").text
+    assert '<option value="1" selected>Burn</option>' in again
+    site.post("/deck-cards", data={"deck": "2", "printing": dragon, "quantity": "3"})
     page = site.get(f"/card/{dragon}").text
     assert '<a href="/decks/2">Control</a> ×3' in page
     bolt = site.get(f"/card/{ids('Lightning Bolt', 'lea')}").text
@@ -824,6 +833,22 @@ def test_add_a_card_from_its_page(site, ids):
 def test_card_page_without_decks_offers_nothing_to_add_to(client, ids):
     page = client.get(f"/card/{ids('Sol Ring', 'c21')}").text
     assert "In my decks" in page and 'action="/deck-cards"' not in page
+    assert "You have no decks yet" in page and 'href="/decks"' in page
+
+
+def test_card_page_offers_what_the_switch_allows_at_the_bottom(site, ids):
+    sol = ids("Sol Ring", "c21")
+    for state, wanted, absent in (
+        ("input", 'action="/add"', 'action="/deck-cards"'),
+        ("deck", 'action="/deck-cards"', 'action="/add"'),
+        ("locked", "Locked: choose Collection input", 'action="/'),
+    ):
+        editing(site, state)
+        page = site.get(f"/card/{sol}").text
+        add = page.split('<section class="mine card-add" id="add">')[1].split("</section>")[0]
+        assert wanted in add and absent not in add.split("</form>", 1)[1], state
+        assert f'name="next" value="/card/{sol}#add"' in add  # the switch comes back here
+        assert page.index('id="decks"') < page.index('id="add"') < page.index("printings")
 
 
 def test_import_a_list_through_the_page(site):
