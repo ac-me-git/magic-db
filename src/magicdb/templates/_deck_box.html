@@ -1,0 +1,22 @@
+{# Deck mode pieces: the − N + under a card, and the switch beside a picker. #}
+{% macro deck_count(card, n) -%}
+<span class="deck-count" id="deck-count-{{ card.oracle_id }}">
+  <button type="submit" name="action" value="remove" class="deck-step"
+          aria-label="{{ t('deckmode.remove', name=card.name) }}" title="{{ t('deckmode.remove', name=card.name) }}"
+          {%- if locked or not n %} disabled{% endif %}><span aria-hidden="true">−</span></button>
+  <output class="deck-n{% if n %} is-in{% endif %}" title="{{ t('deckmode.copies', n=n) }}">{{ n }}</output>
+  <button type="submit" name="action" value="add" class="deck-step"
+          aria-label="{{ t('deckmode.add', name=card.name) }}" title="{{ t('deckmode.add', name=card.name) }}"
+          {%- if locked %} disabled{% endif %}><span aria-hidden="true">+</span></button>
+</span>
+{%- endmacro %}
+
+{# A link drawn as a switch: it reloads the search with the filter written in or taken out,
+   so the search box shows it. #}
+{% macro only_switch(only, label) -%}
+<span class="only-switch">
+  <a href="{{ only.url }}" class="switch collection-only" role="switch"
+     aria-checked="{{ 'true' if only.on else 'false' }}" aria-label="{{ label }}"><span class="knob" aria-hidden="true"></span></a>
+  <span aria-hidden="true">{{ label }}</span>
+</span>
+{%- endmacro %}

@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from magicdb import db, i18n, web
 from magicdb.collection.routes import as_id, currency, redirect
 from magicdb.collection.service import CollectionError
-from magicdb.decks import service
+from magicdb.decks import mode, service
 from magicdb.decks.service import ImportReport
 from magicdb.templating import resolve_language, safe_next
 
@@ -170,6 +170,66 @@ def add_card_to(
 ) -> Response:
     """The card page's form: the deck is one of its fields, not part of the address."""
     return add_card(request, conn, deck, "", printing, quantity, board, next)
+
+
+# --- deck mode: + and − beside the cards of a search ------------------------------------
+
+
+@router.get("/deckmode/settings")
+def deck_mode_settings(
+    request: Request, conn: web.Conn, deck: str = "", board: str = "", next: str = ""
+) -> Response:
+    """Choose the deck and the board deck mode fills (a cookie only, so allowed while
+    locked). A search limited to the deck chosen before follows the new one."""
+    before = mode.choice(request, conn)
+    chosen = {str(d["id"]): d for d in before.decks}.get(deck, before.deck)
+    back = target = safe_next(next, "/")
+    if before.deck is not None and chosen is not None:
+        target = web.swap_in_address(back, "deck", before.deck["name"], chosen["name"])
+    response = web.settings_redirect(request, target, changed=target != back)
+    mode.remember(
+        response,
+        chosen["id"] if chosen is not None else None,
+        board if board in service.BOARDS else before.board,
+    )
+    return response
+
+
+@router.post("/deckmode/card")
+def deck_mode_card(
+    request: Request,
+    conn: web.Conn,
+    deck: Field = "",
+    printing: Field = "",
+    board: Field = "main",
+    action: Field = "add",
+    next: Field = "",
+) -> Response:
+    """One more copy of a card in a board of a deck, or one less; then the card's
+    buttons again (with HTMX) or the search it came from."""
+    number = as_id(deck)
+    card = None
+    if web.is_card_id(printing) and db.has_catalog(conn):
+        card = conn.execute("SELECT * FROM cat.printings WHERE id = ?", (printing,)).fetchone()
+    if card is None or board not in service.BOARDS or action not in ("add", "remove"):
+        return web.render(request, "not_found.html", 404)
+    try:
+        if action == "add":
+            service.add_card(conn, number, printing=printing, board=board)
+        else:
+            service.take_card(conn, number, printing=printing, board=board)
+    except CollectionError:
+        return web.render(request, "not_found.html", 404)  # the deck went away
+    if request.headers.get("HX-Request") != "true":
+        return redirect(safe_next(next, "/"))
+    return web.render(
+        request,
+        "_deck_counted.html",
+        card=card,
+        deck_id=number,
+        board=board,
+        deck_counts=service.copies_in_deck(conn, number, [card["oracle_id"]]),
+    )
 
 
 @router.post("/decks/{deck_id}/import")

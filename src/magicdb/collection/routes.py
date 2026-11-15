@@ -82,12 +82,22 @@ FAST_FINISHES = ("nonfoil", "foil")
 
 @router.get("/fast/settings")
 def fast_settings(
-    request: Request, condition: str = "", language: str = "", location: str = "", next: str = ""
+    request: Request,
+    conn: web.Conn,
+    condition: str = "",
+    language: str = "",
+    location: str = "",
+    next: str = "",
 ) -> Response:
     """Remember what fast input gives to new copies (the same memory the card page's add
-    form uses)."""
+    form uses). A search limited to the location chosen before follows the new one."""
     sticky = forms.read_sticky(request)
-    response = redirect(safe_next(next, "/"))
+    names = {str(row["id"]): row["name"] for row in forms.options(conn)["locations"]}
+    back = target = safe_next(next, "/")
+    old, new = names.get(sticky["location"]), names.get(location)
+    if old and new:
+        target = web.swap_in_address(back, "loc", old, new)
+    response = web.settings_redirect(request, target, changed=target != back)
     forms.write_sticky(
         response,
         finish=sticky["finish"],

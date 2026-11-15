@@ -365,6 +365,51 @@ def update_card(
         _touch(conn, deck_id)
 
 
+def take_card(conn: sqlite3.Connection, deck_id: int, *, printing: str, board: object) -> None:
+    """Take one copy of a card (given by one of its printings) out of a board; the last
+    copy takes the row away. A card that is not there is left alone."""
+    board = _board(board)
+    with conn:
+        get_deck(conn, deck_id)
+        card = card_of_printing(conn, printing)
+        if card is None:
+            raise CollectionError("unknown_deck_card", name="")
+        row = conn.execute(
+            "SELECT id, quantity FROM deck_cards WHERE deck_id = ? AND oracle_id = ? AND board = ?",
+            (deck_id, card["oracle_id"], board),
+        ).fetchone()
+        if row is None:
+            return
+        if row["quantity"] > 1:
+            conn.execute("UPDATE deck_cards SET quantity = quantity - 1 WHERE id = ?", (row["id"],))
+        else:
+            conn.execute("DELETE FROM deck_cards WHERE id = ?", (row["id"],))
+        _touch(conn, deck_id)
+
+
+def copies_in_deck(
+    conn: sqlite3.Connection, deck_id: int, oracle_ids: list[str]
+) -> dict[tuple[str, str], int]:
+    """``{(oracle id, board): copies}`` of these cards in a deck."""
+    counts: dict[tuple[str, str], int] = {}
+    for chunk in _chunks(sorted(set(oracle_ids))):
+        marks = ", ".join("?" * len(chunk))
+        for row in conn.execute(
+            f"SELECT oracle_id, board, quantity FROM deck_cards "
+            f"WHERE deck_id = ? AND oracle_id IN ({marks})",
+            [deck_id, *chunk],
+        ):
+            counts[(row["oracle_id"], row["board"])] = row["quantity"]
+    return counts
+
+
+def deck_choices(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Every deck, for a picker: id, name and when it last changed; by name."""
+    return conn.execute(
+        "SELECT id, name, updated_at FROM decks ORDER BY name COLLATE NOCASE, id"
+    ).fetchall()
+
+
 def remove_card(conn: sqlite3.Connection, deck_id: int, card_id: int) -> None:
     with conn:
         _deck_card(conn, deck_id, card_id)

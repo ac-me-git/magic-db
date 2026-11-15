@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- **Deck mode**, a fourth view of the search results beside Images, List and Fast
+  input: one image per card with − N + under it. A picker at the top chooses the deck
+  and the board (main deck or sideboard); + puts one more copy there, − takes one out.
+  The number is the copies already in that board.
+- Beside the deck picker, a switch *Only cards in this deck* writes `deck:"name"` into
+  the search, or takes it out; fast input has the same switch beside its location,
+  *Only cards in this location*, which writes `loc:"name"`. Picking another deck or
+  location while the switch is on moves the search to it.
+- Fast input keeps its pickers on screen when the search finds nothing.
+- The footer has a *Contact me* link with the Reddit icon, beside *Buy me a coffee*.
+
 ## 1.3.0 — 2026-11-15
 
 - In the search results the ×N badge of the copies you own sits in the bottom left

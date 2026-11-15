@@ -7,7 +7,7 @@ from contextlib import closing
 from datetime import date
 from itertools import groupby
 from typing import Annotated
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -18,6 +18,7 @@ from magicdb.catalog import ingest
 from magicdb.catalog.ingest import normalize
 from magicdb.collection import forms, service
 from magicdb.config import LANGS, Settings
+from magicdb.decks import mode
 from magicdb.decks import service as decks
 from magicdb.search import panel
 from magicdb.search.compiler import LIKE, ORDERS, FilterDef, _contains
@@ -33,7 +34,7 @@ from magicdb.templating import (
 router = APIRouter()
 Conn = Annotated[sqlite3.Connection, Depends(db.get_conn)]
 
-VIEWS = ("grid", "list", "input")
+VIEWS = ("grid", "list", "input", "deck")
 SCOPES = ("all", "collection")  # what the switch beside the search box sends
 FAST_PER_PAGE = 500  # fast input: a whole set on one page
 AUTOCOMPLETE_LIMIT = 15
@@ -85,6 +86,29 @@ def render(request: Request, template: str, status: int = 200, **context: object
     return request.app.state.templates.TemplateResponse(
         request, template, context, status_code=status
     )
+
+
+def swap_in_address(address: str, kind: str, old: str, new: str) -> str:
+    """A search address whose search is limited to the location or deck ``old`` (``kind``
+    "loc" or "deck"), now limited to ``new``; any other address as it is."""
+    parts = urlsplit(address)
+    params = parse_qs(parts.query, keep_blank_values=True)
+    query = (params.get("q") or [""])[0]
+    swapped = search.swap_named(query, kind, old, new)
+    if swapped == query:
+        return address
+    params["q"] = [swapped]
+    params.pop("page", None)
+    return urlunsplit(parts._replace(query=urlencode(params, doseq=True)))
+
+
+def settings_redirect(request: Request, target: str, changed: bool) -> Response:
+    """Back to the search after a picker above the results changed (fast input's location,
+    deck mode's deck). With HTMX only the results are redrawn — unless the search itself
+    was rewritten, which the search box must show too: then the whole page loads."""
+    if changed and request.headers.get("HX-Request") == "true":
+        return Response(status_code=204, headers={"HX-Redirect": target})
+    return RedirectResponse(target, status_code=303)
 
 
 def no_catalog(request: Request) -> HTMLResponse:
@@ -197,6 +221,7 @@ def search_page(
             page_number,
             currency=request.app.state.settings.currency,
             prints=view == "input",
+            cards=view == "deck",
             per_page=FAST_PER_PAGE if view == "input" else search.PER_PAGE,
         )
     except search.QueryError as exc:
@@ -206,19 +231,16 @@ def search_page(
         # a card's badge counts every printing; a printing's badge counts only itself
         key = "id" if result.unique == "prints" else "oracle_id"
         owned = service.owned_counts(conn, [row[key] for row in result.rows], result.unique)
-    fast: dict[str, object] = {}
+    extra: dict[str, object] = {}
     if result is not None and view == "input":
-        key = forms.copy_key(request, conn)
-        fast = {
-            "fast_counts": service.copies_like(conn, [row["id"] for row in result.rows], **key),
-            "fast_key": key,
-            "options": forms.options(conn),
-        }
+        extra = fast_input_context(request, conn, q, result)
+    elif result is not None and view == "deck":
+        extra = deck_mode_context(request, conn, q, result)
     partial = request.headers.get("HX-Request") == "true"
     return render(
         request,
         "_results.html" if partial else "search.html",
-        **fast,
+        **extra,
         q=q,
         mine=search.in_collection(q),
         without_collection=search.with_collection(q, False),
@@ -228,6 +250,45 @@ def search_page(
         owned=owned,
         sort=search.sort_links(q, result) if result is not None else {},
     )
+
+
+def only_switch(q: str, view: str, kind: str, name: str | None) -> dict[str, object] | None:
+    """The switch beside a picker above the results: whether the search is limited to
+    that location or deck, and the search that turns it the other way. None when there
+    is nothing to limit to (no location chosen, no deck)."""
+    if not name:
+        return None
+    on = search.has_named(q, kind, name)
+    return {"on": on, "url": search_url(search.with_named(q, kind, name, not on), 1, view)}
+
+
+def fast_input_context(
+    request: Request, conn: sqlite3.Connection, q: str, result: search.Result
+) -> dict[str, object]:
+    key = forms.copy_key(request, conn)
+    options = forms.options(conn)
+    place = next((p["name"] for p in options["locations"] if p["id"] == key["location_id"]), None)
+    return {
+        "fast_counts": service.copies_like(conn, [row["id"] for row in result.rows], **key),
+        "fast_key": key,
+        "options": options,
+        "only": only_switch(q, "input", "loc", place),
+    }
+
+
+def deck_mode_context(
+    request: Request, conn: sqlite3.Connection, q: str, result: search.Result
+) -> dict[str, object]:
+    chosen = mode.choice(request, conn)
+    counts: dict[tuple[str, str], int] = {}
+    if chosen.deck is not None:
+        ids = [row["oracle_id"] for row in result.rows]
+        counts = decks.copies_in_deck(conn, chosen.deck["id"], ids)
+    return {
+        "deck_choice": chosen,
+        "deck_counts": counts,
+        "only": only_switch(q, "deck", "deck", chosen.deck["name"] if chosen.deck else None),
+    }
 
 
 @router.get("/search/suggest", response_class=HTMLResponse)

@@ -10,6 +10,8 @@
    {%- if result.order == key %} title="{{ t('results.sorted.' ~ result.direction) }}"{% endif %}>{{ label }}{% if result.order == key %}<span aria-hidden="true"> {{ "▲" if result.direction == "asc" else "▼" }}</span>{% endif %}</a>
 {%- endmacro %}
 
+{% from "_deck_box.html" import deck_count, only_switch with context %}
+
 {% macro badge(card) -%}
 {% set have = owned.get(card.id if result.unique == "prints" else card.oracle_id) %}
 {%- if have %}<span class="owned" title="{{ t('results.owned', n=have) }}">×{{ have }}</span>{% endif %}
@@ -30,21 +32,38 @@
     {{ nav(t("results.view.grid"), result.page, "grid", current=(view == "grid")) }}
     {{ nav(t("results.view.list"), result.page, "list", current=(view == "list")) }}
     {{ nav(t("results.view.input"), 1, "input", current=(view == "input")) }}
+    {{ nav(t("results.view.deck"), 1, "deck", current=(view == "deck")) }}
   </p>
 </div>
 
-{% if not result.rows %}
-<div class="empty">
-  <p>{{ t("results.none.collection") if mine else t("results.none") }}</p>
-  {% if mine %}<p><a href="{{ search_url(without_collection, 1, view) }}">{{ t("results.try_all") }}</a></p>{% endif %}
-  {% if result.suggestions %}
-  <p>{{ t("results.did_you_mean") }}
-    {% for name in result.suggestions %}
-    <a href="{{ search_url('!"' ~ name ~ '"', 1, view) }}">{{ name }}</a>{% if not loop.last %}, {% endif %}
-    {% endfor %}
-  </p>
-  {% endif %}
-</div>
+{% if view == "deck" %}
+{% if locked %}{% include "_locked_notice.html" %}{% endif %}
+{% if deck_choice.deck is none %}
+<p class="hint">{{ t("deckmode.no_decks") }} <a href="/decks">{{ t("nav.decks") }}</a></p>
+{% else %}
+<form class="filters fast-settings deck-settings" method="get" action="/deckmode/settings"
+      hx-get="/deckmode/settings" hx-trigger="change" hx-target="#results" hx-swap="innerHTML">
+  <input type="hidden" name="next" value="{{ here }}">
+  <label>{{ t("deckmode.adding") }}
+    <select name="deck">
+      {% for d in deck_choice.decks %}
+      <option value="{{ d.id }}"{% if d.id == deck_choice.deck.id %} selected{% endif %}>{{ d.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>{{ t("deck.board") }}
+    <select name="board">
+      {% for b in ("main", "side") %}
+      <option value="{{ b }}"{% if b == deck_choice.board %} selected{% endif %}>{{ t("deck.board." ~ b) }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <noscript><button type="submit">{{ t("fast.apply") }}</button></noscript>
+  {% if only %}{{ only_switch(only, t("deckmode.only")) }}{% endif %}
+  <a class="deck-open" href="/decks/{{ deck_choice.deck.id }}">{{ t("deckmode.open") }}</a>
+</form>
+<p class="hint">{{ t("deckmode.hint") }}</p>
+{% endif %}
 {% elif view == "input" %}
 {% if locked %}{% include "_locked_notice.html" %}{% endif %}
 <form class="filters fast-settings" method="get" action="/fast/settings"
@@ -73,8 +92,24 @@
     </select>
   </label>
   <noscript><button type="submit">{{ t("fast.apply") }}</button></noscript>
+  {% if only %}{{ only_switch(only, t("fast.only")) }}{% endif %}
 </form>
 <p class="hint">{{ t("fast.hint") }}</p>
+{% endif %}
+
+{% if not result.rows %}
+<div class="empty">
+  <p>{{ t("results.none.collection") if mine else t("results.none") }}</p>
+  {% if mine %}<p><a href="{{ search_url(without_collection, 1, view) }}">{{ t("results.try_all") }}</a></p>{% endif %}
+  {% if result.suggestions %}
+  <p>{{ t("results.did_you_mean") }}
+    {% for name in result.suggestions %}
+    <a href="{{ search_url('!"' ~ name ~ '"', 1, view) }}">{{ name }}</a>{% if not loop.last %}, {% endif %}
+    {% endfor %}
+  </p>
+  {% endif %}
+</div>
+{% elif view == "input" %}
 <div class="table-wrap">
 <table class="card-list fast-list">
   <thead>
@@ -93,6 +128,30 @@
   </tbody>
 </table>
 </div>
+{% elif view == "deck" %}
+<ul class="card-grid deck-grid">
+  {% for card in result.rows %}
+  <li>
+    <a href="/card/{{ card.id }}">
+      <span class="card-face">
+        <img src="/img/normal/{{ card.id }}/front" alt="" width="488" height="680" loading="lazy">
+        {{- badge(card) }}
+      </span>
+      <span class="caption">{{ card.name }}</span>
+    </a>
+    {% if deck_choice.deck is not none %}
+    <form method="post" action="/deckmode/card" hx-post="/deckmode/card"
+          hx-target="find .deck-count" hx-swap="outerHTML" hx-sync="this:queue all">
+      <input type="hidden" name="deck" value="{{ deck_choice.deck.id }}">
+      <input type="hidden" name="board" value="{{ deck_choice.board }}">
+      <input type="hidden" name="printing" value="{{ card.id }}">
+      <input type="hidden" name="next" value="{{ here }}">
+      {{ deck_count(card, deck_counts.get((card.oracle_id, deck_choice.board), 0)) }}
+    </form>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
 {% elif view == "list" %}
 <div class="table-wrap">
 <table class="card-list">

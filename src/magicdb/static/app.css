@@ -1735,3 +1735,63 @@ textarea {
 .fast-list td {
   vertical-align: middle;
 }
+
+/* the switch beside fast input's location and deck mode's deck: a link drawn as a switch */
+.only-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: center;
+}
+
+a.switch {
+  display: inline-block;
+}
+
+/* Deck mode: − N + under every card of the image grid */
+.deck-settings .deck-open {
+  align-self: center;
+}
+
+.deck-grid form {
+  margin: 0.3rem 0 0;
+}
+
+.deck-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.deck-step {
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+  border: 2px solid var(--accent);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.deck-step:disabled {
+  border-color: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.deck-n {
+  min-width: 2ch;
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--muted);
+}
+
+.deck-n.is-in {
+  color: var(--text);
+  font-weight: 700;
+}

@@ -551,6 +551,38 @@ number or by name with the column headings, and tick boxes.
 - While the safety lock is on the boxes are shown disabled, with the usual notice.
 - Fast input is only a view of the search results: no page or link of its own leads to
   it.
+- The pickers stay above the table when the search finds nothing. Beside them, once a
+  location is chosen, a switch *Only cards in this location* (a link drawn as a switch)
+  reloads the search with `loc:"<name>"` written in, or taken out — the same rules as
+  the collection switch (`search.with_named`); it is on when the whole search is
+  limited to that location. Choosing another location while it is on rewrites the term
+  to the new one; with HTMX the answer is then `HX-Redirect`, so the search box shows
+  the new search. `loc:` matches names that *contain* the text (§6.2), unchanged.
+
+**Deck mode** (`view=deck`, a fourth view of the search results). For building a deck
+from a search: look for white and green humans, press + under the ones you want.
+
+- One image per *card* (as `unique:cards`, whatever the query says): a deck names
+  cards, not printings (§14). Under each image, − N +: N is the copies of the card in
+  the chosen board of the chosen deck. + adds one copy (`decks.service.add_card`), −
+  takes one out and the last one takes the row away (`take_card`); − is disabled at 0.
+  The owned badge on the image is the usual one.
+- Above the grid: the deck (every deck, by name) and the board (main deck or
+  sideboard), kept in the `magicdb_deckmode` cookie (`GET /deckmode/settings`, a cookie
+  only, so allowed while locked). With no choice, or a deck that no longer exists, the
+  deck changed last is used. Without decks the view says so and links to `/decks`.
+  A link opens the chosen deck.
+- Beside the pickers, a switch *Only cards in this deck* writes `deck:"<name>"`, as
+  fast input's location switch does (and follows a change of deck the same way). With
+  the collection switch on as well, the search shows the cards of the deck that are in
+  the collection; without the deck switch, any card can be added.
+- `POST /deckmode/card` (`deck`, `printing`, `board`, `action=add|remove`, `next`): with
+  HTMX it answers with the card's − N + only; without, it redirects to `next`. Clicks on
+  one card are queued (`hx-sync`); each is relative (one more, one less), so the order
+  they arrive in does not matter. An unknown deck, printing, board or action is 404.
+- A deck never changes the collection (§14), but the safety lock still refuses these
+  writes like any other (423): while locked the buttons are shown disabled, with the
+  usual notice.
 
 **Home page.** The page has no title, tagline or catalog status line of its own: the
 name is in the header, and how many printings the catalog holds and when it was built
