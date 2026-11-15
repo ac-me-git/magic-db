@@ -650,9 +650,8 @@ collection" like its link, is the collection's landing page and links to import 
 export; the administration page links to them too.
 
 **Footer.** On every page, and nothing else: the Fan Content Policy notice, its
-copyright line followed by the credit to Scryfall, then "Buy me a coffee" and "Contact me"
-(the project's GitHub issues for 2.0.0; the post where the project is discussed from
-2.0.1). "Wizards"
+copyright line followed by the credit to Scryfall, then "Buy me a coffee" and "Report a bug"
+(a bug icon, the project's GitHub issues). "Wizards"
 in the notice links to `https://company.wizards.com/` and "Scryfall" to
 `https://scryfall.com/`; they, like the coffee, open in a new tab. The two names are
 `{wizards}` and `{scryfall}` in the translated sentences: a template macro makes the

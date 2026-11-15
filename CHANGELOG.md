@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.1 — 2026-11-15
+
+- The footer of the app and of the website: *Contact me* is now **Report a bug**, with a
+  bug icon, still to the project's GitHub issues.
+- The website's "page not found" now has its style, logo and menu at any address, not
+  only at the top level.
+
 ## 2.0.0 — 2026-11-15
 
 - **A simpler collection.** A copy no longer has a location, a condition or a language:

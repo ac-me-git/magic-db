@@ -106,4 +106,7 @@ def test_every_page_of_the_website_shows_the_logo_beside_its_favicon():
         icon = re.search(r'<link rel="icon" href="([^"]*)favicon\.svg"', text).group(1)
         brand = text.split('<a class="brand"')[1].split("</a>")[0]
         assert f'<img class="logo" src="{icon}logo.svg" alt="AMTG.FANS"' in brand, page
-        assert (page.parent / f"{icon}logo.svg").resolve() == (ROOT / "site" / "logo.svg")
+        # the 404 page names its files from the root of the site, the others relatively
+        base = ROOT / "site" if icon.startswith("/") else page.parent
+        target = base / f"{icon.lstrip('/')}logo.svg"
+        assert target.resolve() == (ROOT / "site" / "logo.svg").resolve(), page

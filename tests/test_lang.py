@@ -183,10 +183,11 @@ def test_footer_credits_scryfall_on_the_copyright_line(client):
     assert f"©Wizards of the Coast LLC. Dati delle carte forniti da {SCRYFALL}.</p>" in italian
 
 
-def test_footer_has_a_contact_link_next_to_the_coffee_in_both_languages(client):
+def test_footer_has_a_bug_link_after_the_coffee_in_both_languages(client):
     english = footer(client.get("/").text)
-    assert "Contact me" in english and english.index("buymeacoffee") < english.index("/issues")
-    assert "Contattami" in footer(client.get("/", headers={"Accept-Language": "it"}).text)
+    assert "Report a bug" in english and english.index("buymeacoffee") < english.index("/issues")
+    italian = footer(client.get("/", headers={"Accept-Language": "it"}).text)
+    assert "Segnala un bug" in italian
 
 
 def test_footer_has_only_the_notice_and_then_the_coffee(client):
