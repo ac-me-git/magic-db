@@ -45,7 +45,10 @@ figcaption{color:var(--muted);font-size:.9rem;margin-top:6px}
 .toc{display:flex;flex-wrap:wrap;gap:6px 18px;margin:16px 0}
 li{margin:.3em 0}
 footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padding:20px 0 32px}
+footer{text-align:center}
+footer p{margin:.4em 0}
 footer .ico{vertical-align:-.2em;margin-right:.3em}
+footer .links a{margin:0 .8em}
 .support{text-align:center}
 .support .btn{margin-top:4px}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}

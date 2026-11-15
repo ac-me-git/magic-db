@@ -194,7 +194,12 @@ main {
   margin: 0.25rem auto;
 }
 
-.site-footer .coffee svg {
+.site-footer .links a {
+  margin: 0 0.8em;
+  white-space: nowrap;
+}
+
+.site-footer .links svg {
   margin-right: 0.3em;
   vertical-align: -0.2em;
 }

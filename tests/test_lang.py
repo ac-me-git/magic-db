@@ -183,15 +183,22 @@ def test_footer_credits_scryfall_on_the_copyright_line(client):
     assert f"©Wizards of the Coast LLC. Dati delle carte forniti da {SCRYFALL}.</p>" in italian
 
 
+def test_footer_has_a_contact_link_next_to_the_coffee_in_both_languages(client):
+    english = footer(client.get("/").text)
+    assert "Contact me" in english and english.index("buymeacoffee") < english.index("reddit.com")
+    assert "Contattami" in footer(client.get("/", headers={"Accept-Language": "it"}).text)
+
+
 def test_footer_has_only_the_notice_and_then_the_coffee(client):
     for address in ("/", "/syntax", "/admin"):
         bottom = footer(client.get(address).text)
-        assert bottom.count("<p>") == 2, address
+        assert len(re.findall(r"<p[ >]", bottom)) == 2, address
         assert bottom.index("Fan Content Policy") < bottom.index("buymeacoffee.com"), address
         assert re.findall(r'href="([^"]+)"', bottom) == [
             "https://company.wizards.com/",
             "https://scryfall.com/",
             "https://buymeacoffee.com/amtg",
+            "https://www.reddit.com/",
         ], address
 
 
