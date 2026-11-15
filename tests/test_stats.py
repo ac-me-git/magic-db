@@ -298,7 +298,7 @@ def test_set_sorting_and_type_filter(owned, fixture_sets):
     )
     assert stats.set_completion(owned, sort="nonsense") == by_percent
 
-    kinds = stats.set_types(owned)
+    kinds = stats.set_types(stats.set_completion(owned))
     assert "core" in kinds and "expansion" in kinds and kinds == sorted(kinds)
     core = stats.set_completion(owned, set_type="core")
     assert core and {s.set_type for s in core} == {"core"}

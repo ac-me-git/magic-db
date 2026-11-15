@@ -176,7 +176,8 @@ def stats_page(
     if not db.has_catalog(conn):
         return web.no_catalog(request)
     sets_sort = sets if sets in stats.SET_SORTS else "percent"
-    kinds = stats.set_types(conn)
+    every = stats.set_completion(conn, sets_sort)  # two queries: done once, then filtered
+    kinds = stats.set_types(every)
     set_type = set_type if set_type in kinds else ""
     rows = stats.collect(conn, currency(request))
     return web.render(
@@ -184,7 +185,7 @@ def stats_page(
         "stats.html",
         totals=stats.totals(rows),
         charts=stats.breakdowns(rows),
-        sets=stats.set_completion(conn, sets_sort, set_type),
+        sets=[s for s in every if not set_type or s.set_type == set_type],
         sets_sort=sets_sort,
         set_type=set_type,
         set_types=kinds,

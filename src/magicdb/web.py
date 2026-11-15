@@ -94,13 +94,13 @@ def render(request: Request, template: str, status: int = 200, **context: object
     )
 
 
-def swap_in_address(address: str, kind: str, old: str, new: str) -> str:
-    """A search address whose search is limited to the deck ``old`` (``kind`` "deck"),
-    now limited to ``new``; any other address as it is."""
+def swap_in_address(address: str, old: str, new: str) -> str:
+    """A search address whose search is limited to the deck ``old``, now limited to
+    ``new``; any other address as it is."""
     parts = urlsplit(address)
     params = parse_qs(parts.query, keep_blank_values=True)
     query = (params.get("q") or [""])[0]
-    swapped = search.swap_named(query, kind, old, new)
+    swapped = search.swap_deck(query, old, new)
     if swapped == query:
         return address
     params["q"] = [swapped]
@@ -211,7 +211,6 @@ def search_page(
     if not db.has_catalog(conn):
         return no_catalog(request)
     view = view if view in LAYOUTS else OLD_VIEWS.get(view, "grid")
-    layout = view
     mode_name = SEARCH_MODES.get(request.app.state.edit_mode, "")
     page_number = int(page) if page.isascii() and page.isdigit() and len(page) < 7 else 1
     scope = request.query_params.get("scope")
@@ -252,7 +251,6 @@ def search_page(
         mine=search.in_collection(q),
         without_collection=search.with_collection(q, False),
         view=view,
-        layout=layout,
         mode=mode_name,
         result=result,
         error=error,
@@ -261,13 +259,13 @@ def search_page(
     )
 
 
-def only_switch(q: str, view: str, kind: str, name: str | None) -> dict[str, object] | None:
+def only_switch(q: str, view: str, name: str | None) -> dict[str, object] | None:
     """The switch beside deck mode's picker: whether the search is limited to that deck,
     and the search that turns it the other way. None when there is no deck."""
     if not name:
         return None
-    on = search.has_named(q, kind, name)
-    return {"on": on, "url": search_url(search.with_named(q, kind, name, not on), 1, view)}
+    on = search.has_deck(q, name)
+    return {"on": on, "url": search_url(search.with_deck(q, name, not on), 1, view)}
 
 
 def fast_input_context(conn: sqlite3.Connection, result: search.Result) -> dict[str, object]:
@@ -285,7 +283,7 @@ def deck_mode_context(
     return {
         "deck_choice": chosen,
         "deck_counts": counts,
-        "only": only_switch(q, view, "deck", chosen.deck["name"] if chosen.deck else None),
+        "only": only_switch(q, view, chosen.deck["name"] if chosen.deck else None),
     }
 
 

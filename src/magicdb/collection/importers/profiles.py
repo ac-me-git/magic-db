@@ -16,19 +16,6 @@ UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 _MONEY_START = re.compile(r"[€$£]\s?\d+")
 _CENTS = re.compile(r"\d{1,2}")
 
-TEXT_FIELDS = (
-    "name",
-    "set_code",
-    "set_name",
-    "collector_number",
-    "scryfall_id",
-    "quantity",
-    "finish",
-    "notes",
-    "purchase_price",
-    "added_at",
-)
-
 
 @dataclass
 class Row:

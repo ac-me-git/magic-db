@@ -1,6 +1,7 @@
-# The image is built from pyproject.toml, README.md, LICENSE and src/ only.
+# The image is built from pyproject.toml, uv.lock, README.md, LICENSE and src/ only.
 *
 !pyproject.toml
+!uv.lock
 !README.md
 !LICENSE
 !src

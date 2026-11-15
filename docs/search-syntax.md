@@ -85,8 +85,9 @@ for a set, a collector number, or add `include:extras`.
 unique:prints` lists the printings of a set you are missing, and `have:yes t:dragon` every
 dragon you own in any printing.
 
-The switch beside the Search button writes `haveprint:yes` into the search for you, and
-takes it out again: searching your collection is that one filter and nothing else.
+*Search my collection*, in the dropdown beside Search, writes `haveprint:yes` into the
+search for you, and takes it out again: searching your collection is that one filter and
+nothing else.
 
 ## Limits
 

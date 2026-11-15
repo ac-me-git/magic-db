@@ -46,7 +46,7 @@ def code(excinfo):
 
 def test_add_copies_card_identity_from_the_catalog(conn, bolt):
     added = service.add_entry(conn, bolt)
-    assert (added.merged, added.unusual_finish) == (False, False)
+    assert added.merged is False
     row = service.get_entry(conn, added.entry_id)
     assert (row["name"], row["set_code"], row["collector_number"]) == (
         "Lightning Bolt",
@@ -92,10 +92,10 @@ def test_merging_keeps_notes_and_price(conn, bolt):
     assert row["notes"] == "signed; from Marco" and row["purchase_price"] == 2.0
 
 
-def test_unusual_finish_is_allowed_but_flagged(conn):
+def test_unusual_finish_is_allowed(conn):
     alpha = pid(conn, "Lightning Bolt", "lea")  # Alpha was never printed in foil
-    added = service.add_entry(conn, alpha, finish="foil")
-    assert added.unusual_finish and entries(conn)[0][3] == "foil"
+    service.add_entry(conn, alpha, finish="foil")  # an import may bring one: kept as it is
+    assert entries(conn)[0][3] == "foil"
 
 
 @pytest.mark.parametrize(

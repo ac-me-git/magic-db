@@ -42,7 +42,8 @@
   copies of this printing for the collection, or the card for a deck chosen from a
   list (the deck used last comes first).
 - The header has a background of its own, a shade apart from the page.
-- The footer has a *Contact me* link with the Reddit icon, beside *Buy me a coffee*.
+- The footer has a *Contact me* link, beside *Buy me a coffee*: for now it leads to the
+  project's GitHub issues.
 - `deck="name"` finds the cards of that deck only; `deck:name` still finds every deck
   whose name contains the text. The switch *Only cards in this deck* and the deck
   page's "See the cards as images" use `=`, so "Deck 1" no longer shows "Deck 10" too.

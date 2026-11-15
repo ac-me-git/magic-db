@@ -189,9 +189,9 @@ def set_completion(
     return sets
 
 
-def set_types(conn: sqlite3.Connection) -> list[str]:
+def set_types(sets: list[SetProgress]) -> list[str]:
     """The kinds of set there is something in, for the filter."""
-    return sorted({progress.set_type for progress in set_completion(conn)})
+    return sorted({progress.set_type for progress in sets})
 
 
 def missing_query(code: str) -> str:

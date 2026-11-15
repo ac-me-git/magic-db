@@ -651,7 +651,9 @@ collection" like its link, is the collection's landing page and links to import 
 export; the administration page links to them too.
 
 **Footer.** On every page, and nothing else: the Fan Content Policy notice, its
-copyright line followed by the credit to Scryfall, then "Buy me a coffee". "Wizards"
+copyright line followed by the credit to Scryfall, then "Buy me a coffee" and "Contact me"
+(the project's GitHub issues for 2.0.0; the post where the project is discussed from
+2.0.1). "Wizards"
 in the notice links to `https://company.wizards.com/` and "Scryfall" to
 `https://scryfall.com/`; they, like the coffee, open in a new tab. The two names are
 `{wizards}` and `{scryfall}` in the translated sentences: a template macro makes the
@@ -689,7 +691,7 @@ link, and `t()` escapes the sentence and keeps the link when it is given one.
   and turns it round. Above the image view there is a shorter line: name, set and
   number, price. The links rewrite the `order:` and `dir:` of the query
   (`search.with_order`), so the search box always shows the search as it is. `type`
-  was added to the orders for this. The collection list's headers sort it too.
+  was added to the orders for this.
 - `static/app.js` is the one script the project writes itself: arrow keys and Escape
   in the suggestions, and closing them on a click elsewhere. Everything works
   without it.

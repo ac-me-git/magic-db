@@ -185,7 +185,7 @@ def deck_mode_settings(
     chosen = {str(d["id"]): d for d in before.decks}.get(deck, before.deck)
     back = target = safe_next(next, "/")
     if before.deck is not None and chosen is not None:
-        target = web.swap_in_address(back, "deck", before.deck["name"], chosen["name"])
+        target = web.swap_in_address(back, before.deck["name"], chosen["name"])
     response = web.settings_redirect(request, target, changed=target != back)
     mode.remember(response, chosen["id"] if chosen is not None else None)
     return response

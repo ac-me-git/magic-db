@@ -22,7 +22,6 @@
   "language.short.it": "ITA",
   "search.placeholder": "Card name, or t:dragon c:r mv<=4",
   "search.button": "Search",
-  "nav.filters": "Filters",
   "nav.syntax": "Syntax",
   "panel.title": "Search by filters",
   "panel.hint": "Fill in what you need. The filters become a search you can read and edit in the box above.",
@@ -182,7 +181,6 @@
   "entry.quantity": "Quantity",
   "entry.qty": "Qty",
   "entry.finish": "Finish",
-  "entry.value": "Value",
   "entry.notes": "Notes",
   "entry.purchase_price": "Price paid",
   "entry.edit": "Edit",
@@ -332,7 +330,6 @@
   "admin.status.error": "failed",
   "admin.status.running": "running",
   "admin.message": "Details",
-  "admin.times_utc": "Times are in UTC.",
   "admin.settings": "Settings",
   "admin.settings.version": "Version",
   "admin.settings.data": "Data folder",
@@ -429,7 +426,6 @@
   "results.sorted.asc": "Sorted ascending: click to reverse",
   "results.sorted.desc": "Sorted descending: click to reverse",
   "order.type": "Type",
-  "collection.hub.hint": "Everything about your collection starts here.",
   "admin.collection": "Collection",
   "app.full_name": "Another Magic Tracking Gizmo",
   "admin.version": "Software version",
@@ -468,5 +464,5 @@
   "deckmode.no_decks": "You have no decks yet. Make one first:",
   "deckmode.add": "One more {name} in the deck",
   "deckmode.remove": "One less {name} in the deck",
-  "deckmode.copies": "Copies in this board: {n}"
+  "deckmode.copies": "Copies in this deck: {n}"
 }

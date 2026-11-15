@@ -3,10 +3,6 @@
 {% block content %}
 <h1 class="page-title">{{ t("entry.edit_title") }}</h1>
 {% if locked_collection %}{% with needed="input" %}{% include "_locked_notice.html" %}{% endwith %}{% else %}
-<table class="card-list">
-  <tbody>
-    {% include "_entry_edit.html" %}
-  </tbody>
-</table>
+{% include "_entry_edit.html" %}
 {% endif %}
 {% endblock %}

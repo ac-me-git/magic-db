@@ -926,6 +926,7 @@ main {
 
 .facts dd {
   margin: 0;
+  overflow-wrap: anywhere; /* a long data folder path on a phone */
 }
 
 .printings h2 {
@@ -1021,10 +1022,11 @@ button.danger {
 }
 
 /* the edit form opened inside a table row */
-.editing > td {
+.editing {
   padding: 0.75rem;
   background: var(--surface);
   border: 1px solid var(--accent);
+  border-radius: 0.5rem;
 }
 
 .editing label {
@@ -1513,12 +1515,6 @@ button:disabled {
   text-align: left;
 }
 
-.tile-bar {
-  display: block;
-  width: 100%;
-  margin-top: 0.3rem;
-}
-
 .fold {
   margin-top: 0.75rem;
 }
@@ -1797,9 +1793,6 @@ textarea {
 }
 
 /* Fast input: a big box per finish beside every card */
-.fast-settings {
-  align-items: end;
-}
 
 .fast-list thead th {
   position: sticky;
@@ -1881,7 +1874,7 @@ textarea {
   vertical-align: middle;
 }
 
-/* the switch beside fast input's location and deck mode's deck: a link drawn as a switch */
+/* the switch beside deck mode's deck: a link drawn as a switch */
 .only-switch {
   display: inline-flex;
   align-items: center;
@@ -1894,6 +1887,10 @@ a.switch {
 }
 
 /* Deck mode: − N + beside every card */
+.deck-settings {
+  align-items: end;
+}
+
 .deck-settings .deck-open {
   align-self: center;
 }

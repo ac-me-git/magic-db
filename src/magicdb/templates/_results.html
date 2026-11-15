@@ -36,7 +36,7 @@
       {%- for name in ("grid", "list") %}
       <a href="{{ search_url(q, result.page, name) }}" hx-get="{{ search_url(q, result.page, name) }}"
          hx-target="#results" hx-swap="innerHTML show:window:top" hx-push-url="true"
-         {%- if layout == name %} aria-current="true"{% endif %} aria-label="{{ t('results.view.' ~ name) }}" title="{{ t('results.view.' ~ name) }}">
+         {%- if view == name %} aria-current="true"{% endif %} aria-label="{{ t('results.view.' ~ name) }}" title="{{ t('results.view.' ~ name) }}">
         {{- icon(name) }}<span class="slider-label">{{ t("results.view." ~ name) }}</span></a>
       {%- endfor %}
     </span>
@@ -56,7 +56,7 @@
 {% if deck_choice.deck is none %}
 <p class="hint">{{ t("deckmode.no_decks") }} <a href="/decks">{{ t("nav.decks") }}</a></p>
 {% else %}
-<form class="filters fast-settings deck-settings" method="get" action="/deckmode/settings"
+<form class="filters deck-settings" method="get" action="/deckmode/settings"
       hx-get="/deckmode/settings" hx-trigger="change" hx-target="#results" hx-swap="innerHTML">
   <input type="hidden" name="next" value="{{ here }}">
   <label>{{ t("deckmode.adding") }}
@@ -85,7 +85,7 @@
   </p>
   {% endif %}
 </div>
-{% elif layout == "list" and mode == "input" %}
+{% elif view == "list" and mode == "input" %}
 <div class="table-wrap">
 <table class="card-list fast-list">
   <thead>
@@ -104,7 +104,7 @@
   </tbody>
 </table>
 </div>
-{% elif layout == "list" and mode == "deck" %}
+{% elif view == "list" and mode == "deck" %}
 {# as fast input's list: − N + where the two boxes are #}
 <div class="table-wrap">
 <table class="card-list fast-list deck-list">
@@ -127,7 +127,7 @@
   </tbody>
 </table>
 </div>
-{% elif layout == "list" %}
+{% elif view == "list" %}
 <div class="table-wrap">
 <table class="card-list">
   <thead>

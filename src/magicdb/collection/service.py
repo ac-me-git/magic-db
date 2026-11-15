@@ -29,7 +29,6 @@ class CollectionError(ValueError):
 class Added:
     entry_id: int
     merged: bool  # the copies joined an existing row
-    unusual_finish: bool  # this printing is not known to exist in that finish
 
 
 # --- validation -----------------------------------------------------------------------
@@ -226,7 +225,7 @@ def add_entry(
             merged=merged,
             **{k: fields[k] for k in ("quantity", "finish")},
         )
-    return Added(entry_id, merged, f"|{fields['finish']}|" not in printing["finishes"])
+    return Added(entry_id, merged)
 
 
 def update_entry(conn: sqlite3.Connection, entry_id: int, **changes: object) -> int:

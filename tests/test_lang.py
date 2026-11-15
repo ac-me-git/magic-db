@@ -185,7 +185,7 @@ def test_footer_credits_scryfall_on_the_copyright_line(client):
 
 def test_footer_has_a_contact_link_next_to_the_coffee_in_both_languages(client):
     english = footer(client.get("/").text)
-    assert "Contact me" in english and english.index("buymeacoffee") < english.index("reddit.com")
+    assert "Contact me" in english and english.index("buymeacoffee") < english.index("/issues")
     assert "Contattami" in footer(client.get("/", headers={"Accept-Language": "it"}).text)
 
 
@@ -198,7 +198,7 @@ def test_footer_has_only_the_notice_and_then_the_coffee(client):
             "https://company.wizards.com/",
             "https://scryfall.com/",
             "https://buymeacoffee.com/amtg",
-            "https://www.reddit.com/",
+            "https://github.com/ac-me-git/magic-db/issues",
         ], address
 
 

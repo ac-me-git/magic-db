@@ -149,7 +149,7 @@ Everything is optional and set with environment variables.
 | `MAGICDB_PASSWORD` | *(none)* | If set, every page asks for it (HTTP Basic: any user name, this password) |
 | `MAGICDB_UPDATE_HOUR` | `3` | Hour of the nightly catalog update, 0–23, local time |
 | `MAGICDB_BACKUP_HOUR` | `4` | Hour of the nightly backup, 0–23, local time |
-| `MAGICDB_LANG` | `en` | Interface language (`en` or `it`) for visitors whose browser asks for neither. Each visitor can switch at the bottom of any page |
+| `MAGICDB_LANG` | `en` | Interface language (`en` or `it`) for visitors whose browser asks for neither. Each visitor can choose another in the menu (☰) |
 | `MAGICDB_CURRENCY` | `eur` | `eur` or `usd`, for prices and values |
 | `MAGICDB_SCHEDULER` | `on` | `off` stops the automatic nightly update and backup |
 | `MAGICDB_UPDATE_CHECK` | `on` | `off` stops the Administration page from asking GitHub whether a newer version is out |

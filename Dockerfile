@@ -2,13 +2,18 @@
 
 FROM python:3.12-slim AS build
 WORKDIR /src
-COPY pyproject.toml README.md LICENSE ./
+COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY src ./src
 # The development image (":edge") is built with the commit it is made from, and the
 # Administration page then says so. A release is built without.
 ARG REVISION=""
 RUN if [ -n "$REVISION" ]; then printf '%s\n' "$REVISION" > src/magicdb/REVISION; fi
-RUN pip install --no-cache-dir --prefix=/install .
+# The exact versions of uv.lock (checked against their hashes), then the app itself, so
+# that an image built today and one built next month hold the same libraries.
+RUN pip install --no-cache-dir uv==0.11.32 \
+    && uv export --locked --no-dev --no-emit-project --format requirements-txt -o /tmp/requirements.txt \
+    && pip install --no-cache-dir --prefix=/install --require-hashes -r /tmp/requirements.txt \
+    && pip install --no-cache-dir --prefix=/install --no-deps .
 
 FROM python:3.12-slim
 LABEL org.opencontainers.image.title="magic-db" \

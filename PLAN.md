@@ -50,6 +50,7 @@ Read `SPEC.md` first; section numbers below (§) refer to it.
 | + | Owner request: icons in the sliders (icons only on a phone, one line); a shorter sort line; where to search as a dropdown on the Search button instead of a switch in the menu | done 2026-11-15 | Tests green. Below 40rem the slider names are hidden (each control keeps an `aria-label`). Sort line: name, set and number, price. The dropdown is a `<details class="search-scope">` joined to Search; its two buttons send `scope=all|collection`, as the switch did. |
 | + | Owner request: the switch leaves the menu; on the card page, at the bottom, the switch and the form it allows (collection, or a deck from a list) | done 2026-11-15 | Tests green. The card page's last section `#add`; the deck list starts on deck mode's deck (`decks.mode.choice`), and `POST /deck-cards` remembers the deck in the same cookie. |
 | + | Review before the public release: defects 1, 2, 3, 5 of the checklist below | done 2026-11-15 | 1130 tests green (6 new). Deck download: the header carries an ASCII name and the full name (`filename*`, RFC 6266; `decks.routes.attachment`). `deck=` is now the exact deck name (`= ?` on `decks.name`, which is NOCASE); `deck:` still contains. The switch writes and recognises only `deck="name"` (deck mode was never released, so no saved address uses `deck:`); the deck page's link too. SPEC §6.2, §7, §14, docs and both website guides follow; `docs/search-syntax.md` regenerated. Phone: `.slider .slider-label` is hidden under 40rem for both sliders, so the card page's switch fits (checked at 390 px in Italian, all three positions). Card page: `forms.made_in` offers only the printing's finishes; the remembered finish is used when offered; the service still accepts any finish (SPEC §5 rule rewritten). `test_add_then_the_finish_sticks` now uses Wrath of God (10e): Sol Ring c21 was never made in foil. Defect 4 waits for the owner's Reddit address. |
+| + | Review before the public release: the temporary contact link, leftovers, builds from `uv.lock` | done 2026-11-15 | 1130 tests green. *Contact me* → `github.com/ac-me-git/magic-db/issues` in the app and on 15 website pages, with a speech bubble instead of Reddit's icon (2.0.1 will point it at the owner's post). Removed: 4 unused strings, `.tile-bar`, `.fast-settings`, `TEXT_FIELDS`, `Added.unusual_finish` (its test now only checks the finish is kept), `layout` in `web.search_page`; `deckmode.copies` says deck. `search.*_named(kind, …)` became `has_deck` / `with_deck` / `swap_deck` / `deck_term`. The edit page is a `<section class="editing">` (no table). `/stats` computes set completion once (`stats.set_types` takes the list). Admin `.facts dd` wraps long paths. Docker: `uv export --locked` then `pip install --require-hashes`, then the app with `--no-deps`; `uv.lock` added to `.dockerignore`'s list; CI and release use `uv sync --locked`. Image built and run here (non-root 10001, `/healthz`, pages, "development version, commit 0123456"; fastapi 0.163.1 / starlette 1.10.0 as locked) — with a test-only copy of the Dockerfile that trusts this sandbox's proxy certificate. Still open: JSON import and decks, `history`/notes (owner), `/api/autocomplete`, catalog `schema_version`. |
 
 
 ## Review before the public release (2026-11-15)
@@ -69,7 +70,9 @@ marked **owner**.
 - [x] 3. On a phone, in Italian, the edit switch at the bottom of the card page is wider
   than the screen (the labels are hidden only above the search results).
 - [ ] 4. "Contact me" links to `https://www.reddit.com/` itself, in the app's footer and
-  on 16 pages of the website. **owner**: the real address.
+  on 16 pages of the website. Owner's plan (2026-11-15): 2.0.0 links to the GitHub issues
+  (done, with a neutral speech-bubble icon instead of Reddit's); the owner then posts on
+  Reddit, and 2.0.1 links to the post.
 - [x] 5. The card page's add form offers every finish, also one the printing was never
   made in, and the warning the service computes is never shown: offer only the
   printing's finishes.
@@ -83,7 +86,7 @@ marked **owner**.
 - [ ] Importing a JSON dump recreates decks while the switch is on Collection input,
   which is meant to keep the decks unchanged.
 - [ ] `/api/autocomplete` is called by no page any more (its function is used inside).
-- [ ] The entry edit page is still a table row with `colspan=7`, left from the removed
+- [x] The entry edit page is still a table row with `colspan=7`, left from the removed
   collection list.
 
 **Database** (no schema change before the release)
@@ -95,35 +98,36 @@ marked **owner**.
 
 **Leftovers to clean up** (no change in behaviour)
 
-- [ ] Unused strings: `nav.filters`, `entry.value`, `admin.times_utc`,
+- [x] Unused strings: `nav.filters`, `entry.value`, `admin.times_utc`,
   `collection.hub.hint`; `deckmode.copies` still says "board" / "sezione".
-- [ ] Unused CSS `.tile-bar`; a CSS comment still speaks of fast input's location.
-- [ ] Unused Python: `TEXT_FIELDS`, `OPERATORS`, `Added.merged` / `Added.unusual_finish`;
+- [x] Unused CSS `.tile-bar`; a CSS comment still speaks of fast input's location.
+- [x] Unused Python: `TEXT_FIELDS`, `OPERATORS`, `Added.merged` / `Added.unusual_finish`;
   the `kind` parameter of `search.*_named` and `web.swap_in_address` (only "deck" is
   left); `layout` duplicates `view` in `web.search_page`; the deck picker still has
-  the class `fast-settings`.
-- [ ] Docs: `README.md` says the language is chosen at the bottom of the page (it is
+  the class `fast-settings`. (`OPERATORS` and `Added.merged` stay: the tests use them.
+  The helpers are now `search.has_deck`, `with_deck`, `swap_deck`, `deck_term`.)
+- [x] Docs: `README.md` says the language is chosen at the bottom of the page (it is
   in the menu); `docs/search-syntax.md` speaks of the switch beside Search (it is a
   dropdown); SPEC §7 still mentions the collection list's headers; a comment in
-  `importers/profiles.py` speaks of "before 2.0".
+  `importers/profiles.py` speaks of "before 2.0" (right after all, with 2.0.0).
 
 **Technical**
 
-- [ ] `uv.lock` is committed (2026-11-15), but the Docker image and the executable
+- [x] `uv.lock` is committed (2026-11-15), but the Docker image and the executable
   still install with `pip install .` and the `>=` ranges of `pyproject.toml`: build
   them from the lock.
 - [ ] The catalog's `schema_version` is written and never checked: a catalog of an
   older schema should be rebuilt by itself.
-- [ ] Administration: a long data folder path is wider than a phone's screen.
-- [ ] `/stats` computes set completion twice (once for the set types).
+- [x] Administration: a long data folder path is wider than a phone's screen.
+- [x] `/stats` computes set completion twice (once for the set types).
 
 **Release** (**owner**)
 
 - [ ] What "open to the public" means: the repository and the website (ready), or an
   instance anyone can reach (needs `MAGICDB_PASSWORD` or a gateway: without it anyone
   can move the switch, change the collection and download backups).
-- [ ] Version number: 2.0.0 proposed (database upgrade, three filters gone, export
-  format 2).
+- [x] Version number: 2.0.0 tonight, then 2.0.1 with the link to the Reddit post (owner,
+  2026-11-15).
 - [ ] Branch: `CLAUDE.md` says `main`, this session was set up on
   `ccr-b454176f-ogs7w6`.
 

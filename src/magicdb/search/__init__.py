@@ -24,19 +24,19 @@ from magicdb.search.tokenizer import Token, tokenize
 
 __all__ = [
     "COLLECTION_TERM",
-    "FILTERS",
     "CatalogUnavailable",
+    "FILTERS",
     "QueryError",
     "Result",
-    "has_named",
+    "deck_term",
+    "has_deck",
     "in_collection",
-    "named_term",
     "run",
     "sort_links",
     "suggest",
-    "swap_named",
+    "swap_deck",
     "with_collection",
-    "with_named",
+    "with_deck",
     "with_order",
 ]
 
@@ -173,37 +173,36 @@ def with_collection(query: str, on: bool) -> str:
 # The switch beside deck mode's deck writes deck="name": that deck only, not every deck
 # whose name contains it ("Deck 1" would also be "Deck 10"). Deck names never hold a
 # double quote, so the term can always be written.
-_NAMED_KEYS = {"deck": ("deck",)}
 
 
-def _named(kind: str, name: str) -> Callable[[Token], bool]:
-    keys, wanted = _NAMED_KEYS[kind], name.strip().lower()
-    return lambda token: token.key in keys and token.op == "=" and token.value.lower() == wanted
+def _is_deck_term(name: str) -> Callable[[Token], bool]:
+    wanted = name.strip().lower()
+    return lambda token: (token.key, token.op) == ("deck", "=") and token.value.lower() == wanted
 
 
-def named_term(kind: str, name: str) -> str:
+def deck_term(name: str) -> str:
     """``deck="name"``."""
-    return f'{kind}="{name.strip()}"'
+    return f'deck="{name.strip()}"'
 
 
-def has_named(query: str, kind: str, name: str) -> bool:
-    """True when the whole search is limited to this deck (``kind`` "deck")."""
-    return bool(name.strip()) and _has(query, _named(kind, name))
+def has_deck(query: str, name: str) -> bool:
+    """True when the whole search is limited to this deck."""
+    return bool(name.strip()) and _has(query, _is_deck_term(name))
 
 
-def with_named(query: str, kind: str, name: str, on: bool) -> str:
+def with_deck(query: str, name: str, on: bool) -> str:
     """The same search limited to this deck, or no longer limited to it."""
     if not name.strip():
         return query
-    return _switched(query, _named(kind, name), named_term(kind, name), on)
+    return _switched(query, _is_deck_term(name), deck_term(name), on)
 
 
-def swap_named(query: str, kind: str, old: str, new: str) -> str:
+def swap_deck(query: str, old: str, new: str) -> str:
     """When the search is limited to the deck ``old``, the same search
     limited to ``new`` instead; otherwise the search as it is."""
-    if not has_named(query, kind, old) or not new.strip():
+    if not has_deck(query, old) or not new.strip():
         return query
-    return with_named(with_named(query, kind, old, False), kind, new, True)
+    return with_deck(with_deck(query, old, False), new, True)
 
 
 def suggest(conn: sqlite3.Connection, text: str) -> list[str]:

@@ -293,27 +293,23 @@ def test_fast_input_has_no_switch_and_no_pickers(client, card):
         ('deck="Humans', False),  # cannot be read
     ],
 )
-def test_has_named(query, expected):
-    assert search.has_named(query, "deck", "Humans") is expected
+def test_has_deck(query, expected):
+    assert search.has_deck(query, "Humans") is expected
 
 
-def test_with_named_adds_and_takes_out_the_term():
-    assert search.with_named("t:elf", "deck", "Humans", True) == 't:elf deck="Humans"'
-    assert search.with_named("", "deck", "Humans", True) == 'deck="Humans"'
-    assert search.with_named("t:elf or t:goblin", "deck", "Box", True) == (
-        '(t:elf or t:goblin) deck="Box"'
-    )
-    assert search.with_named('t:elf deck="Humans" c:w', "deck", "Humans", False) == "t:elf c:w"
-    assert search.with_named('t:elf deck="Humans"', "deck", "Humans", True) == (
-        't:elf deck="Humans"'
-    )
-    assert search.with_named("t:elf", "deck", "", True) == "t:elf"
+def test_with_deck_adds_and_takes_out_the_term():
+    assert search.with_deck("t:elf", "Humans", True) == 't:elf deck="Humans"'
+    assert search.with_deck("", "Humans", True) == 'deck="Humans"'
+    assert search.with_deck("t:elf or t:goblin", "Box", True) == ('(t:elf or t:goblin) deck="Box"')
+    assert search.with_deck('t:elf deck="Humans" c:w', "Humans", False) == "t:elf c:w"
+    assert search.with_deck('t:elf deck="Humans"', "Humans", True) == ('t:elf deck="Humans"')
+    assert search.with_deck("t:elf", "", True) == "t:elf"
 
 
-def test_swap_named_only_moves_a_term_that_is_there():
-    assert search.swap_named('t:elf deck="A"', "deck", "A", "B") == 't:elf deck="B"'
-    assert search.swap_named("t:elf", "deck", "A", "B") == "t:elf"
-    assert search.swap_named('t:elf deck="C"', "deck", "A", "B") == 't:elf deck="C"'
+def test_swap_deck_only_moves_a_term_that_is_there():
+    assert search.swap_deck('t:elf deck="A"', "A", "B") == 't:elf deck="B"'
+    assert search.swap_deck("t:elf", "A", "B") == "t:elf"
+    assert search.swap_deck('t:elf deck="C"', "A", "B") == 't:elf deck="C"'
 
 
 def test_the_collection_switch_still_works(client):
