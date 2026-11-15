@@ -79,7 +79,6 @@
         <td class="num">{{ entry.quantity }}</td>
         <td class="nowrap"><a href="/card/{{ entry.scryfall_id }}"><span class="set-code">{{ entry.set_code }}</span> {{ entry.collector_number }}</a></td>
         <td class="nowrap">{{ traits(entry) }}</td>
-        <td>{{ entry.location_name or t("entry.unassigned") }}</td>
         <td class="num">{% if not locked %}<a href="/collection/{{ entry.id }}/edit?next={{ here | urlencode }}">{{ t("entry.edit") }}</a>{% endif %}</td>
       </tr>
       {% endfor %}
@@ -97,7 +96,7 @@
     <input type="hidden" name="printing" value="{{ card.id }}">
     <input type="hidden" name="next" value="/card/{{ card.id }}#mine">
     <div class="fields">
-      {{ copy_fields(sticky, options, 1, sticky.location) }}
+      {{ copy_fields(sticky, options, 1) }}
     </div>
     <div class="actions">
       <button type="submit" class="primary">{{ t("copies.add") }}</button>
@@ -128,12 +127,6 @@
     </label>
     <label>{{ t("entry.quantity") }}
       <input type="number" name="quantity" value="1" min="1" max="999" inputmode="numeric" required>
-    </label>
-    <label>{{ t("deck.board") }}
-      <select name="board">
-        <option value="main">{{ t("deck.board.main") }}</option>
-        <option value="side">{{ t("deck.board.side") }}</option>
-      </select>
     </label>
     <button type="submit">{{ t("deck.add_submit") }}</button>
   </form>

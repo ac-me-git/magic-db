@@ -20,7 +20,7 @@
 
 <h1>Backup and restore</h1>
 <h2>What is backed up</h2>
-<p>Your collection, locations, decks and settings are one SQLite file: <code>collection.db</code>, in the data folder. That file is the only thing worth backing up. The card catalog and the cached images are downloaded again whenever they are missing.</p>
+<p>Your collection, decks and settings are one SQLite file: <code>collection.db</code>, in the data folder. That file is the only thing worth backing up. The card catalog and the cached images are downloaded again whenever they are missing.</p>
 <h2>Automatic backups</h2>
 <p>Every night at <code>MAGICDB_BACKUP_HOUR</code> (4:00 by default) AMTG writes, in the backup folder:</p>
 <ul>
@@ -58,7 +58,7 @@ docker compose run --rm --entrypoint sh magic-db -c \
   "rm -f /data/collection.db-wal /data/collection.db-shm &amp;&amp; \
    cp /data/backups/collection-20261112-040000.db /data/collection.db"
 docker compose start</code></pre>
-<p>If you only have a CSV or JSON export, start with an empty collection and bring it back with <strong>Import</strong> &mdash; see <a href="import-export.html">Import and export</a>. The JSON export also restores empty locations and decks; the CSV does not.</p>
+<p>If you only have a CSV or JSON export, start with an empty collection and bring it back with <strong>Import</strong> &mdash; see <a href="import-export.html">Import and export</a>. The JSON export also restores the decks; the CSV does not.</p>
 <h2>Moving to another computer</h2>
 <p>Stop AMTG, copy <code>collection.db</code> (and the <code>backups</code> folder if you want the history) into the data folder of the new installation, and start it there. The catalog is downloaded again by itself.</p>
 

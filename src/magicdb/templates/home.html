@@ -87,14 +87,6 @@
     <div class="checks">
       <label class="check"><input type="checkbox" name="owned" value="1"> {{ t("panel.owned") }}</label>
     </div>
-    {% if options.locations %}
-    <label>{{ t("panel.location") }}
-      <select name="location">
-        <option value="">{{ t("panel.any") }}</option>
-        {% for value in options.locations %}<option>{{ value }}</option>{% endfor %}
-      </select>
-    </label>
-    {% endif %}
   </fieldset>
 
   <div class="fields">

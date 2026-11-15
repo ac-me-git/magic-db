@@ -9,7 +9,6 @@ from fastapi.testclient import TestClient
 
 from magicdb import db, search, web
 from magicdb.app import create_app
-from magicdb.collection import service as collection
 from magicdb.templating import search_url
 
 
@@ -99,7 +98,7 @@ def test_the_menu_has_the_switches_the_ways_onward_the_choices_and_administratio
 
 
 def test_the_page_you_are_on_is_marked_in_the_menu(client):
-    plain = menu(client.get("/locations").text).replace('aria-current="true"', "")
+    plain = menu(client.get("/import").text).replace('aria-current="true"', "")
     assert "aria-current" not in plain
     for address, link in (
         ("/stats", "/stats"),
@@ -138,12 +137,12 @@ def test_my_collection_opens_the_statistics_with_the_ways_onward(owned):
     assert '<h1 class="page-title">My collection</h1>' in page and "Statistics" in page
     assert "<title>My collection · AMTG</title>" in page  # the same name as the link to it
     hub = page.split('<p class="links">')[1].split("</p>")[0]
-    assert links(hub) == ["/locations", "/import", "/export"]  # no card list, no fast input
+    assert links(hub) == ["/import", "/export"]  # no card list, no locations, no fast input
     assert "<dd>6</dd>" in page  # and the numbers are there
 
 
 def test_no_page_links_to_add_cards_any_more(owned):
-    for path in ("/admin", "/stats", "/locations"):
+    for path in ("/admin", "/stats", "/decks"):
         assert 'href="/add"' not in owned.get(path).text, path
 
 
@@ -430,7 +429,6 @@ def test_suggestions_in_the_collection_are_only_owned_names(owned):
 
 def test_suggestion_names_are_escaped(catalog, client):
     with closing(db.connect(catalog)) as conn:
-        collection.create_location(conn, "x")
         conn.execute(
             "INSERT INTO entries (scryfall_id, oracle_id, name, set_code, collector_number, quantity,"
             " created_at, updated_at) VALUES ('p', 'o', 'Evil <b>\"card\"</b> & co', 'x', '1', 1, 'n', 'n')"
@@ -570,7 +568,7 @@ def test_new_labels_in_italian(owned):
     )
     stats = owned.get("/stats").text
     assert '<h1 class="page-title">La mia collezione</h1>' in stats
-    assert ">Posizioni</a>" in stats
+    assert ">Importa</a>" in stats and "Posizioni" not in stats
 
 
 # --- style sheets and scripts are refreshed when they change --------------------------

@@ -28,9 +28,9 @@ def bolt(fixture_cards):
 
 @pytest.fixture
 def stocked(client, bolt):
-    """An unlocked collection with one location and three Lightning Bolts in it."""
-    client.post("/locations", data={"name": "Binder", "kind": "binder"})
-    client.post("/add", data={"printing": bolt, "quantity": "3", "location": "1"})
+    """An unlocked collection with three Lightning Bolts and a deck."""
+    client.post("/add", data={"printing": bolt, "quantity": "3"})
+    client.post("/decks", data={"name": "Burn"})
     return client
 
 
@@ -43,7 +43,7 @@ def snapshot(settings):
     with closing(db.connect(settings)) as conn:
         return {
             table: [tuple(row) for row in conn.execute(f"SELECT * FROM {table} ORDER BY id")]
-            for table in ("entries", "locations", "history")
+            for table in ("entries", "decks", "deck_cards", "history")
         }
 
 
@@ -61,10 +61,10 @@ def test_a_new_collection_is_unlocked(client, catalog):
 
 
 def test_locking_and_unlocking(client, catalog):
-    response = set_lock(client, "on", "/stats?location=none")
-    assert (response.status_code, response.headers["location"]) == (303, "/stats?location=none")
+    response = set_lock(client, "on", "/stats?sets=name")
+    assert (response.status_code, response.headers["location"]) == (303, "/stats?sets=name")
     assert lock.load(catalog) is True
-    page = client.get("/stats?location=none").text
+    page = client.get("/stats?sets=name").text
     assert 'class="menu-row lock-switch is-locked"' in page
     # the lock is in the menu, so the button that opens it says it is on
     name = "Menu · Collection locked: read only"
@@ -73,7 +73,7 @@ def test_locking_and_unlocking(client, catalog):
     assert '<span class="menu-lock"><svg' in button
     assert 'name="state" value="off"' in page
     assert 'title="Collection locked: read only"' in page
-    assert 'name="next" value="/stats?location=none"' in page  # comes back to this page
+    assert 'name="next" value="/stats?sets=name"' in page  # comes back to this page
 
     assert set_lock(client, "off").headers["location"] == "/"
     assert lock.load(catalog) is False
@@ -105,7 +105,7 @@ def test_the_bar_is_on_every_page(stocked, bolt):
         "/",
         "/search?q=bolt",
         f"/card/{bolt}",
-        "/locations",
+        "/decks",
         "/import",
         "/export",
         "/stats",
@@ -122,15 +122,13 @@ def test_the_bar_is_on_every_page(stocked, bolt):
 
 CHANGES = [
     ("/add", {"printing": "BOLT", "quantity": "1"}),
-    ("/collection/1", {"quantity": "9", "finish": "foil", "condition": "NM", "language": "en"}),
-    ("/collection/1/move", {"quantity": "1", "location": ""}),
+    ("/collection/1", {"quantity": "9", "finish": "foil"}),
     ("/collection/1/remove", {"quantity": "1"}),
     ("/collection/1/remove", {}),
-    ("/locations", {"name": "Box", "kind": "box"}),
-    ("/locations/1", {"name": "Renamed", "kind": "box"}),
-    ("/locations/1/shift", {"offset": "1"}),
-    ("/locations/1/empty", {"destination": ""}),
-    ("/locations/1/delete", {}),
+    ("/fast/toggle", {"printing": "BOLT", "finish": "foil", "action": "add"}),
+    ("/deckmode/card", {"deck": "1", "printing": "BOLT", "action": "add"}),
+    ("/decks", {"name": "Control"}),
+    ("/decks/1", {"name": "Renamed"}),
     ("/import/0123456789abcdef0123456789abcdef/confirm", {"mode": "replace"}),
     ("/some/page/that/does/not/exist/yet", {}),
 ]
@@ -168,10 +166,7 @@ def test_the_same_changes_work_again_once_unlocked(stocked, catalog, bolt):
     set_lock(stocked, "on")
     assert stocked.post("/add", data={"printing": bolt, "quantity": "2"}).status_code == 423
     set_lock(stocked, "off")
-    assert (
-        stocked.post("/add", data={"printing": bolt, "quantity": "2", "location": "1"}).status_code
-        == 303
-    )
+    assert stocked.post("/add", data={"printing": bolt, "quantity": "2"}).status_code == 303
     assert snapshot(catalog)["entries"][0][6] == 5  # quantity: 3 + 2
 
 
@@ -185,7 +180,7 @@ def test_reading_works_while_locked(stocked, bolt):
         "/search?q=bolt",
         "/search?q=have:yes",
         f"/card/{bolt}",
-        "/locations",
+        "/decks",
         "/stats",
         "/export",
         "/admin",
@@ -225,7 +220,7 @@ def test_backups_and_catalog_updates_work_while_locked(stocked, catalog, monkeyp
 def test_pages_hide_their_forms_while_locked(stocked, bolt):
     open_pages = {
         f"/card/{bolt}": 'name="printing"',
-        "/locations": 'action="/locations"',
+        "/decks/1": 'action="/decks/1/cards"',
         "/import": 'enctype="multipart/form-data"',
         "/collection/1/edit": 'action="/collection/1"',
     }
@@ -236,10 +231,9 @@ def test_pages_hide_their_forms_while_locked(stocked, bolt):
     for path, control in open_pages.items():
         page = stocked.get(path).text
         assert control not in page, path
-        assert "Lightning Bolt" in page or path in ("/locations", "/import"), path
-    assert 'action="/locations/1' not in stocked.get("/locations").text  # no rename, no delete
-    assert "Binder" in stocked.get("/locations").text  # still listed
-    for path in ("/locations", "/import", "/collection/1/edit"):
+        assert "Lightning Bolt" in page or path in ("/decks/1", "/import"), path
+    assert "Burn" in stocked.get("/decks/1").text  # still shown
+    for path in ("/decks/1", "/import", "/collection/1/edit"):
         page = stocked.get(path).text
         assert "so nothing can change them by accident" in page, path
     assert "Edit</a>" not in stocked.get(f"/card/{bolt}").text
@@ -285,7 +279,6 @@ def test_upgrade_adds_the_settings_table_and_backs_up_first(settings):
     client = TestClient(create_app(settings))  # starting the app upgrades the database
     with closing(db.connect(settings)) as conn:
         assert conn.execute("PRAGMA user_version").fetchone()[0] >= 2
-        assert conn.execute("SELECT name FROM locations").fetchone()[0] == "Old binder"
         assert conn.execute("SELECT COUNT(*) FROM settings").fetchone()[0] == 0
     assert client.app.state.locked is False  # an upgraded collection starts unlocked
 

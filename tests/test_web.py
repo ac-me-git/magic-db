@@ -66,7 +66,7 @@ def test_home_shows_the_filter_panel_when_administration_says_so(client, fixture
     for option in ['<option value="Dragon">', '<option value="Flying">', '<option value="arn">']:
         assert option in page.text
     assert "<option>modern</option>" in page.text
-    assert "Kept in" not in page.text  # no locations yet
+    assert "Kept in" not in page.text and 'name="location"' not in page.text  # no locations
     # one or the other: the panel takes the place of the map and of the list of sets
     assert "Syntax map" not in page.text and "Recent expansions" not in page.text
     assert "<details" not in page.text.split("<main>")[1] and "<h1" not in page.text
@@ -112,16 +112,6 @@ def test_the_home_page_can_be_chosen_while_the_collection_is_locked(client):
     client.post("/lock", data={"state": "on"})
     show_filters(client)  # it changes a page, not the collection
     assert 'action="/filter"' in client.get("/").text
-
-
-def test_home_lists_locations_once_there_are_some(client, catalog):
-    show_filters(client)
-    conn = db.connect(catalog)
-    with conn:
-        conn.execute("INSERT INTO locations (name, created_at) VALUES ('Blue box', 'now')")
-    conn.close()
-    page = client.get("/")
-    assert "Kept in" in page.text and "<option>Blue box</option>" in page.text
 
 
 def link(query: str) -> str:

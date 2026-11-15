@@ -299,12 +299,11 @@ def test_scheduler_survives_a_job_that_raises(catalog, monkeypatch):
 @pytest.fixture
 def stocked(catalog):
     with closing(db.connect(catalog)) as conn:
-        binder = service.create_location(conn, "Binder", "binder")
         for name, set_code, copies in [("Lightning Bolt", "m10", 3), ("Sol Ring", "c21", 2)]:
             printing = conn.execute(
                 "SELECT id FROM cat.printings WHERE name = ? AND set_code = ?", (name, set_code)
             ).fetchone()[0]
-            service.add_entry(conn, printing, copies, location_id=binder)
+            service.add_entry(conn, printing, copies)
     return catalog
 
 
@@ -318,7 +317,7 @@ def test_backup_is_a_sound_copy_with_a_csv_beside_it(stocked):
 
     with closing(sqlite3.connect(result.path)) as copy, closing(db.connect(stocked)) as live:
         assert copy.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
-        for table in ("entries", "locations", "history"):
+        for table in ("entries", "history"):
             query = f"SELECT * FROM {table} ORDER BY id"
             assert copy.execute(query).fetchall() == [tuple(r) for r in live.execute(query)]
         csv_text = result.path.with_suffix(".csv").read_text(encoding="utf-8-sig")
@@ -628,7 +627,7 @@ def test_password_protects_everything_but_healthz(catalog):
         refused = client.get(path)
         assert refused.status_code == 401, path
         assert refused.headers["www-authenticate"].startswith('Basic realm="magic-db"')
-    assert client.post("/locations", data={"name": "x"}).status_code == 401
+    assert client.post("/add", data={"printing": "x"}).status_code == 401
     assert client.get("/healthz").status_code == 200
 
     assert client.get("/", headers=basic("anyone", "s3cret: è")).status_code == 200

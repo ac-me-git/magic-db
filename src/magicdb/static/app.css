@@ -893,54 +893,19 @@ button.danger {
   box-shadow: 0 1px 3px rgb(0 0 0 / 60%);
 }
 
-.locations {
+/* the export page's two downloads, one box each */
+.choices {
   margin: 1rem 0;
   padding: 0;
   list-style: none;
 }
 
-.location {
+.choice {
   margin-bottom: 0.5rem;
   padding: 0.75rem 1rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-}
-
-.location-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 0.75rem;
-}
-
-.location-head .sub {
-  overflow: visible;
-  white-space: normal;
-}
-
-.location details {
-  margin-top: 0.5rem;
-}
-
-.location summary {
-  cursor: pointer;
-  color: var(--accent);
-  font-size: 0.9rem;
-}
-
-.location label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-
-.location .fields input,
-.location .fields select {
-  width: 100%;
-  color: var(--text);
 }
 
 .mine {

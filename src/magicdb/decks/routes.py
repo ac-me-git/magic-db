@@ -36,9 +36,7 @@ def decks(request: Request, conn: web.Conn) -> HTMLResponse:
 
 
 @router.post("/decks")
-def create_deck(
-    request: Request, conn: web.Conn, name: Field = "", format: Field = "", notes: Field = ""
-) -> Response:
+def create_deck(request: Request, conn: web.Conn, name: Field = "", notes: Field = "") -> Response:
     """With no name (the New deck button) the deck is "Deck 1", "Deck 2"... in the
     visitor's language, and its page opens with the name ready to change."""
     if not name.strip():
@@ -46,7 +44,7 @@ def create_deck(
         deck_id = service.create_numbered(conn, t("decks.default_name"))
         return redirect(f"/decks/{deck_id}?new=1")
     try:
-        deck_id = service.create_deck(conn, name, format, notes)
+        deck_id = service.create_deck(conn, name, notes)
     except CollectionError as error:
         return decks_page(request, conn, error)
     return redirect(f"/decks/{deck_id}")
@@ -62,7 +60,7 @@ def deck_page(
     added: str = "",
     editing: str = "",
 ) -> HTMLResponse:
-    """``editing`` opens the name, format and notes: "new" for a deck just made (the
+    """``editing`` opens the name and notes: "new" for a deck just made (the
     name is selected, ready to type over), "error" when saving them failed."""
     try:
         summary = service.summary(conn, deck_id, currency(request))
@@ -75,7 +73,7 @@ def deck_page(
         "deck.html",
         400 if error else 200,
         deck=summary,
-        boards=[(board, [row for row in rows if row.board == board]) for board in service.BOARDS],
+        rows=rows,
         has_catalog=db.has_catalog(conn),
         error=error,
         report=report,
@@ -109,11 +107,10 @@ def update_deck(
     conn: web.Conn,
     deck_id: str,
     name: Field = "",
-    format: Field = "",
     notes: Field = "",
 ) -> Response:
     try:
-        service.update_deck(conn, as_id(deck_id), name, format, notes)
+        service.update_deck(conn, as_id(deck_id), name, notes)
     except CollectionError as error:
         return deck_page(request, conn, as_id(deck_id), error, editing="error")
     return redirect(f"/decks/{as_id(deck_id)}")
@@ -136,7 +133,6 @@ def add_card(
     name: Field = "",
     printing: Field = "",
     quantity: Field = "1",
-    board: Field = "main",
     next: Field = "",
 ) -> Response:
     """Add a card by name (from the deck page) or by printing (from a card's page)."""
@@ -148,7 +144,6 @@ def add_card(
             name=name,
             printing=printing if web.is_card_id(printing) else "",
             quantity=quantity,
-            board=board,
         )
     except CollectionError as error:
         return deck_page(request, conn, number, error, typed=name)
@@ -165,11 +160,10 @@ def add_card_to(
     deck: Field = "",
     printing: Field = "",
     quantity: Field = "1",
-    board: Field = "main",
     next: Field = "",
 ) -> Response:
     """The card page's form: the deck is one of its fields, not part of the address."""
-    return add_card(request, conn, deck, "", printing, quantity, board, next)
+    return add_card(request, conn, deck, "", printing, quantity, next)
 
 
 # --- deck mode: + and − beside the cards of a search ------------------------------------
@@ -177,9 +171,9 @@ def add_card_to(
 
 @router.get("/deckmode/settings")
 def deck_mode_settings(
-    request: Request, conn: web.Conn, deck: str = "", board: str = "", next: str = ""
+    request: Request, conn: web.Conn, deck: str = "", next: str = ""
 ) -> Response:
-    """Choose the deck and the board deck mode fills (a cookie only, so allowed while
+    """Choose the deck deck mode fills (a cookie only, so allowed while
     locked). A search limited to the deck chosen before follows the new one."""
     before = mode.choice(request, conn)
     chosen = {str(d["id"]): d for d in before.decks}.get(deck, before.deck)
@@ -187,11 +181,7 @@ def deck_mode_settings(
     if before.deck is not None and chosen is not None:
         target = web.swap_in_address(back, "deck", before.deck["name"], chosen["name"])
     response = web.settings_redirect(request, target, changed=target != back)
-    mode.remember(
-        response,
-        chosen["id"] if chosen is not None else None,
-        board if board in service.BOARDS else before.board,
-    )
+    mode.remember(response, chosen["id"] if chosen is not None else None)
     return response
 
 
@@ -201,23 +191,22 @@ def deck_mode_card(
     conn: web.Conn,
     deck: Field = "",
     printing: Field = "",
-    board: Field = "main",
     action: Field = "add",
     next: Field = "",
 ) -> Response:
-    """One more copy of a card in a board of a deck, or one less; then the card's
+    """One more copy of a card in a deck, or one less; then the card's
     buttons again (with HTMX) or the search it came from."""
     number = as_id(deck)
     card = None
     if web.is_card_id(printing) and db.has_catalog(conn):
         card = conn.execute("SELECT * FROM cat.printings WHERE id = ?", (printing,)).fetchone()
-    if card is None or board not in service.BOARDS or action not in ("add", "remove"):
+    if card is None or action not in ("add", "remove"):
         return web.render(request, "not_found.html", 404)
     try:
         if action == "add":
-            service.add_card(conn, number, printing=printing, board=board)
+            service.add_card(conn, number, printing=printing)
         else:
-            service.take_card(conn, number, printing=printing, board=board)
+            service.take_card(conn, number, printing=printing)
     except CollectionError:
         return web.render(request, "not_found.html", 404)  # the deck went away
     if request.headers.get("HX-Request") != "true":
@@ -227,7 +216,6 @@ def deck_mode_card(
         "_deck_counted.html",
         card=card,
         deck_id=number,
-        board=board,
         deck_counts=service.copies_in_deck(conn, number, [card["oracle_id"]]),
     )
 
@@ -249,11 +237,10 @@ def update_card(
     deck_id: str,
     card_id: str,
     quantity: Field = "",
-    board: Field = "main",
 ) -> Response:
     number = as_id(deck_id)
     try:
-        service.update_card(conn, number, as_id(card_id), quantity, board)
+        service.update_card(conn, number, as_id(card_id), quantity)
     except CollectionError as error:
         return deck_page(request, conn, number, error)
     return redirect(f"/decks/{number}")

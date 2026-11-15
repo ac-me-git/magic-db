@@ -22,7 +22,6 @@ LIKE = "LIKE ? ESCAPE '\\'"
 
 ORDERS = ("name", "mv", "released", "rarity", "price", "set", "type")
 DESCENDING_BY_DEFAULT = ("released", "rarity", "price")
-CONDITIONS = ("MT", "NM", "EX", "GD", "LP", "PL", "PO")
 FINISHES = ("nonfoil", "foil", "etched")
 
 _COLOR_NAMES = {"white": "w", "blue": "u", "black": "b", "red": "r", "green": "g"}
@@ -278,26 +277,8 @@ def _owned(condition: str) -> str:
     return f"EXISTS (SELECT 1 FROM entries e WHERE e.scryfall_id = p.id AND {condition})"
 
 
-def location(ctx: Context, op: str, value: str) -> Sql:
-    sql = (
-        "EXISTS (SELECT 1 FROM entries e JOIN locations l ON l.id = e.location_id "
-        f"WHERE e.scryfall_id = p.id AND l.name {LIKE})"
-    )
-    return sql, [_contains(value)]
-
-
-def condition(ctx: Context, op: str, value: str) -> Sql:
-    if value.upper() not in CONDITIONS:
-        raise QueryError(f"'cond:' accepts {', '.join(CONDITIONS)}; got '{value}'.")
-    return _owned("e.condition = ?"), [value.upper()]
-
-
 def finish(ctx: Context, op: str, value: str) -> Sql:
     return _owned("e.finish = ?"), [_choice("finish", value, FINISHES)]
-
-
-def language(ctx: Context, op: str, value: str) -> Sql:
-    return _owned("e.language = ?"), [value.lower()]
 
 
 def deck(ctx: Context, op: str, value: str) -> Sql:
@@ -405,17 +386,7 @@ FILTERS: tuple[FilterDef, ...] = (
         "set:arn haveprint:no",
     ),
     _def("qty", "qty", NUMERIC_OPS, quantity, "Copies I own of this printing", "qty>=4"),
-    _def(
-        "loc",
-        "loc location",
-        TEXT,
-        location,
-        "I keep it in a location named like",
-        'loc:"blue box"',
-    ),
-    _def("cond", "cond", TEXT, condition, "I own it in this condition", "cond:nm"),
     _def("finish", "finish", TEXT, finish, "I own it in this finish", "finish:foil"),
-    _def("lang", "lang", TEXT, language, "I own it in this language", "lang:it"),
     _def("deck", "deck", TEXT, deck, "In a deck whose name contains", 'deck:"dragons"'),
     _directive("unique", unique, "Show cards (default) or every printing", "unique:prints"),
     _directive("order", order, "Sort by: " + ", ".join(ORDERS), "order:price"),
@@ -480,7 +451,7 @@ def compile_query(node: Node, currency: str = "eur") -> tuple[str, list, Context
     """Return ``(where_sql, params, context)`` for a parsed search.
 
     The WHERE clause refers to the catalog row as ``p`` and to the collection tables
-    ``entries`` and ``locations`` by their plain names.
+    ``entries`` and ``deck_cards`` by their plain names.
     """
     ctx = Context(currency=currency)
     compiled = _walk(node, ctx)

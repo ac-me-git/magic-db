@@ -2,7 +2,7 @@
 
 ## What is backed up
 
-Your collection, locations, decks and settings are one SQLite file: `collection.db`, in
+Your collection, decks and settings are one SQLite file: `collection.db`, in
 the data folder. That file is the only thing worth backing up. The card catalog and the
 cached images are downloaded again whenever they are missing.
 
@@ -83,7 +83,7 @@ docker compose start
 
 If you only have a CSV or JSON export, start with an empty collection and bring it back
 with **Import** — see [import-export.md](import-export.md). The JSON export also restores
-empty locations and decks; the CSV does not.
+the decks; the CSV does not.
 
 ## Moving to another computer
 

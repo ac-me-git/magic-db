@@ -10,8 +10,9 @@ Understands what Arena, MTGO, Moxfield and most deck sites export:
     2 Pyroblast
     SB: 1 Red Elemental Blast
 
-This module only reads the text; whether a name is a real card is decided by the
-caller, which has the catalog.
+A deck has no sideboard: the cards of a "Sideboard" section, or after "SB:", join the
+list like the others. This module only reads the text; whether a name is a real card is
+decided by the caller, which has the catalog.
 """
 
 import re
@@ -64,7 +65,6 @@ class Line:
     text: str  # the line as written
     quantity: int
     name: str  # cleaned: no set, collector number or foil mark
-    board: str  # "main" | "side"
     counted: bool  # the line gave a quantity ("4 Bolt"), not just a name
 
 
@@ -80,15 +80,13 @@ def clean_name(name: str) -> str:
 
 
 def header(line: str) -> str | None:
-    """'main', 'side', 'skip' or 'group' if the line is a section title, else None."""
+    """'deck', 'skip' or 'group' if the line is a section title, else None."""
     match = _HEADER.fullmatch(line.strip().lower())
     if not match:
         return None
     word = match.group(1).strip()
-    if word in MAIN_HEADERS:
-        return "main"
-    if word in SIDE_HEADERS:
-        return "side"
+    if word in MAIN_HEADERS or word in SIDE_HEADERS:
+        return "deck"
     if word in SKIPPED_HEADERS:
         return "skip"
     if word in GROUP_HEADERS:
@@ -100,7 +98,7 @@ def parse(text: str) -> list[Line]:
     """The card lines of a deck list, in order. Titles, comments and the cards of
     sections that are not part of the deck (maybeboard, tokens) are left out."""
     lines: list[Line] = []
-    board, skipping = "main", False
+    skipping = False
     for number, raw in enumerate(text.splitlines(), start=1):
         line = raw.strip()
         if not line or line.startswith(("//", "#")):
@@ -109,16 +107,13 @@ def parse(text: str) -> list[Line]:
         if kind is not None:
             if kind != "group":  # a type group keeps the section it is in
                 skipping = kind == "skip"
-                board = "side" if kind == "side" else "main"
             continue
         if skipping:  # also Arena's "About" block, whose next line is "Name <deck name>"
             continue
-        line_board = board
-        if _SIDE_PREFIX.match(line):
-            line_board, line = "side", _SIDE_PREFIX.sub("", line, count=1)
+        line = _SIDE_PREFIX.sub("", line, count=1)
         counted = _QUANTITY.fullmatch(line)
         quantity = int(counted.group(1)) if counted else 1
         name = clean_name(counted.group(2) if counted else line)
         if name:
-            lines.append(Line(number, raw.strip(), quantity, name, line_board, bool(counted)))
+            lines.append(Line(number, raw.strip(), quantity, name, bool(counted)))
     return lines

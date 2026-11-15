@@ -285,10 +285,11 @@ def test_cases_are_not_vacuous(conn, fixture_cards):
 def test_every_filter_key_in_the_spec_exists():
     keys = (
         "name o oracle t type kw keyword c color id identity mv cmc m mana pow tou loy r rarity "
-        "s e set cn st f legal a artist ft year date eur usd is have haveprint qty loc cond "
-        "finish lang unique order dir include"
+        "s e set cn st f legal a artist ft year date eur usd is have haveprint qty finish deck "
+        "unique order dir include"
     )
     assert set(keys.split()) <= set(BY_KEY)
+    assert not {"loc", "location", "cond", "lang"} & set(BY_KEY)  # removed 2026-11-15
     assert sum(len(d.keys) for d in FILTERS) == len(BY_KEY)  # no key defined twice
 
 
@@ -399,39 +400,23 @@ def test_paging(conn):
 # --- collection filters ---------------------------------------------------------------
 
 
-def own(conn, name, set_code, quantity=1, finish="nonfoil", condition="NM", lang="en", loc=None):
+def own(conn, name, set_code, quantity=1, finish="nonfoil"):
     card = conn.execute(
         "SELECT * FROM cat.printings WHERE name = ? AND set_code = ?", (name, set_code)
     ).fetchone()
-    location_id = None
-    if loc:
-        conn.execute("INSERT OR IGNORE INTO locations (name, created_at) VALUES (?, 'now')", (loc,))
-        location_id = conn.execute("SELECT id FROM locations WHERE name = ?", (loc,)).fetchone()[0]
     conn.execute(
         "INSERT INTO entries (scryfall_id, oracle_id, name, set_code, collector_number, quantity,"
-        " finish, condition, language, location_id, created_at, updated_at)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'now', 'now')",
-        (
-            card["id"],
-            card["oracle_id"],
-            name,
-            set_code,
-            card["collector_number"],
-            quantity,
-            finish,
-            condition,
-            lang,
-            location_id,
-        ),
+        " finish, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'now', 'now')",
+        (card["id"], card["oracle_id"], name, set_code, card["collector_number"], quantity, finish),
     )
 
 
 @pytest.fixture
 def owned(conn):
-    own(conn, "Lightning Bolt", "m10", 3, loc="Binder 1")
-    own(conn, "Lightning Bolt", "m10", 2, finish="foil", condition="EX", loc="Blue box")
-    own(conn, "Lightning Bolt", "lea", 1, condition="PL", loc="Blue box")
-    own(conn, "Serra Angel", "dom", 4, lang="it", loc="Deck 100%")
+    own(conn, "Lightning Bolt", "m10", 3)
+    own(conn, "Lightning Bolt", "m10", 2, finish="foil")
+    own(conn, "Lightning Bolt", "lea", 1)
+    own(conn, "Serra Angel", "dom", 4)
     own(conn, "Sol Ring", "c21", 1)
     return conn
 
@@ -472,31 +457,22 @@ def test_qty(owned):
     assert found(owned, "qty>0 qty<4 unique:prints") == [BOLT_LEA, RING]
 
 
-def test_loc(owned):
-    assert found(owned, "loc:binder unique:prints") == [BOLT_M10]
-    assert found(owned, 'loc:"blue box" unique:prints') == [BOLT_LEA, BOLT_M10]
-    assert found(owned, "loc:BLUE unique:prints") == [BOLT_LEA, BOLT_M10]
-    assert found(owned, "loc:garage unique:prints") == []
-    assert found(owned, 'loc:"100%" unique:prints') == [ANGEL]
-    assert found(owned, "loc:% unique:prints") == [ANGEL]  # % is a character, not a wildcard
-    assert found(owned, "haveprint:yes -loc:b unique:prints") == [ANGEL, RING]
-
-
-def test_cond_finish_lang(owned):
-    assert found(owned, "cond:ex unique:prints") == [BOLT_M10]
-    assert found(owned, "cond:PL unique:prints") == [BOLT_LEA]
-    assert found(owned, "cond:nm unique:prints") == [BOLT_M10, ANGEL, RING]
-    assert found(owned, "cond:mt unique:prints") == []
+def test_finish(owned):
     assert found(owned, "finish:foil unique:prints") == [BOLT_M10]
+    assert found(owned, "finish:nonfoil unique:prints") == [BOLT_LEA, BOLT_M10, ANGEL, RING]
     assert found(owned, "finish:etched unique:prints") == []
-    assert found(owned, "lang:it unique:prints") == [ANGEL]
-    assert found(owned, "lang:EN t:artifact unique:prints") == [RING]
+
+
+@pytest.mark.parametrize("query", ["loc:binder", 'location:"blue box"', "cond:nm", "lang:it"])
+def test_locations_conditions_and_languages_are_not_searched_any_more(owned, query):
+    with pytest.raises(QueryError, match="is not something you can search by"):
+        run(owned, query)
 
 
 def test_collection_filters_on_an_empty_collection(conn):
     assert run(conn, "have:yes").total == 0
     assert run(conn, "have:no").total == run(conn, "").total
-    assert run(conn, "qty>=1 or loc:x or cond:nm or finish:foil or lang:en").total == 0
+    assert run(conn, "qty>=1 or finish:foil or deck:x").total == 0
 
 
 # --- errors ---------------------------------------------------------------------------
@@ -523,7 +499,6 @@ def test_collection_filters_on_an_empty_collection(conn):
         ("haveprint:2", "'haveprint:' accepts yes or no"),
         ("date:2024", "needs a date like"),
         ("date>=01/02/2024", "needs a date like"),
-        ("cond:mint", "'cond:' accepts MT, NM"),
         ("finish:shiny", "'finish:' accepts nonfoil"),
         ("m:2r!", "'m:' accepts"),
         ("t>dragon", "'t' cannot be used with '>'"),
@@ -607,7 +582,6 @@ def test_hostile_input_gives_results_or_a_query_error(owned, text):
             assert 0 <= result.total <= before
     assert owned.execute("SELECT COUNT(*) FROM cat.printings").fetchone()[0] == before
     assert owned.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 5
-    assert owned.execute("SELECT COUNT(*) FROM locations").fetchone()[0] == 3
 
 
 def test_wildcard_characters_are_literal(conn):

@@ -1,5 +1,5 @@
-"""Deck mode: + and − under the cards of a search fill a deck; switches beside the
-pickers of deck mode and fast input limit the search to that deck or location (SPEC §7)."""
+"""Deck mode: + and − on the cards of a search fill a deck; a switch beside the deck
+picker limits the search to that deck (SPEC §7)."""
 
 import re
 from contextlib import closing
@@ -44,14 +44,12 @@ def make_deck(client, name):
 
 def deck_cards(catalog):
     with closing(db.connect(catalog)) as conn:
-        rows = conn.execute(
-            "SELECT deck_id, oracle_id, board, quantity FROM deck_cards ORDER BY id"
-        )
+        rows = conn.execute("SELECT deck_id, oracle_id, quantity FROM deck_cards ORDER BY id")
         return [tuple(row) for row in rows]
 
 
-def click(client, deck, card, action="add", board="main", **extra):
-    data = {"deck": deck, "printing": card["id"], "board": board, "action": action, **extra}
+def click(client, deck, card, action="add", **extra):
+    data = {"deck": deck, "printing": card["id"], "action": action, **extra}
     return client.post("/deckmode/card", data=data, headers=HTMX)
 
 
@@ -83,11 +81,11 @@ def test_without_decks_the_view_says_so_and_links_to_the_decks(client):
     assert "deck-count" not in page and 'action="/deckmode/settings"' not in page
 
 
-def test_the_view_shows_the_deck_picker_the_board_and_buttons_per_card(client, card):
+def test_the_view_shows_the_deck_picker_and_buttons_per_card(client, card):
     make_deck(client, "Humans")
     page = search_page(client, f'!"{card["name"]}" unique:prints')
     assert 'action="/deckmode/settings"' in page and ">Humans</option>" in page
-    assert ">Main deck</option>" in page and ">Sideboard</option>" in page
+    assert 'name="board"' not in page and "Sideboard" not in page  # a deck is one list
     # a deck lists cards, not printings: one image per card whatever unique: says
     assert page.count('class="deck-count"') == 1
     assert shown(page) == 0
@@ -98,7 +96,7 @@ def test_plus_and_minus_change_the_copies_in_the_deck(client, catalog, card):
     deck = make_deck(client, "Humans")
     assert shown(click(client, deck, card).text) == 1
     assert shown(click(client, deck, card).text) == 2
-    assert deck_cards(catalog) == [(deck, card["oracle_id"], "main", 2)]
+    assert deck_cards(catalog) == [(deck, card["oracle_id"], 2)]
     assert shown(click(client, deck, card, "remove").text) == 1
     assert shown(click(client, deck, card, "remove").text) == 0
     assert deck_cards(catalog) == []  # the last copy takes the row away
@@ -110,26 +108,13 @@ def test_any_printing_counts_as_the_same_card(client, catalog, card, fixture_car
     twins = [c for c in fixture_cards if c["oracle_id"] == card["oracle_id"]]
     for printing in twins[:2]:
         click(client, deck, printing)
-    assert deck_cards(catalog) == [(deck, card["oracle_id"], "main", 2)]
-
-
-def test_the_sideboard_is_counted_apart(client, catalog, card):
-    deck = make_deck(client, "Humans")
-    click(client, deck, card)
-    assert shown(click(client, deck, card, board="side").text) == 1
-    assert sorted(deck_cards(catalog)) == [
-        (deck, card["oracle_id"], "main", 1),
-        (deck, card["oracle_id"], "side", 1),
-    ]
-    client.get("/deckmode/settings", params={"deck": deck, "board": "side"})
-    page = search_page(client, f'!"{card["name"]}"')
-    assert 'name="board" value="side"' in page and shown(page) == 1
+    assert deck_cards(catalog) == [(deck, card["oracle_id"], 2)]
 
 
 def test_without_htmx_a_click_goes_back_to_the_search(client, card):
     deck = make_deck(client, "Humans")
     here = "/search?q=bolt&view=deck"
-    data = {"deck": deck, "printing": card["id"], "board": "main", "next": here}
+    data = {"deck": deck, "printing": card["id"], "next": here}
     answer = client.post("/deckmode/card", data=data)
     assert answer.status_code == 303 and answer.headers["location"] == here
     data["next"] = "//evil.example"
@@ -141,7 +126,6 @@ def test_without_htmx_a_click_goes_back_to_the_search(client, card):
     [
         {"printing": "00000000-0000-4000-8000-000000000000"},
         {"printing": "nonsense"},
-        {"board": "maybe"},
         {"action": "twice"},
         {"deck": "999"},
         {"deck": "x"},
@@ -149,7 +133,7 @@ def test_without_htmx_a_click_goes_back_to_the_search(client, card):
 )
 def test_nonsense_is_not_found_and_changes_nothing(client, catalog, card, change):
     deck = make_deck(client, "Humans")
-    data = {"deck": deck, "printing": card["id"], "board": "main", "action": "add", **change}
+    data = {"deck": deck, "printing": card["id"], "action": "add", **change}
     assert client.post("/deckmode/card", data=data, headers=HTMX).status_code == 404
     assert deck_cards(catalog) == []
 
@@ -162,7 +146,7 @@ def test_locked_collection_shows_the_buttons_disabled_and_refuses_clicks(client,
     assert "locked-notice" in page
     assert len(re.findall(r'class="deck-step"[^>]*disabled', page)) == 2
     assert click(client, deck, card).status_code == 423
-    assert deck_cards(catalog) == [(deck, card["oracle_id"], "main", 1)]
+    assert deck_cards(catalog) == [(deck, card["oracle_id"], 1)]
     # choosing the deck is only a cookie: allowed
     assert client.get("/deckmode/settings", params={"deck": deck}).status_code == 303
 
@@ -187,18 +171,17 @@ def test_the_deck_changed_last_is_chosen_until_another_is_picked(client, catalog
 def test_a_deck_that_was_deleted_falls_back_to_another(client, card):
     keep = make_deck(client, "Keep")
     gone = make_deck(client, "Gone")
-    client.get("/deckmode/settings", params={"deck": gone, "board": "side"})
+    client.get("/deckmode/settings", params={"deck": gone})
     client.post(f"/decks/{gone}/delete")
     page = search_page(client, f'!"{card["name"]}"')
     assert f'<option value="{keep}" selected>Keep</option>' in page
-    assert 'name="board" value="side"' in page  # the board is still remembered
 
 
 def test_settings_ignore_nonsense(client, card):
     deck = make_deck(client, "Humans")
-    client.get("/deckmode/settings", params={"deck": "abc", "board": "maybe"})
+    client.get("/deckmode/settings", params={"deck": "abc"})
     page = search_page(client, f'!"{card["name"]}"')
-    assert f'name="deck" value="{deck}"' in page and 'name="board" value="main"' in page
+    assert f'name="deck" value="{deck}"' in page
     assert (
         client.get("/deckmode/settings", params={"next": "//evil.example"}).headers["location"]
         == "/"
@@ -266,38 +249,15 @@ def test_picking_another_deck_leaves_a_search_without_the_filter_alone(client):
     assert answer.status_code == 303 and answer.headers["location"] == here
 
 
-# --- the location switch in fast input ------------------------------------------------
-
-
-def test_fast_input_has_a_location_switch_once_a_location_is_chosen(client, card):
-    page = search_page(client, f"set:{card['set']}", view="input")
-    assert "only-switch" not in page  # new copies go to no location: nothing to limit to
-    client.post("/locations", data={"name": "Binder A", "kind": "binder"})
-    client.get("/fast/settings", params={"location": "1"})
-    on, address = only(search_page(client, f"set:{card['set']}", view="input"))
-    assert not on and query_of(address) == f'set:{card["set"]} loc:"Binder A"'
-    assert "view=input" in address
-    on, back = only(client.get(address).text)
-    assert on and query_of(back) == f"set:{card['set']}"
-
-
-def test_with_nothing_found_the_switches_stay_so_they_can_be_turned_off(client):
+def test_with_nothing_found_the_switch_stays_so_it_can_be_turned_off(client):
     make_deck(client, "Empty")
     on, back = only(search_page(client, 'deck:"Empty"'))
     assert on and query_of(back) == ""
-    client.post("/locations", data={"name": "Bare", "kind": "box"})
-    client.get("/fast/settings", params={"location": "1"})
-    on, back = only(search_page(client, 'loc:"Bare"', view="input"))
-    assert on and query_of(back) == ""
 
 
-def test_picking_another_location_moves_the_switch_to_it(client):
-    client.post("/locations", data={"name": "Binder A", "kind": "binder"})
-    client.post("/locations", data={"name": "Box B", "kind": "box"})
-    client.get("/fast/settings", params={"location": "1"})
-    here = "/search?q=set%3Aabc+loc%3A%22Binder+A%22&view=input"
-    answer = client.get("/fast/settings", params={"location": "2", "next": here})
-    assert query_of(answer.headers["location"]) == 'set:abc loc:"Box B"'
+def test_fast_input_has_no_switch_and_no_pickers(client, card):
+    page = search_page(client, f"set:{card['set']}", view="input")
+    assert "only-switch" not in page and "<select" not in page.split("fast-list")[0]
 
 
 # --- the search helpers ---------------------------------------------------------------
@@ -324,11 +284,10 @@ def test_has_named(query, expected):
 def test_with_named_adds_and_takes_out_the_term():
     assert search.with_named("t:elf", "deck", "Humans", True) == 't:elf deck:"Humans"'
     assert search.with_named("", "deck", "Humans", True) == 'deck:"Humans"'
-    assert search.with_named("t:elf or t:goblin", "loc", "Box", True) == (
-        '(t:elf or t:goblin) loc:"Box"'
+    assert search.with_named("t:elf or t:goblin", "deck", "Box", True) == (
+        '(t:elf or t:goblin) deck:"Box"'
     )
     assert search.with_named('t:elf deck:"Humans" c:w', "deck", "Humans", False) == "t:elf c:w"
-    assert search.with_named('location:"box" t:elf', "loc", "Box", False) == "t:elf"
     assert search.with_named('t:elf deck:"Humans"', "deck", "Humans", True) == (
         't:elf deck:"Humans"'
     )
@@ -406,7 +365,7 @@ def test_deck_mode_as_a_list_puts_the_buttons_where_the_boxes_are(client, card):
     assert row.count("<tr>") == 1  # one row per card
     cells = row.split("<td")
     assert 'class="deck-count"' in cells[-1] and shown(row) == 1  # the last column
-    assert ">Main deck</th>" in page
+    assert ">Humans</th>" in page  # the column is headed by the deck
     assert 'class="sorter' in page.split("<thead>")[1].split("</thead>")[0]
 
 

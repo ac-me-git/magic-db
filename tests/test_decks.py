@@ -18,14 +18,14 @@ from magicdb.decks import service, text
 
 
 def parsed(listing):
-    return [(line.quantity, line.name, line.board) for line in text.parse(listing)]
+    return [(line.quantity, line.name) for line in text.parse(listing)]
 
 
 def test_plain_list():
     assert parsed("4 Lightning Bolt\n2 Counterspell\n1 Sol Ring") == [
-        (4, "Lightning Bolt", "main"),
-        (2, "Counterspell", "main"),
-        (1, "Sol Ring", "main"),
+        (4, "Lightning Bolt"),
+        (2, "Counterspell"),
+        (1, "Sol Ring"),
     ]
 
 
@@ -54,23 +54,24 @@ def test_plain_list():
     ],
 )
 def test_line_forms(line, expected):
-    assert parsed(line) == [(*expected, "main")]
+    assert parsed(line) == [expected]
 
 
-def test_sideboard_section_and_prefix():
+def test_a_sideboard_joins_the_list():
+    """A deck has no sideboard: its section and the SB: prefix are read past."""
     listing = "4 Lightning Bolt\n\nSideboard\n2 Pyroblast\nSB: 1 Smash to Smithereens\n"
     assert parsed(listing) == [
-        (4, "Lightning Bolt", "main"),
-        (2, "Pyroblast", "side"),
-        (1, "Smash to Smithereens", "side"),
+        (4, "Lightning Bolt"),
+        (2, "Pyroblast"),
+        (1, "Smash to Smithereens"),
     ]
     assert parsed("SB: 3 Pyroblast\n4 Lightning Bolt") == [
-        (3, "Pyroblast", "side"),
-        (4, "Lightning Bolt", "main"),  # the prefix is for its own line only
+        (3, "Pyroblast"),
+        (4, "Lightning Bolt"),
     ]
     assert parsed("sideboard:\n1 Pyroblast\nMainboard\n1 Lightning Bolt") == [
-        (1, "Pyroblast", "side"),
-        (1, "Lightning Bolt", "main"),
+        (1, "Pyroblast"),
+        (1, "Lightning Bolt"),
     ]
 
 
@@ -81,10 +82,10 @@ def test_arena_export():
         "Sideboard\n2 Fire // Ice (APC) 128\n\nMaybeboard\n4 Shock\n"
     )
     assert parsed(listing) == [
-        (1, "Niv-Mizzet Reborn", "main"),
-        (4, "Lightning Bolt", "main"),
-        (20, "Mountain", "main"),
-        (2, "Fire // Ice", "side"),
+        (1, "Niv-Mizzet Reborn"),
+        (4, "Lightning Bolt"),
+        (20, "Mountain"),
+        (2, "Fire // Ice"),
     ]
 
 
@@ -95,10 +96,10 @@ def test_type_groups_comments_and_blank_lines_are_not_cards():
         "Sideboard (1)\nArtifacts\n1 Sol Ring\n"
     )
     assert parsed(listing) == [
-        (2, "Serra Angel", "main"),
-        (4, "Lightning Bolt", "main"),
-        (20, "Mountain", "main"),
-        (1, "Sol Ring", "side"),  # a type group does not leave the sideboard
+        (2, "Serra Angel"),
+        (4, "Lightning Bolt"),
+        (20, "Mountain"),
+        (1, "Sol Ring"),
     ]
     assert parsed("") == [] and parsed("\n\n// nothing\n") == []
 
@@ -135,12 +136,13 @@ def code(excinfo):
 
 
 def test_create_rename_delete(conn):
-    deck = service.create_deck(conn, "  Red   burn ", "Modern", "fast")
+    deck = service.create_deck(conn, "  Red   burn ", "fast")
     row = service.get_deck(conn, deck)
-    assert (row["name"], row["format"], row["notes"]) == ("Red burn", "Modern", "fast")
-    service.update_deck(conn, deck, 'Burn "v2"', "", "")
+    assert (row["name"], row["notes"]) == ("Red burn", "fast")
+    assert "format" not in row.keys()  # a deck is a name, notes and a list of cards
+    service.update_deck(conn, deck, 'Burn "v2"', "")
     row = service.get_deck(conn, deck)
-    assert (row["name"], row["format"], row["notes"]) == ("Burn 'v2'", None, None)
+    assert (row["name"], row["notes"]) == ("Burn 'v2'", None)
     service.add_card(conn, deck, name="Lightning Bolt", quantity=4)
     service.delete_deck(conn, deck)
     assert service.list_decks(conn) == []
@@ -158,8 +160,7 @@ def test_new_decks_are_numbered(conn):
     service.create_deck(conn, "mazzo 5")
     italian = service.create_numbered(conn, "Mazzo {n}")
     assert service.get_deck(conn, italian)["name"] == "Mazzo 6"  # case does not matter
-    deck = service.get_deck(conn, italian)
-    assert (deck["format"], deck["notes"]) == (None, None)
+    assert service.get_deck(conn, italian)["notes"] is None
     assert service.deck_rows(conn, italian) == []
 
 
@@ -186,19 +187,16 @@ def test_add_card_by_name_face_or_printing(conn):
     assert service.add_card(conn, deck, name="Delver of Secrets") == (
         "Delver of Secrets // Insectile Aberration"
     )
-    assert (
-        service.add_card(conn, deck, printing=pid(conn, "Sol Ring", "c21"), board="side")
-        == "Sol Ring"
-    )
+    assert service.add_card(conn, deck, printing=pid(conn, "Sol Ring", "c21")) == "Sol Ring"
     assert (
         service.add_card(conn, deck, printing=pid(conn, "Lightning Bolt", "lea"))
         == "Lightning Bolt"
     )
-    rows = {(row.name, row.board): row.quantity for row in service.deck_rows(conn, deck)}
+    rows = {row.name: row.quantity for row in service.deck_rows(conn, deck)}
     assert rows == {
-        ("Lightning Bolt", "main"): 4,  # the Alpha printing is the same card: one row
-        ("Delver of Secrets // Insectile Aberration", "main"): 1,
-        ("Sol Ring", "side"): 1,
+        "Lightning Bolt": 4,  # the Alpha printing is the same card: one row
+        "Delver of Secrets // Insectile Aberration": 1,
+        "Sol Ring": 1,
     }
 
 
@@ -211,7 +209,6 @@ def test_add_card_by_name_face_or_printing(conn):
         ({"name": "Lightning Bolt", "quantity": 0}, "bad_deck_quantity"),
         ({"name": "Lightning Bolt", "quantity": "many"}, "bad_deck_quantity"),
         ({"name": "Lightning Bolt", "quantity": 1000}, "bad_deck_quantity"),
-        ({"name": "Lightning Bolt", "board": "maybe"}, "bad_board"),
     ],
 )
 def test_add_card_rejects(conn, kwargs, expected):
@@ -233,17 +230,15 @@ def test_tokens_are_not_deck_cards(conn):
 def test_update_and_remove_card(conn):
     deck = service.create_deck(conn, "Test")
     service.add_card(conn, deck, name="Lightning Bolt", quantity=4)
-    service.add_card(conn, deck, name="Lightning Bolt", quantity=2, board="side")
-    main, side = sorted(service.deck_rows(conn, deck), key=lambda r: r.board)
-    service.update_card(conn, deck, main.id, 3, "main")
-    assert [r.quantity for r in service.deck_rows(conn, deck)] == [3, 2]
-    service.update_card(conn, deck, side.id, 1, "main")  # onto the board where it already is
-    assert [(r.quantity, r.board) for r in service.deck_rows(conn, deck)] == [(4, "main")]
+    service.add_card(conn, deck, name="Lightning Bolt", quantity=2)  # the same row
     (row,) = service.deck_rows(conn, deck)
-    for bad, expected in [((0, "main"), "bad_deck_quantity"), ((1, "x"), "bad_board")]:
+    assert row.quantity == 6
+    service.update_card(conn, deck, row.id, 3)
+    assert [r.quantity for r in service.deck_rows(conn, deck)] == [3]
+    for bad in (0, "x", 1000):
         with pytest.raises(CollectionError) as excinfo:
-            service.update_card(conn, deck, row.id, *bad)
-        assert code(excinfo) == expected
+            service.update_card(conn, deck, row.id, bad)
+        assert code(excinfo) == "bad_deck_quantity"
     other = service.create_deck(conn, "Other")
     with pytest.raises(CollectionError) as excinfo:
         service.remove_card(conn, other, row.id)  # a row of another deck
@@ -276,18 +271,18 @@ def test_import_text(conn):
         "Sideboard\n3 Sol Ring\n2 Lightning Bolt\n",
     )
     assert (report.cards, report.copies, report.unknown) == (6, 13, [])
-    rows = [(r.board, r.name, r.quantity) for r in service.deck_rows(conn, deck)]
-    assert sorted(rows) == [
-        ("main", "Delver of Secrets // Insectile Aberration", 1),
-        ("main", "Fire // Ice", 1),
-        ("main", "Lightning Bolt", 4),
-        ("main", "Serra Angel", 2),
-        ("side", "Lightning Bolt", 2),
-        ("side", "Sol Ring", 3),
+    rows = [(r.name, r.quantity) for r in service.deck_rows(conn, deck)]
+    assert sorted(rows) == [  # the sideboard's cards join the list
+        ("Delver of Secrets // Insectile Aberration", 1),
+        ("Fire // Ice", 1),
+        ("Lightning Bolt", 6),
+        ("Serra Angel", 2),
+        ("Sol Ring", 3),
     ]
     again = service.import_text(conn, deck, "1 Lightning Bolt")  # adds to what is there
     assert again.copies == 1
     assert sum(r.quantity for r in service.deck_rows(conn, deck) if r.name == "Lightning Bolt") == 7
+    assert sum(r.name == "Lightning Bolt" for r in service.deck_rows(conn, deck)) == 1
 
 
 def test_import_reports_what_is_not_a_card(conn):
@@ -319,11 +314,11 @@ def test_export_text_round_trip(conn):
     deck = service.create_deck(conn, "Test")
     service.import_text(conn, deck, "4 Lightning Bolt\n1 Fire // Ice\nSideboard\n2 Sol Ring")
     exported = service.export_text(conn, deck)
-    assert exported == "Deck\n1 Fire // Ice\n4 Lightning Bolt\n\nSideboard\n2 Sol Ring\n"
+    assert exported == "1 Fire // Ice\n4 Lightning Bolt\n2 Sol Ring\n"
     copy = service.create_deck(conn, "Copy")
     assert service.import_text(conn, copy, exported).unknown == []
     assert service.export_text(conn, copy) == exported
-    assert service.export_text(conn, service.create_deck(conn, "Empty")) == "\n"
+    assert service.export_text(conn, service.create_deck(conn, "Empty")) == ""
 
 
 # --- completion and contested cards ---------------------------------------------------
@@ -334,15 +329,15 @@ def decks(conn):
     """Two decks that both want Lightning Bolt, against a small collection.
 
     Owned: 6 Lightning Bolt (4 M10 + 2 Alpha, one of them foil), 1 Serra Angel, 5 Sol Ring.
-    Burn wants 4 Bolt, 4 Serra Angel, 1 Sol Ring. Control wants 4 Bolt (3 main + 1 side),
-    2 Sol Ring, 2 Fire // Ice.
+    Burn wants 4 Bolt, 4 Serra Angel, 1 Sol Ring. Control wants 4 Bolt (3 + 1 written
+    under Sideboard, which joins the list), 2 Sol Ring, 2 Fire // Ice.
     """
     own(conn, "Lightning Bolt", "m10", 3)
     own(conn, "Lightning Bolt", "m10", 1, finish="foil")
-    own(conn, "Lightning Bolt", "lea", 2, condition="PL")
+    own(conn, "Lightning Bolt", "lea", 2)
     own(conn, "Serra Angel", "dom", 1)
     own(conn, "Sol Ring", "c21", 5)
-    burn = service.create_deck(conn, "Burn", "Modern")
+    burn = service.create_deck(conn, "Burn", "Modern, for fun")
     service.import_text(conn, burn, "4 Lightning Bolt\n4 Serra Angel\n1 Sol Ring")
     control = service.create_deck(conn, "Control")
     service.import_text(
@@ -352,7 +347,7 @@ def decks(conn):
 
 
 def by_name(rows):
-    return {(row.name, row.board): row for row in rows}
+    return {row.name: row for row in rows}
 
 
 def test_completion_counts_every_printing_owned(decks):
@@ -371,11 +366,11 @@ def test_completion_counts_every_printing_owned(decks):
 def test_row_states(decks):
     conn, burn, control = decks
     rows = by_name(service.deck_rows(conn, burn))
-    bolt = rows[("Lightning Bolt", "main")]
+    bolt = rows["Lightning Bolt"]
     # 6 owned is enough for Burn's 4, but Burn and Control together want 8
     assert (bolt.owned, bolt.have, bolt.missing, bolt.wanted, bolt.contested) == (6, 4, 0, 8, True)
     assert bolt.others == [(control, "Control", 4)]
-    angel = rows[("Serra Angel", "main")]
+    angel = rows["Serra Angel"]
     assert (angel.owned, angel.have, angel.missing, angel.contested, angel.others) == (
         1,
         1,
@@ -383,21 +378,18 @@ def test_row_states(decks):
         False,
         [],
     )
-    ring = rows[("Sol Ring", "main")]
+    ring = rows["Sol Ring"]
     # in both decks, and 5 owned cover the 3 wanted: not contested
     assert (ring.owned, ring.wanted, ring.missing, ring.contested) == (5, 3, 0, False)
     assert ring.others == [(control, "Control", 2)]
 
 
-def test_a_card_in_both_boards_counts_the_main_board_first(decks):
+def test_fewer_copies_than_wanted(decks):
     conn, burn, control = decks
     collection.remove_entry(conn, 3)  # the two Alpha Bolts: 4 left
     collection.remove_entry(conn, 2)  # the foil: 3 left
-    rows = by_name(service.deck_rows(conn, control))
-    main, side = rows[("Lightning Bolt", "main")], rows[("Lightning Bolt", "side")]
-    assert (main.quantity, main.have, main.missing) == (3, 3, 0)
-    assert (side.quantity, side.have, side.missing) == (1, 0, 1)
-    assert main.owned == side.owned == 3
+    bolt = by_name(service.deck_rows(conn, control))["Lightning Bolt"]
+    assert (bolt.quantity, bolt.owned, bolt.have, bolt.missing) == (4, 3, 3, 1)
     assert service.summary(conn, control).have == 3 + 2  # Bolts + Rings
 
 
@@ -412,7 +404,7 @@ def test_summary_contested_count_and_shortages(decks):
     own(conn, "Lightning Bolt", "a25", 2)  # now 8: enough for both
     assert service.shortages(conn) == []
     assert all(deck.contested == 0 for deck in service.list_decks(conn))
-    assert not by_name(service.deck_rows(conn, burn))[("Lightning Bolt", "main")].contested
+    assert not by_name(service.deck_rows(conn, burn))["Lightning Bolt"].contested
 
 
 def test_a_card_missing_in_a_deck_is_missing_not_contested(decks):
@@ -420,9 +412,9 @@ def test_a_card_missing_in_a_deck_is_missing_not_contested(decks):
     third = service.create_deck(conn, "Third")
     service.add_card(conn, third, name="Serra Angel", quantity=1)
     rows = by_name(service.deck_rows(conn, burn))
-    angel = rows[("Serra Angel", "main")]
+    angel = rows["Serra Angel"]
     assert angel.missing == 3 and not angel.contested  # "missing" says more
-    alone = by_name(service.deck_rows(conn, third))[("Serra Angel", "main")]
+    alone = by_name(service.deck_rows(conn, third))["Serra Angel"]
     assert alone.missing == 0 and alone.contested  # 1 owned, 5 wanted in all
     names = [short.name for short in service.shortages(conn)]
     assert names == ["Serra Angel", "Lightning Bolt"]  # the biggest gap first
@@ -453,22 +445,21 @@ def test_percent_never_rounds_up(conn):
 def test_rows_carry_catalog_facts_and_are_grouped(decks, fixture_cards):
     conn, burn, control = decks
     rows = service.deck_rows(conn, control)
-    assert [(r.board, r.group) for r in rows] == [
-        ("main", "Instant"),
-        ("main", "Instant"),
-        ("main", "Artifact"),
-        ("side", "Instant"),
+    assert [(r.name, r.group) for r in rows] == [
+        ("Lightning Bolt", "Instant"),  # by mana value within a type
+        ("Fire // Ice", "Instant"),
+        ("Sol Ring", "Artifact"),
     ]
-    fire = by_name(rows)[("Fire // Ice", "main")]
+    fire = by_name(rows)["Fire // Ice"]
     assert fire.mana_cost == "{1}{R} // {1}{U}" and fire.printing and fire.cmc == 4
-    bolt = by_name(rows)[("Lightning Bolt", "main")]
+    bolt = by_name(rows)["Lightning Bolt"]
     prices = [
         float(c["prices"]["eur"])
         for c in fixture_cards
         if c["name"] == "Lightning Bolt" and c["prices"].get("eur") and not c["digital"]
     ]
     assert bolt.price == min(prices)  # the cheapest printing, to estimate what is missing
-    dollars = by_name(service.deck_rows(conn, control, "usd"))[("Lightning Bolt", "main")]
+    dollars = by_name(service.deck_rows(conn, control, "usd"))["Lightning Bolt"]
     assert dollars.price != bolt.price
 
 
@@ -479,20 +470,21 @@ def test_decks_with_card(decks):
     ).fetchone()[0]
     assert [tuple(r) for r in service.decks_with_card(conn, oracle)] == [
         (burn, "Burn", 4),
-        (control, "Control", 4),  # main and sideboard together
+        (control, "Control", 4),
     ]
     assert service.decks_with_card(conn, "nothing") == []
 
 
-def test_summary_has_colour_identity_boards_and_costs(decks):
+def test_summary_has_colour_identity_and_costs(decks):
     conn, burn, control = decks
     summaries = {deck.name: deck for deck in service.list_decks(conn)}
     burn_summary, control_summary = summaries["Burn"], summaries["Control"]
-    # Bolt is red, Serra Angel white, Sol Ring colourless; always in WUBRG order
+    # no legendary creature: every card counts. Bolt is red, Serra Angel white, Sol Ring
+    # colourless; always in WUBRG order
     assert (burn_summary.identity, burn_summary.colours) == (1 | 8, "{W}{R}")
     assert control_summary.colours == "{U}{R}"  # Fire // Ice
-    assert (burn_summary.main, burn_summary.side) == (9, 0)
-    assert (control_summary.main, control_summary.side) == (7, 1)
+    assert (burn_summary.copies, control_summary.copies) == (9, 8)
+    assert burn_summary.notes == "Modern, for fun"
     assert burn_summary.updated_at.startswith("20")
 
     # the same prices as the rows: the cheapest paper printing of each card
@@ -502,9 +494,9 @@ def test_summary_has_colour_identity_boards_and_costs(decks):
         assert all(row.price is not None for row in rows)
         assert deck.value == pytest.approx(sum(row.quantity * row.price for row in rows))
         assert deck.unpriced == deck.missing_unpriced == 0
-    angel = by_name(service.deck_rows(conn, burn))[("Serra Angel", "main")]
+    angel = by_name(service.deck_rows(conn, burn))["Serra Angel"]
     assert burn_summary.missing_cost == pytest.approx(3 * angel.price)  # 3 Angels missing
-    fire = by_name(service.deck_rows(conn, control))[("Fire // Ice", "main")]
+    fire = by_name(service.deck_rows(conn, control))["Fire // Ice"]
     assert control_summary.missing_cost == pytest.approx(2 * fire.price)
     assert service.summary(conn, burn) == burn_summary
     in_dollars = service.summary(conn, burn, "usd")
@@ -514,14 +506,9 @@ def test_summary_has_colour_identity_boards_and_costs(decks):
 def test_colourless_deck_and_empty_deck_have_no_cost(conn):
     artifacts = service.create_deck(conn, "Artifacts")
     service.add_card(conn, artifacts, name="Sol Ring", quantity=2)
-    empty = service.create_deck(conn, "Empty")
-    service.add_card(conn, empty, name="Lightning Bolt", board="side")
     summaries = {deck.name: deck for deck in service.list_decks(conn)}
     assert summaries["Artifacts"].colours == "{C}"
     assert summaries["Artifacts"].missing_cost == summaries["Artifacts"].value
-    # only a sideboard: no colour identity to speak of, but its cost still counts
-    assert (summaries["Empty"].identity, summaries["Empty"].colours) == (None, "")
-    assert summaries["Empty"].value is not None and summaries["Empty"].side == 1
     nothing = service.summary(conn, service.create_deck(conn, "Nothing"))
     assert (nothing.colours, nothing.value, nothing.missing_cost, nothing.unpriced) == (
         "",
@@ -529,6 +516,52 @@ def test_colourless_deck_and_empty_deck_have_no_cost(conn):
         None,
         0,
     )
+
+
+# --- colour identity ------------------------------------------------------------------
+
+
+def identity(conn, listing):
+    deck = service.create_deck(conn, f"Deck {len(service.list_decks(conn)) + 1}")
+    service.import_text(conn, deck, listing)
+    return service.summary(conn, deck).colours
+
+
+def test_identity_is_the_widest_legendary_creature(conn):
+    # Uro is green and blue: the deck's identity, whatever else is in it
+    assert identity(conn, "1 Uro, Titan of Nature's Wrath\n4 Lightning Bolt\n1 Serra Angel") == (
+        "{U}{G}"
+    )
+    # Omnath has four colours, Uro two, Braids one: Omnath wins
+    listing = (
+        "1 Braids, Arisen Nightmare\n1 Uro, Titan of Nature's Wrath\n1 Omnath, Locus of Creation"
+    )
+    assert identity(conn, listing) == "{W}{U}{R}{G}"
+    # a tie: the first by name (Braids before Danitha)
+    assert identity(conn, "1 Danitha, Benalia's Hope\n1 Braids, Arisen Nightmare") == "{B}"
+    # a colourless commander makes a colourless deck
+    assert identity(conn, "1 Kozilek, Butcher of Truth\n4 Lightning Bolt") == "{C}"
+
+
+def test_identity_without_legendary_creatures_is_every_card(conn):
+    # Jace is legendary but not a creature
+    assert identity(conn, "1 Jace, the Mind Sculptor\n4 Lightning Bolt") == "{U}{R}"
+    assert identity(conn, "2 Sol Ring") == "{C}"
+
+
+def test_identity_of(conn):
+    W, U, B, R = 1, 2, 4, 8
+    creature = "Legendary Creature — Angel"
+    assert service.identity_of([]) is None
+    assert service.identity_of([("x", None, None)]) is None  # unknown card
+    assert service.identity_of([("a", creature, W), ("b", "Instant", R)]) == W
+    assert service.identity_of([("b", creature, W | U), ("a", creature, B | R)]) == B | R
+    assert service.identity_of([("a", "Instant", W), ("b", "Sorcery", U)]) == W | U
+    assert service.identity_of(
+        [("a", "Legendary Planeswalker — Jace", U), ("b", "Instant", R)]
+    ) == (U | R)
+    back = "Legendary Enchantment // Legendary Creature — God"  # only the front face counts
+    assert service.identity_of([("a", back, W), ("b", "Instant", R)]) == W | R
 
 
 def test_reading_decks_without_a_catalog(settings):
@@ -577,19 +610,32 @@ def test_json_export_and_import_carry_the_decks(decks, catalog, tmp_path):
     assert '"decks"' in dump
     parsed_dump = importers.parse_file(dump.encode())
     assert [deck["name"] for deck in parsed_dump.decks] == ["Burn", "Control"]
-    assert parsed_dump.decks[0]["format"] == "Modern"
+    assert parsed_dump.decks[0]["notes"] == "Modern, for fun"
+    assert "format" not in parsed_dump.decks[0]
+    assert all("board" not in card for card in parsed_dump.decks[1]["cards"])
 
     service.delete_deck(conn, burn)
     assert service.restore(conn, parsed_dump.decks) == ["Burn"]  # Control is already there
     restored = next(deck for deck in service.list_decks(conn) if deck.name == "Burn")
-    assert (restored.copies, restored.format) == (9, "Modern")
-    assert (
-        service.export_text(conn, restored.id)
-        == "Deck\n4 Lightning Bolt\n4 Serra Angel\n1 Sol Ring\n"
-    )
+    assert (restored.copies, restored.notes) == (9, "Modern, for fun")
+    assert service.export_text(conn, restored.id) == "4 Lightning Bolt\n4 Serra Angel\n1 Sol Ring\n"
     assert service.restore(
         conn, [{"name": ""}, {"cards": []}, {"name": "X", "cards": [{"quantity": "4"}]}]
     ) == ["X"]
+    # an export from before: the format is dropped, the sideboard joins the list
+    old = {
+        "name": "Old",
+        "format": "Modern",
+        "cards": [
+            {"name": "Lightning Bolt", "oracle_id": "o1", "quantity": 3, "board": "main"},
+            {"name": "Lightning Bolt", "oracle_id": "o1", "quantity": 1, "board": "side"},
+        ],
+    }
+    assert service.restore(conn, [old]) == ["Old"]
+    rows = conn.execute(
+        "SELECT quantity FROM deck_cards WHERE name = 'Lightning Bolt' AND oracle_id = 'o1'"
+    )
+    assert [row[0] for row in rows] == [4]
 
 
 # --- the pages ------------------------------------------------------------------------
@@ -618,7 +664,7 @@ def site(client, ids):
     ]:
         client.post("/add", data={"printing": ids(name, set_code), "quantity": str(copies)})
     assert (
-        client.post("/decks", data={"name": "Burn", "format": "Modern"}).headers["location"]
+        client.post("/decks", data={"name": "Burn", "notes": "Modern"}).headers["location"]
         == "/decks/1"
     )
     client.post("/decks/1/import", data={"text": "4 Lightning Bolt\n4 Serra Angel\n1 Sol Ring"})
@@ -648,18 +694,17 @@ def test_new_deck_button(client):
     assert (made.status_code, made.headers["location"]) == (303, "/decks/1?new=1")
     new = client.get(made.headers["location"]).text
     assert "<title>Deck 1" in new
-    # the name, format and notes are open, the name ready to type over
+    # the name and notes are open, the name ready to type over
     assert '<details class="panel fold deck-edit" open>' in new
     assert 'value="Deck 1" maxlength="80" required data-select>' in new
     assert "A new deck: give it a name" in new
+    assert 'name="format"' not in new and 'name="board"' not in new
     assert client.post("/decks", data={"name": " "}).headers["location"] == "/decks/2?new=1"
 
-    saved = client.post(
-        "/decks/1", data={"name": "Dragons", "format": "Commander", "notes": "Big flyers"}
-    )
+    saved = client.post("/decks/1", data={"name": "Dragons", "notes": "Big flyers"})
     assert saved.headers["location"] == "/decks/1"
     page = client.get("/decks/1").text
-    assert "<title>Dragons" in page and ">Commander</span>" in page
+    assert "<title>Dragons" in page
     assert '<p class="hint deck-notes">Big flyers</p>' in page
     assert ">Big flyers</textarea>" in page
     assert '<details class="panel fold deck-edit">' in page and "data-select" not in page
@@ -675,16 +720,18 @@ def test_new_deck_button(client):
 
 def test_decks_page_lists_completion_and_shortages(site):
     page = site.get("/decks").text
-    assert '<a class="deck-name" href="/decks/1">Burn</a>' in page and ">Modern</span>" in page
+    assert (
+        '<a class="deck-name" href="/decks/1">Burn</a>' in page and '<span class="tag">' not in page
+    )
     assert '<ul class="deck-rows">' in page  # one block under the other
     burn, control = page.split('<li class="deck-row">')[1:3]
     assert 'alt="{W}"' in burn and 'alt="{R}"' in burn and 'alt="{U}"' not in burn
     assert 'alt="{U}"' in control and 'alt="{R}"' in control
-    for fact in ("<dt>Main deck</dt><dd>9</dd>", "<dt>Missing</dt><dd>3", "Estimated cost"):
+    for fact in ("<dt>Cards</dt><dd>9</dd>", "<dt>Missing</dt><dd>3", "Estimated cost"):
         assert fact in burn, fact
     assert "To complete it" in burn and "<dt>Contested</dt><dd>1</dd>" in burn
-    assert "Sideboard" not in burn
-    assert "<dt>Sideboard</dt><dd>1</dd>" in control
+    assert "<dt>Cards</dt><dd>8</dd>" in control
+    assert "Sideboard" not in page and "Main deck" not in page
     assert re.search(r"<dt>Changed</dt><dd>\d{4}-\d\d-\d\d</dd>", burn)
     assert (
         'style="--p: 66"' in page and 'style="--p: 75"' in page and "66%" in page and "75%" in page
@@ -704,7 +751,7 @@ def test_deck_page(site):
     body = page.text
     for expected in [
         "<title>Burn",
-        "Main deck (9)",
+        "<dt>Cards</dt><dd>9</dd>",
         "66%",
         'class="num owned-short" title="3 missing">1</td>',
         'class="num owned-shared" title="contested: 6 for 8 wanted">6</td>',
@@ -717,14 +764,14 @@ def test_deck_page(site):
         ">Creature</th>",
         'alt="{R}"',
         "<dt>Estimated cost</dt>",
-        '<span class="mana identity" title="Colour identity">',
+        '<span class="mana identity" title="Colour identity: the one of the widest legendary',
     ]:
         assert expected in body, expected
-    assert "Sideboard (" not in body  # Burn has none
     # the copies owned say it all: no column with "have it" beside them
     assert "have it" not in body and "In collection" not in body
     assert 'class="mana identity"' in site.get("/decks/1/stats").text
-    assert "Sideboard (1)" in site.get("/decks/2").text
+    for gone in ("Sideboard (", "Main deck", 'name="board"', 'name="format"'):
+        assert gone not in body and gone not in site.get("/decks/2").text, gone
     assert 'class="is-missing"' in body and 'class="is-contested"' in body
 
 
@@ -736,12 +783,10 @@ def test_unknown_deck_is_not_found(site, deck):
 
 
 def test_add_a_card_by_name(site):
-    added = site.post(
-        "/decks/1/cards", data={"name": "shivan dragon", "quantity": "2", "board": "side"}
-    )
+    added = site.post("/decks/1/cards", data={"name": "shivan dragon", "quantity": "2"})
     assert added.status_code == 303 and added.headers["location"] == "/decks/1?added=Shivan+Dragon"
     page = site.get(added.headers["location"]).text
-    assert "Added Shivan Dragon." in page and "Sideboard (2)" in page
+    assert "Added Shivan Dragon." in page and "<dt>Cards</dt><dd>11</dd>" in page
 
     wrong = site.post("/decks/1/cards", data={"name": "lightnin", "quantity": "1"})
     assert wrong.status_code == 400
@@ -796,12 +841,9 @@ def test_edit_and_remove_rows(site, catalog):
         row = conn.execute(
             "SELECT id FROM deck_cards WHERE deck_id = 1 AND name = 'Serra Angel'"
         ).fetchone()[0]
-    assert (
-        site.post(f"/decks/1/cards/{row}", data={"quantity": "1", "board": "side"}).status_code
-        == 303
-    )
+    assert site.post(f"/decks/1/cards/{row}", data={"quantity": "1"}).status_code == 303
     page = site.get("/decks/1").text
-    assert "Sideboard (1)" in page and "Main deck (5)" in page and "100%" in page
+    assert "<dt>Cards</dt><dd>6</dd>" in page and "100%" in page
     assert site.post(f"/decks/1/cards/{row}/remove").status_code == 303
     assert "Serra Angel" not in site.get("/decks/1").text
     assert site.post(f"/decks/1/cards/{row}/remove").status_code == 400  # already gone
@@ -811,7 +853,7 @@ def test_edit_and_remove_rows(site, catalog):
 
 def test_rename_and_delete_a_deck(site):
     assert (
-        site.post("/decks/1", data={"name": "Burn 2", "format": "Legacy"}).headers["location"]
+        site.post("/decks/1", data={"name": "Burn 2", "notes": "Legacy"}).headers["location"]
         == "/decks/1"
     )
     assert "<title>Burn 2" in site.get("/decks/1").text
@@ -828,9 +870,7 @@ def test_export_a_deck_as_text(site):
     response = site.get("/decks/2/export.txt")
     assert response.headers["content-type"] == "text/plain; charset=utf-8"
     assert 'filename="Control.txt"' in response.headers["content-disposition"]
-    assert response.text == (
-        "Deck\n2 Fire // Ice\n3 Lightning Bolt\n2 Sol Ring\n\nSideboard\n1 Lightning Bolt\n"
-    )
+    assert response.text == "2 Fire // Ice\n4 Lightning Bolt\n2 Sol Ring\n"
 
 
 def test_decks_are_read_only_while_locked(site, catalog):
@@ -871,7 +911,7 @@ def test_deck_pages_in_italian(site):
     )
     page = site.get("/decks/1").text
     for expected in [
-        "Mazzo principale (9)",
+        "<dt>Carte</dt><dd>9</dd>",
         "3 mancanti",
         "contesa: 6 per 8 richieste",
         "anche in",

@@ -23,11 +23,9 @@
       <p class="deck-row-title">
         <a class="deck-name" href="/decks/{{ deck.id }}">{{ deck.name }}</a>
         {%- if deck.colours %} <span class="mana identity" title="{{ t('decks.identity') }}">{{ deck.colours | symbols }}</span>{% endif %}
-        {%- if deck.format %} <span class="tag">{{ deck.format }}</span>{% endif %}
       </p>
       <dl class="deck-facts">
-        <div><dt>{{ t("deck.board.main") }}</dt><dd>{{ deck.main | count }}</dd></div>
-        {% if deck.side %}<div><dt>{{ t("deck.board.side") }}</dt><dd>{{ deck.side | count }}</dd></div>{% endif %}
+        <div><dt>{{ t("decks.cards") }}</dt><dd>{{ deck.copies | count }}</dd></div>
         <div><dt>{{ t("decks.missing") }}</dt><dd>{{ deck.missing | count }}</dd></div>
         {% if deck.contested %}<div><dt>{{ t("decks.contested") }}</dt><dd>{{ deck.contested | count }}</dd></div>{% endif %}
         <div><dt>{{ t("decks.value") }}</dt><dd>{{ deck.value | money }}</dd></div>

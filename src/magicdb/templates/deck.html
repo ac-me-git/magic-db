@@ -10,11 +10,8 @@
   {% if editing == "new" %}<p class="hint">{{ t("deck.details_new") }}</p>{% endif %}
   <form method="post" action="/decks/{{ deck.id }}">
     <div class="fields">
-      <label>{{ t("locations.name") }}
+      <label>{{ t("decks.name") }}
         <input type="text" name="name" value="{{ deck.name }}" maxlength="80" required{% if editing == "new" %} data-select{% endif %}>
-      </label>
-      <label>{{ t("decks.format") }}
-        <input type="text" name="format" value="{{ deck.format or '' }}" maxlength="40" placeholder="Commander">
       </label>
       <label class="wide-field">{{ t("entry.notes") }}
         <textarea name="notes" rows="2" maxlength="500">{{ deck.notes or '' }}</textarea>
@@ -74,8 +71,7 @@
 <div class="empty"><p>{{ t("deck.empty") }}</p></div>
 {% endif %}
 
-{% for board, rows in boards if rows %}
-<h2 class="section-title">{{ t("deck.board." ~ board) }} ({{ rows | sum(attribute="quantity") }})</h2>
+{% if rows %}
 <div class="table-wrap">
 <table class="card-list deck-list">
   <thead>
@@ -112,12 +108,6 @@
             <label>{{ t("entry.quantity") }}
               <input type="number" name="quantity" value="{{ row.quantity }}" min="1" max="999" inputmode="numeric" required>
             </label>
-            <label>{{ t("deck.board") }}
-              <select name="board">
-                <option value="main"{% if row.board == "main" %} selected{% endif %}>{{ t("deck.board.main") }}</option>
-                <option value="side"{% if row.board == "side" %} selected{% endif %}>{{ t("deck.board.side") }}</option>
-              </select>
-            </label>
             <button type="submit">{{ t("entry.save") }}</button>
           </form>
           <form class="inline-form" method="post" action="/decks/{{ deck.id }}/cards/{{ row.id }}/remove">
@@ -131,7 +121,7 @@
   </tbody>
 </table>
 </div>
-{% endfor %}
+{% endif %}
 
 {% if locked %}{% include "_locked_notice.html" %}{% else %}
 <form class="panel" method="post" action="/decks/{{ deck.id }}/cards">
@@ -145,12 +135,6 @@
     <label>{{ t("entry.quantity") }}
       <input type="number" name="quantity" value="1" min="1" max="999" inputmode="numeric" required>
     </label>
-    <label>{{ t("deck.board") }}
-      <select name="board">
-        <option value="main">{{ t("deck.board.main") }}</option>
-        <option value="side">{{ t("deck.board.side") }}</option>
-      </select>
-    </label>
   </div>
   <datalist id="names"></datalist>
   <div class="actions">
@@ -162,7 +146,7 @@
   <summary>{{ t("deck.import_title") }}</summary>
   <form method="post" action="/decks/{{ deck.id }}/import">
     <p class="hint">{{ t("deck.import_hint") }}</p>
-    <textarea name="text" rows="10" required placeholder="4 Lightning Bolt&#10;2 Counterspell&#10;&#10;Sideboard&#10;2 Pyroblast">{% if report %}{% for line in report.unknown %}{{ line.text }}
+    <textarea name="text" rows="10" required placeholder="1 Miirym, Sentinel Wyrm&#10;1 Sol Ring&#10;4 Lightning Bolt">{% if report %}{% for line in report.unknown %}{{ line.text }}
 {% endfor %}{% endif %}</textarea>
     <div class="actions">
       <button type="submit" class="primary">{{ t("deck.import_submit") }}</button>

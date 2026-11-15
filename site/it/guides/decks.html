@@ -19,57 +19,52 @@
 <main class="wrap">
 
 <h1>Mazzi</h1>
-<p class="lead">In AMTG un mazzo è una <strong>lista di carte che vuoi giocare insieme</strong>. È separato dalla collezione: aggiungere una carta a un mazzo non la aggiunge alla collezione e non la sposta da nessuna parte. Quello che il mazzo ti dà è un confronto con ciò che possiedi.</p>
-<p>(Se vuoi registrare che certe carte stanno fisicamente in una scatola porta-mazzo, quella è una <em>posizione</em> della collezione, non un mazzo.)</p>
+<p class="lead">In AMTG un mazzo è una <strong>lista di carte che vuoi giocare insieme</strong>: un nome, delle note se vuoi, e le carte con quante copie di ciascuna. Non c'è formato e non c'è sideboard. Un mazzo è separato dalla collezione: aggiungere una carta a un mazzo non la aggiunge alla collezione e non la toglie. Quello che il mazzo ti dà è un confronto con ciò che possiedi.</p>
 <h2>Creare un mazzo</h2>
-<p>Nella pagina <strong>Mazzi</strong>, premi <strong>Nuovo mazzo</strong> (in alto a destra). Il mazzo si chiama «Mazzo 1», «Mazzo 2» e così via, e la sua pagina si apre con il nome selezionato: scrivi quello che vuoi e, se vuoi, un formato e una nota, poi <em>Salva</em>. Restano in cima alla pagina del mazzo, sotto <em>Nome, formato e note</em>. Poi aggiungi le carte in uno di questi modi:</p>
+<p>Nella pagina <strong>Mazzi</strong> premi <strong>Nuovo mazzo</strong> (in alto a destra). Il mazzo si chiama “Mazzo 1”, “Mazzo 2” e così via, e la sua pagina si apre con il nome selezionato: scrivi quello che vuoi e, se vuoi, una nota, poi <em>Salva</em>. Restano in cima alla pagina del mazzo, sotto <em>Nome e note</em>. Poi aggiungi le carte in uno di questi modi:</p>
 <ul>
-<li><strong>Una alla volta</strong>, nella pagina del mazzo: scrivi il nome della carta (compaiono i suggerimenti), la quantità, e se va nel mazzo principale o nella sideboard.</li>
-<li><strong>Dalla pagina di una carta</strong>: «Aggiungi al mazzo».</li>
+<li><strong>Una alla volta</strong>, nella pagina del mazzo: scrivi il nome della carta (compaiono i suggerimenti) e la quantità.</li>
+<li><strong>Dalla pagina di una carta</strong>: “Aggiungi al mazzo”.</li>
+<li><strong>Da una ricerca, in modalità mazzo</strong>: cerca come al solito (per esempio <code>t:human c:wg</code>), poi scegli <strong>Mazzo</strong> sopra i risultati, a immagini o a elenco. Scegli il mazzo in alto; su ogni carta, + ne mette una copia in più e − ne toglie una. Sulle immagini i pulsanti sono tenui finché non passi il mouse sulla carta. L'interruttore <em>Solo le carte di questo mazzo</em> limita la ricerca alle carte già presenti; con <em>Cerca solo nella mia collezione</em> acceso vedi solo le carte che possiedi.</li>
 <li><strong>Incollando una lista</strong>, nella pagina del mazzo.</li>
 </ul>
-<h3>Liste dei mazzi</h3>
-<p>Una carta per riga, come le esporta la maggior parte dei siti e dei programmi:</p>
-<pre><code>4 Lightning Bolt
+<h3>Liste di mazzi</h3>
+<p>Una carta per riga, come la esportano quasi tutti i siti e i programmi:</p>
+<pre><code>1 Miirym, Sentinel Wyrm
 4x Counterspell
 1 Sol Ring (C21) 263
-Brainstorm
-
-Sideboard
-2 Pyroblast
-SB: 1 Red Elemental Blast</code></pre>
+Brainstorm</code></pre>
 <ul>
-<li>Il numero è la quantità; una riga con il solo nome vale una copia.</li>
-<li>Codici dei set, numeri di collezione e indicazioni foil (<code>(C21) 263</code>, <code>[C21]</code>, <code>*F*</code>) vengono ignorati: un mazzo nomina carte, non stampe.</li>
-<li><code>Sideboard</code> da solo su una riga fa cominciare la sideboard. <code>SB:</code> davanti a una riga ci mette solo quella riga. Una riga vuota <strong>non</strong> fa cominciare la sideboard.</li>
-<li><code>Deck</code>, <code>Commander</code> e <code>Companion</code> riportano al mazzo principale. Una sezione <code>Maybeboard</code> viene saltata.</li>
-<li>Titoli come <code>Creatures (12)</code>, commenti (<code>//</code>, <code>#</code>) e righe vuote vengono ignorati.</li>
+<li>Il numero è quante copie; una riga con il solo nome è una copia.</li>
+<li>Codici del set, numeri di collezione e segni del foil (<code>(C21) 263</code>, <code>[C21]</code>, <code>*F*</code>) vengono ignorati: un mazzo nomina carte, non stampe.</li>
+<li>Un mazzo non ha sideboard: le carte di una sezione <code>Sideboard</code>, o di una riga che inizia con <code>SB:</code>, entrano nella lista come le altre. Una sezione <code>Maybeboard</code> viene saltata.</li>
+<li>Titoli come <code>Deck</code>, <code>Commander</code>, <code>Creatures (12)</code>, commenti (<code>//</code>, <code>#</code>) e righe vuote vengono ignorati.</li>
 </ul>
-<p>Le righe che non sono nomi di carte ti vengono mostrate con un suggerimento e rimesse nella casella per correggerle; tutto il resto viene aggiunto.</p>
+<p>Le righe che non sono nomi di carte ti vengono mostrate con un suggerimento e rimesse nella casella da correggere; tutto il resto viene aggiunto.</p>
 <h2>Cosa ti dice il mazzo</h2>
 <ul>
-<li><strong>Completamento</strong>: l'indicatore rotondo mostra quante carte del mazzo possiedi, in percentuale. Vale qualsiasi stampa, ovunque si trovi. 100&nbsp;% significa che hai tutte le copie.</li>
-<li><strong>Mancanti</strong>: carte che non possiedi in numero sufficiente per questo mazzo.</li>
-<li><strong>Contese</strong>: carte che bastano per questo mazzo da solo, ma non per tutti i mazzi che le richiedono. Se due mazzi vogliono ciascuno 4 Lightning Bolt e ne possiedi 6, tutti e due i mazzi sono completi presi da soli e la carta è contesa.</li>
-<li><strong>Costo stimato</strong>: quanto costerebbe tutto il mazzo, con la stampa cartacea più economica di ogni carta. <strong>Per comprare le mancanti</strong> è la stessa stima per le carte che ti mancano.</li>
-<li><strong>Identità di colore</strong>: i colori delle carte del mazzo principale, come simboli di mana, accanto al nome.</li>
+<li><strong>Completamento</strong>: l'indicatore rotondo mostra quante carte del mazzo possiedi, in percentuale. Conta qualsiasi stampa, in qualsiasi finitura. 100&nbsp;% vuol dire che hai ogni copia.</li>
+<li><strong>Mancanti</strong>: carte di cui non hai abbastanza copie per questo mazzo.</li>
+<li><strong>Contese</strong>: carte di cui ne hai abbastanza per questo mazzo da solo, ma non per tutti i mazzi che le vogliono. Se due mazzi vogliono 4 Lightning Bolt ciascuno e ne hai 6, entrambi sono completi da soli e la carta è contesa.</li>
+<li><strong>Costo stimato</strong>: quanto costerebbe tutto il mazzo, prendendo la stampa cartacea più economica di ogni carta. <strong>Per comprare le mancanti</strong> è la stessa stima per le carte che ti mancano.</li>
+<li><strong>Identità di colore</strong>, come simboli di mana accanto al nome: i colori della creatura leggendaria più ampia del mazzo, in pratica il comandante. Un mazzo senza creature leggendarie mostra i colori di tutte le sue carte insieme.</li>
 </ul>
-<p>La pagina Mazzi elenca i tuoi mazzi uno sotto l'altro, ciascuno con questi dati, quante carte ci sono nel mazzo principale e nella sideboard, e il giorno dell'ultima modifica. Ha anche un elenco unico di tutte le carte contese: quante ne possiedi, quante ne richiedono in tutto i tuoi mazzi, e quali mazzi.</p>
+<p>La pagina Mazzi elenca i tuoi mazzi uno sotto l'altro, ciascuno con questi dati, quante carte ha e il giorno dell'ultima modifica. Ha anche un elenco di tutte le carte contese: quante ne possiedi, quante ne vogliono in tutto i tuoi mazzi, e quali mazzi.</p>
 <h2>Statistiche</h2>
-<p>Ogni mazzo ha una seconda scheda, <strong>Statistiche</strong>, che riguarda il mazzo principale:</p>
+<p>Ogni mazzo ha una seconda scheda, <strong>Statistiche</strong>:</p>
 <ul>
 <li>quante terre e quante altre carte, e il valore di mana medio di queste ultime;</li>
 <li>le carte per tipo (una creatura artefatto conta per entrambi);</li>
 <li>la curva di mana e i colori, terre escluse;</li>
-<li>i simboli di mana colorato nei costi, che dicono quanto di ogni colore il mazzo chiede davvero. Un simbolo ibrido conta per entrambi i suoi colori.</li>
+<li>i simboli di mana colorati nei costi, che dicono quanto di ciascun colore chiede davvero il mazzo. Un simbolo ibrido conta per entrambi i suoi colori.</li>
 </ul>
 <h2>Altre cose</h2>
 <ul>
-<li>«Vedi le carte come immagini» cerca <code>deck:"nome"</code>; combinalo con qualsiasi altro filtro, per esempio <code>deck:dragons have:no</code> per quello che ti serve ancora.</li>
-<li>«Scarica come testo» restituisce la lista nel formato qui sopra.</li>
+<li>“Vedi le carte come immagini” cerca <code>deck:"nome"</code>; puoi combinarlo con qualsiasi altro filtro, per esempio <code>deck:dragons have:no</code> per quello che ti manca ancora.</li>
+<li>“Scarica come testo” ti restituisce la lista, una riga per carta.</li>
 <li>La pagina di una carta mostra in quali dei tuoi mazzi si trova.</li>
-<li>I mazzi sono compresi nell'esportazione JSON e nel backup notturno.</li>
-<li>Finché il blocco di sicurezza è attivo, i mazzi si possono guardare ma non modificare.</li>
+<li>I mazzi sono inclusi nell'esportazione JSON e nel backup notturno.</li>
+<li>Mentre il blocco di sicurezza è attivo, i mazzi si possono guardare ma non modificare.</li>
 </ul>
 
 </main>

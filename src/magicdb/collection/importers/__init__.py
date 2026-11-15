@@ -21,7 +21,6 @@ from magicdb.search.compiler import exact_name
 
 __all__ = [
     "PROFILES",
-    "Defaults",
     "FileProblem",
     "Parsed",
     "Row",
@@ -47,21 +46,9 @@ class FileProblem(ValueError):
 @dataclass
 class Parsed:
     profile: str
-    scale: str
     header: list[str]
     rows: list[Row]
-    locations: list[dict] = field(default_factory=list)  # JSON dumps only
     decks: list[dict] = field(default_factory=list)  # JSON dumps only
-
-
-@dataclass(frozen=True)
-class Defaults:
-    """What to use for rows that do not say."""
-
-    condition: str = "NM"
-    language: str = "en"
-    location: str = ""
-    location_kind: str = "other"
 
 
 # --- reading the file -----------------------------------------------------------------
@@ -88,23 +75,17 @@ def _parse_json(text: str) -> Parsed:
         if not isinstance(entry, dict):
             continue
         row = Row(line=number, raw=[])
-        for name in ("name", "set_code", "collector_number", "scryfall_id", "finish", "condition"):
+        for name in ("name", "set_code", "collector_number", "scryfall_id", "finish"):
             setattr(row, name, str(entry.get(name) or ""))
-        row.language = str(entry.get("language") or "")
         row.quantity = str(entry.get("quantity") or "")
-        row.location = str(entry.get("location") or "")
         row.notes = str(entry.get("notes") or "")
         price = entry.get("purchase_price")
         row.purchase_price = "" if price is None else str(price)
         row.added_at = str(entry.get("added_at") or "")
         row.raw = [str(getattr(row, name)) for name in _NATIVE_ORDER]
         rows.append(row)
-    locations = [loc for loc in dump.get("locations") or [] if isinstance(loc, dict)]
-    kinds = {str(loc.get("name") or "").lower(): loc.get("kind") for loc in locations}
-    for row in rows:
-        row.location_kind = str(kinds.get(row.location.lower()) or "")
     decks = [deck for deck in dump.get("decks") or [] if isinstance(deck, dict)]
-    return Parsed("native", "cardmarket", list(CSV_COLUMNS), rows, locations, decks)
+    return Parsed("native", list(CSV_COLUMNS), rows, decks)
 
 
 _NATIVE_ORDER = (
@@ -115,10 +96,6 @@ _NATIVE_ORDER = (
     "scryfall_id",
     "quantity",
     "finish",
-    "condition",
-    "language",
-    "location",
-    "location_kind",
     "notes",
     "purchase_price",
     "added_at",
@@ -146,7 +123,7 @@ def parse_file(data: bytes) -> Parsed:
     profile: Profile | None = detect(header)
     if profile is None:
         raise FileProblem("unknown_format")
-    return Parsed(profile.name, profile.scale, header, profile.parse(header, rows))
+    return Parsed(profile.name, header, profile.parse(header, rows))
 
 
 # --- translating values ---------------------------------------------------------------
@@ -162,62 +139,6 @@ _FINISH = {
     "etched": ("etched", "foil etched", "etched foil"),
 }
 _FINISHES = {alias: finish for finish, aliases in _FINISH.items() for alias in aliases}
-
-# Cardmarket codes as they are, plus their names
-_CARDMARKET = {
-    "mt": "MT",
-    "mint": "MT",
-    "nm": "NM",
-    "near mint": "NM",
-    "ex": "EX",
-    "excellent": "EX",
-    "gd": "GD",
-    "good": "GD",
-    "lp": "LP",
-    "light played": "LP",
-    "pl": "PL",
-    "played": "PL",
-    "po": "PO",
-    "poor": "PO",
-}
-# the US (TCGplayer) scale, translated as in SPEC §8
-_US = {
-    "m": "MT",
-    "mint": "MT",
-    "nm": "NM",
-    "near mint": "NM",
-    "lp": "EX",
-    "lightly played": "EX",
-    "light played": "EX",
-    "sp": "EX",
-    "slightly played": "EX",
-    "excellent": "EX",
-    "mp": "GD",
-    "moderately played": "GD",
-    "good": "GD",
-    "hp": "PL",
-    "heavily played": "PL",
-    "played": "PL",
-    "d": "PO",
-    "dmg": "PO",
-    "damaged": "PO",
-    "poor": "PO",
-}
-_LANGUAGE = {
-    "en": ("en", "english", "eng"),
-    "it": ("it", "italian", "ita", "italiano"),
-    "fr": ("fr", "french", "fra"),
-    "de": ("de", "german", "deu", "ger"),
-    "es": ("es", "spanish", "spa", "sp"),
-    "pt": ("pt", "portuguese", "por"),
-    "ja": ("ja", "jp", "japanese", "jpn"),
-    "ko": ("ko", "kr", "korean", "kor"),
-    "ru": ("ru", "russian", "rus"),
-    "zhs": ("zhs", "cs", "zh cn", "chinese simplified", "simplified chinese", "zh hans"),
-    "zht": ("zht", "ct", "zh tw", "chinese traditional", "traditional chinese", "zh hant"),
-    "ph": ("ph", "phyrexian"),
-}
-_LANGUAGES = {alias: code for code, aliases in _LANGUAGE.items() for alias in aliases}
 
 
 def _price(value: str) -> float | None:
@@ -281,7 +202,7 @@ def _date(value: str) -> str | None:
     return moment.astimezone(UTC).isoformat(timespec="seconds")
 
 
-def _fields(row: Row, scale: str, defaults: Defaults) -> dict:
+def _fields(row: Row) -> dict:
     """The entry fields of a row; raises ``_Problem`` with the code of what is wrong."""
     if not (row.quantity.isascii() and row.quantity.isdigit()):
         raise _Problem("bad_quantity")
@@ -291,28 +212,13 @@ def _fields(row: Row, scale: str, defaults: Defaults) -> dict:
     finish = _FINISHES.get(_norm(row.finish))
     if finish is None:
         raise _Problem("bad_finish", value=row.finish)
-    condition = defaults.condition
-    if row.condition.strip():
-        condition = (_US if scale == "us" else _CARDMARKET).get(_norm(row.condition))
-        if condition is None:
-            raise _Problem("bad_condition", value=row.condition)
-    language = defaults.language
-    if row.language.strip():
-        language = _LANGUAGES.get(_norm(row.language))
-        if language is None:
-            raise _Problem("bad_language", value=row.language)
     try:
         price = _price(row.purchase_price)
     except ValueError:
         raise _Problem("bad_price", value=row.purchase_price) from None
-    location = " ".join(row.location.split())[: service.MAX_NAME]
     return {
         "quantity": quantity,
         "finish": finish,
-        "condition": condition,
-        "language": language,
-        "location": location or defaults.location,
-        "location_kind": (row.location_kind.lower() if location else defaults.location_kind),
         "notes": row.notes.strip() or None,
         "purchase_price": price,
         "added_at": _date(row.added_at) if row.added_at else None,
@@ -406,15 +312,14 @@ def _find(catalog: _Catalog, row: Row) -> tuple[sqlite3.Row, bool]:
     raise _Problem("ambiguous", printings=len(printings))
 
 
-def resolve(conn: sqlite3.Connection, parsed: Parsed, defaults: Defaults | None = None) -> None:
+def resolve(conn: sqlite3.Connection, parsed: Parsed) -> None:
     """Decide for every row whether it can be imported. Writes nothing."""
     if not db.has_catalog(conn):
         raise FileProblem("no_catalog")
-    defaults = defaults or Defaults()
     catalog = _Catalog(conn)
     for row in parsed.rows:
         try:
-            row.fields = _fields(row, parsed.scale, defaults)
+            row.fields = _fields(row)
             printing, row.guessed = _find(catalog, row)
         except _Problem as problem:
             row.status = "ambiguous" if problem.code == "ambiguous" else "failed"

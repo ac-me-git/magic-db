@@ -34,10 +34,7 @@ def foil_only(fixture_cards):
 
 def entries(catalog):
     with closing(db.connect(catalog)) as conn:
-        found = conn.execute(
-            "SELECT e.scryfall_id, e.quantity, e.finish, e.condition, e.language, l.name "
-            "FROM entries e LEFT JOIN locations l ON l.id = e.location_id ORDER BY e.id"
-        )
+        found = conn.execute("SELECT scryfall_id, quantity, finish FROM entries ORDER BY id")
         return [tuple(row) for row in found]
 
 
@@ -85,7 +82,8 @@ def test_input_view_has_two_boxes_per_printing(client, both):
     assert rows >= 1 and page.count('class="bigcheck') == 2 * rows
     assert f'name="printing" value="{both["id"]}"' in page
     assert ">Non-foil</th>" in page and ">Foil</th>" in page
-    assert "New copies go to" in page and 'action="/fast/settings"' in page
+    # nothing to choose above the list: no place, condition or language
+    assert 'action="/fast/settings"' not in page and "<select" not in page.split("fast-list")[0]
     assert 'aria-current="true"' in page.split(">Fast input</a>")[0].rsplit("<a", 1)[1]
 
 
@@ -138,7 +136,7 @@ def test_ticking_adds_a_copy_and_unticking_takes_it_back(client, catalog, both):
     answer = toggle(client, both)
     assert answer.status_code == 200
     assert box(answer.text) == (True, False, "remove")
-    assert entries(catalog) == [(both["id"], 1, "nonfoil", "NM", "en", None)]
+    assert entries(catalog) == [(both["id"], 1, "nonfoil")]
 
     answer = toggle(client, both, "foil")
     assert box(answer.text) == (True, False, "remove")
@@ -147,7 +145,7 @@ def test_ticking_adds_a_copy_and_unticking_takes_it_back(client, catalog, both):
 
     answer = toggle(client, both, "nonfoil", "remove")
     assert box(answer.text) == (False, False, "add")
-    assert entries(catalog) == [(both["id"], 1, "foil", "NM", "en", None)]
+    assert entries(catalog) == [(both["id"], 1, "foil")]
 
     toggle(client, both, "nonfoil", "remove")  # nothing to take back: nothing happens
     assert len(entries(catalog)) == 1
@@ -185,7 +183,7 @@ def test_a_box_never_adds_a_second_copy(client, catalog, both):
     toggle(client, both, "foil")
     answer = toggle(client, both, "foil").text  # a second tab, or no JavaScript
     assert box(answer) == (True, False, "remove")
-    assert entries(catalog) == [(both["id"], 1, "foil", "NM", "en", None)]
+    assert entries(catalog) == [(both["id"], 1, "foil")]
 
 
 def test_copies_added_elsewhere_are_taken_back_one_at_a_time(client, catalog, both):
@@ -223,48 +221,18 @@ def test_the_row_keeps_the_way_back(client, both):
     assert row.count(f'name="next" value="/search?q=set%3A{both["set"]}&amp;view=input"') == 2
 
 
-# --- where new copies go --------------------------------------------------------------
+# --- what a box is about -------------------------------------------------------------
 
 
-def test_copies_get_the_remembered_place_condition_and_language(client, catalog, both):
-    client.post("/locations", data={"name": "New set", "kind": "binder"})
-    here = f"/search?q=set%3A{both['set']}&view=input"
-    answer = client.get(
-        "/fast/settings",
-        params={"location": "1", "condition": "EX", "language": "it", "next": here},
-    )
-    assert answer.status_code == 303 and answer.headers["location"] == here
-
-    toggle(client, both)
-    assert entries(catalog) == [(both["id"], 1, "nonfoil", "EX", "it", "New set")]
-    page = client.get(here).text
-    assert '<option value="1" selected>New set</option>' in page
-    assert '<option value="EX" selected>' in page and '<option value="it" selected>' in page
-
-    # the boxes are about these copies only: elsewhere the same card is not ticked
-    client.get("/fast/settings", params={"location": "", "condition": "EX", "language": "it"})
-    row = next(r for r in client.get(here).text.split("<tr>") if both["id"] in r)
-    assert box(row, "nonfoil") == (False, False, "add") and "×1</span>" in row
-    toggle(client, both)
-    assert [e[5] for e in entries(catalog)] == ["New set", None]
-
-
-def test_settings_ignore_nonsense_and_share_quick_adds_memory(client, catalog, both):
-    client.post("/add", data={"printing": both["id"], "condition": "GD", "language": "de"})
-    client.get("/fast/settings", params={"condition": "??", "language": "xx", "location": "x"})
-    toggle(client, both, "foil")
-    assert entries(catalog)[-1] == (both["id"], 1, "foil", "GD", "de", None)
-    assert client.get("/fast/settings").headers["location"] == "/"
-    bad = client.get("/fast/settings", params={"next": "//evil.example"})
-    assert bad.headers["location"] == "/"
-
-
-def test_a_location_that_was_deleted_becomes_no_location(client, catalog, both):
-    client.post("/locations", data={"name": "Gone", "kind": "box"})
-    client.get("/fast/settings", params={"location": "1"})
-    client.post("/locations/1/delete")
-    toggle(client, both)
-    assert entries(catalog) == [(both["id"], 1, "nonfoil", "NM", "en", None)]
+def test_a_box_is_ticked_by_any_copy_of_that_printing_and_finish(client, catalog, both):
+    """There is no place, condition or language: a copy added from the card's page ticks
+    the box as well."""
+    client.post("/add", data={"printing": both["id"], "finish": "foil", "quantity": "2"})
+    row = page_row(client, both)
+    assert box(row, "foil") == (True, False, "remove") and "×2</span>" in row
+    assert box(row, "nonfoil") == (False, False, "add")
+    for gone in ("/fast/settings", "/fast/settings?location=1"):
+        assert client.get(gone).status_code == 404
 
 
 # --- refusals -------------------------------------------------------------------------
@@ -296,20 +264,20 @@ def test_locked_collection_shows_the_boxes_but_does_not_change(client, catalog, 
     assert box(row, "foil") == (False, True, "add")
 
 
-def test_copies_like_and_take_one(catalog, both):
-    key = {"condition": "NM", "language": "en", "location_id": None}
+def test_copies_by_finish_and_take_one(catalog, both):
     with closing(db.connect(catalog)) as conn:
-        assert service.copies_like(conn, [], **key) == {}
+        assert service.copies_by_finish(conn, []) == {}
         service.add_entry(conn, both["id"], 3, finish="foil")
-        service.add_entry(conn, both["id"], 1, finish="foil", condition="EX")
-        assert service.copies_like(conn, [both["id"], UNKNOWN], **key) == {(both["id"], "foil"): 3}
-        assert service.take_one(conn, both["id"], finish="foil", **key) is True
-        assert service.take_one(conn, both["id"], finish="nonfoil", **key) is False
-        assert service.copies_like(conn, [both["id"]], **key) == {(both["id"], "foil"): 2}
+        service.add_entry(conn, both["id"], 1, finish="foil")
+        found = service.copies_by_finish(conn, [both["id"], UNKNOWN])
+        assert found == {(both["id"], "foil"): 4}
+        assert service.take_one(conn, both["id"], finish="foil") is True
+        assert service.take_one(conn, both["id"], finish="nonfoil") is False
+        assert service.copies_by_finish(conn, [both["id"]]) == {(both["id"], "foil"): 3}
 
 
 def test_in_italian(client, both):
     client.get("/lang/it")
     page = client.get(f"/search?q=set:{both['set']}&view=input").text
-    assert ">Inserimento rapido</a>" in page and "Le nuove copie vanno in" in page
+    assert ">Inserimento rapido</a>" in page and "Spunta una casella" in page
     assert ">Normale</th>" in page

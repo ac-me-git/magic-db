@@ -15,17 +15,17 @@ from magicdb.app import create_app
 from magicdb.catalog import publish
 from magicdb.collection import service
 
-# (name, set, copies, finish, location)
+# (name, set, copies, finish)
 OWNED = [
-    ("Lightning Bolt", "m10", 3, "nonfoil", "Binder"),
-    ("Lightning Bolt", "lea", 1, "nonfoil", "Binder"),
-    ("Serra Angel", "dom", 2, "foil", "Binder"),
-    ("Niv-Mizzet Reborn", "war", 1, "nonfoil", "Deck"),
-    ("Sol Ring", "c21", 4, "nonfoil", "Deck"),
-    ("Dryad Arbor", "fut", 1, "nonfoil", None),
-    ("Delver of Secrets // Insectile Aberration", "isd", 1, "nonfoil", None),
-    ("Mountain", "m21", 10, "nonfoil", "Deck"),
-    ("Jace, the Mind Sculptor", "wwk", 1, "nonfoil", None),
+    ("Lightning Bolt", "m10", 3, "nonfoil"),
+    ("Lightning Bolt", "lea", 1, "nonfoil"),
+    ("Serra Angel", "dom", 2, "foil"),
+    ("Niv-Mizzet Reborn", "war", 1, "nonfoil"),
+    ("Sol Ring", "c21", 4, "nonfoil"),
+    ("Dryad Arbor", "fut", 1, "nonfoil"),
+    ("Delver of Secrets // Insectile Aberration", "isd", 1, "nonfoil"),
+    ("Mountain", "m21", 10, "nonfoil"),
+    ("Jace, the Mind Sculptor", "wwk", 1, "nonfoil"),
 ]
 
 
@@ -42,18 +42,8 @@ def cards(fixture_cards):
 
 @pytest.fixture
 def owned(conn, cards):
-    places = {
-        "Binder": service.create_location(conn, "Binder", "binder"),
-        "Deck": service.create_location(conn, "Deck", "deck"),
-    }
-    for name, set_code, copies, finish, place in OWNED:
-        service.add_entry(
-            conn,
-            cards[(name, set_code)]["id"],
-            copies,
-            finish=finish,
-            location_id=places.get(place),
-        )
+    for name, set_code, copies, finish in OWNED:
+        service.add_entry(conn, cards[(name, set_code)]["id"], copies, finish=finish)
     conn.execute("UPDATE entries SET created_at = '2025-01-0' || id || 'T00:00:00+00:00'")
     conn.commit()
     return conn
@@ -66,9 +56,9 @@ def as_dict(bars):
 def expected(cards, key_of):
     """{key: (copies, distinct cards)} counted the slow, obvious way."""
     copies, distinct = defaultdict(int), defaultdict(set)
-    for name, set_code, count, finish, place in OWNED:
+    for name, set_code, count, finish in OWNED:
         card = cards[(name, set_code)]
-        for key in key_of(card, finish, place):
+        for key in key_of(card, finish, None):
             copies[key] += count
             distinct[key].add(card["oracle_id"])
     return {key: (copies[key], len(distinct[key])) for key in copies}
@@ -95,7 +85,7 @@ def test_totals(owned, cards):
     assert total.cards == 8  # the two Lightning Bolts are one card
     priced = unpriced = 0
     value = 0.0
-    for name, set_code, copies, finish, _ in OWNED:
+    for name, set_code, copies, finish in OWNED:
         prices = cards[(name, set_code)]["prices"]
         price = (
             prices.get("eur")
@@ -211,34 +201,10 @@ def test_by_year_of_the_printing(owned, cards):
     assert as_dict(bars)["1993"] == (1, 1) and as_dict(bars)["2009"] == (3, 1)
 
 
-def test_by_finish_condition_language_location(owned, cards):
-    service.update_entry(owned, 5, condition="EX", language="it")  # the Sol Rings
+def test_by_finish(owned, cards):
     charts = stats.breakdowns(stats.collect(owned))
     assert as_dict(charts["finish"]) == {"nonfoil": (22, 7), "foil": (2, 1)}
-    assert as_dict(charts["condition"]) == {"NM": (20, 7), "EX": (4, 1)}
-    assert [bar.key for bar in charts["condition"]] == ["NM", "EX"]  # best first
-    assert as_dict(charts["language"]) == {"en": (20, 7), "it": (4, 1)}
-    assert as_dict(charts["location"]) == {"Binder": (6, 2), "Deck": (15, 3), "": (3, 3)}
-    assert [bar.key for bar in charts["location"]] == ["Binder", "Deck", ""]
-
-
-def test_location_order_follows_the_owner(owned):
-    service.shift_location(owned, 2, -1)  # Deck before Binder
-    keys = [bar.key for bar in stats.breakdowns(stats.collect(owned))["location"]]
-    assert keys == ["Deck", "Binder", ""]
-
-
-def test_one_location_only(owned):
-    binder = stats.collect(owned, 1)
-    assert (stats.totals(binder).copies, stats.totals(binder).cards) == (6, 2)
-    assert as_dict(stats.breakdowns(binder)["color"]) == {"w": (2, 1), "r": (4, 1)}
-    loose = stats.collect(owned, service.UNASSIGNED)
-    assert stats.totals(loose).copies == 3
-    assert [bar.key for bar in stats.breakdowns(loose)["location"]] == [""]
-    assert stats.totals(stats.collect(owned, 99)).entries == 0
-
-
-# --- most valuable, most recent -------------------------------------------------------
+    assert set(charts) == {"color", "rarity", "type", "mana_value", "year", "finish"}
 
 
 def test_most_valuable(owned, cards):
@@ -281,7 +247,7 @@ def test_set_with_nothing_owned_is_not_listed(owned):
 def test_partial_set(conn, fixture_cards):
     first, second = arabian(fixture_cards)[:2]
     service.add_entry(conn, first["id"], 3)
-    service.add_entry(conn, first["id"], 1, condition="EX")  # same card again: still one
+    service.add_entry(conn, first["id"], 1, finish="foil")  # same card again: still one
     service.add_entry(conn, second["id"], 1)
     arn = progress(conn)
     assert (arn.owned, arn.total, arn.percent, arn.complete) == (2, 92, 2, False)
@@ -313,23 +279,6 @@ def test_missing_link_lists_exactly_what_is_missing(conn, fixture_cards):
     assert result.total == 92 - progress(conn).owned
 
 
-def owned_name(conn, location_id):
-    return conn.execute("SELECT name FROM locations WHERE id = ?", (location_id,)).fetchone()[0]
-
-
-def test_missing_link_for_one_location(conn, fixture_cards):
-    cards = arabian(fixture_cards)
-    binder = service.create_location(conn, 'Binder "A"', "binder")
-    service.add_entry(conn, cards[0]["id"], location_id=binder)
-    service.add_entry(conn, cards[1]["id"])  # owned, but somewhere else
-    assert progress(conn, location=binder).owned == 1 and progress(conn).owned == 2
-    name = owned_name(conn, binder)
-    assert name == "Binder 'A'"  # a double quote in a name becomes an apostrophe
-    query = stats.missing_query("arn", name)
-    result = search.run(conn, query, per_page=1000)  # the quote in the name does not break it
-    assert {row["id"] for row in result.rows} == {c["id"] for c in cards[1:]}
-
-
 def test_digital_sets_are_left_out(conn, fixture_cards):
     digital = next(c for c in fixture_cards if c["set"] == "j21")
     service.add_entry(conn, digital["id"])
@@ -354,7 +303,6 @@ def test_set_sorting_and_type_filter(owned, fixture_sets):
     core = stats.set_completion(owned, set_type="core")
     assert core and {s.set_type for s in core} == {"core"}
     assert stats.set_completion(owned, set_type="nonsense") == []
-    assert {s.code for s in stats.set_completion(owned, location=1)} == {"m10", "lea", "dom"}
 
 
 # --- the page -------------------------------------------------------------------------
@@ -378,26 +326,16 @@ def test_stats_page(client):
         "Most valuable",
         "Added most recently",
         ">Multicolour<",
-        "NM · Near Mint",
-        ">No location<",
+        ">Foil<",
     ]:
         assert expected_text in text, expected_text
     assert 'class="bar color-r" style="width: ' in text
     assert 'style="width: 100.0%"' in text  # the longest bar of a chart is full width
     assert "set%3Am10+haveprint%3Ano+unique%3Aprints+order%3Aset" in text  # the missing link
     assert "Jace, the Mind Sculptor" in text
-    assert 'href="/stats"' in client.get("/locations").text  # the menu, on every page
-
-
-def test_stats_page_for_one_location(client):
-    page = client.get("/stats?location=1").text
-    assert "<dd>6</dd>" in page and "Set completion (3 sets)" in page
-    assert '<option value="1" selected>Binder</option>' in page
-    assert "-loc%3A%22Binder%22" in page  # missing = not in this binder
-    loose = client.get("/stats?location=none").text
-    assert "<dd>3</dd>" in loose and '<option value="none" selected>' in loose
-    assert "There is nothing here yet." in client.get("/stats?location=99").text
-    assert "<dd>24</dd>" in client.get("/stats?location=garbage").text
+    assert 'href="/stats"' in client.get("/decks").text  # the menu, on every page
+    for gone in ("NM · Near Mint", "No location", 'name="location"', "By condition"):
+        assert gone not in text, gone
 
 
 def test_stats_page_set_options(client):

@@ -32,52 +32,10 @@
   <input type="hidden" name="filename" value="{{ filename }}">
 
   <fieldset>
-    <legend>{{ t("import.option.location", n=without.location | count) }}</legend>
-    <div class="fields">
-      <label>{{ t("entry.location") }}
-        <select name="location">
-          <option value="">{{ t("entry.unassigned") }}</option>
-          <option value="new"{% if chosen.location == "new" %} selected{% endif %}>{{ t("import.option.new_location") }}</option>
-          {% for place in options.locations %}
-          <option value="{{ place.id }}"{% if place.id | string == chosen.location %} selected{% endif %}>{{ place.name }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <label>{{ t("import.option.new_name") }}
-        <input type="text" name="new_location" value="{{ chosen.new_location }}" maxlength="80">
-      </label>
-      <label>{{ t("locations.kind") }}
-        <select name="new_kind">
-          {% for kind in options.kinds %}
-          <option value="{{ kind }}"{% if kind == chosen.new_kind %} selected{% endif %}>{{ t("kind." ~ kind) }}</option>
-          {% endfor %}
-        </select>
-      </label>
-    </div>
-  </fieldset>
-
-  <div class="fields">
-    <label>{{ t("import.option.condition", n=without.condition | count) }}
-      <select name="condition">
-        {% for value in options.conditions %}
-        <option value="{{ value }}"{% if value == chosen.condition %} selected{% endif %}>{{ value }} · {{ t("condition." ~ value) }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <label>{{ t("import.option.language", n=without.language | count) }}
-      <select name="language">
-        {% for value in options.languages %}
-        <option value="{{ value }}"{% if value == chosen.language %} selected{% endif %}>{{ t("lang." ~ value) }}</option>
-        {% endfor %}
-      </select>
-    </label>
-  </div>
-
-  <fieldset>
     <legend>{{ t("import.option.mode") }}</legend>
     <div class="checks">
-      <label class="check"><input type="radio" name="mode" value="add"{% if chosen.mode != "replace" %} checked{% endif %}> {{ t("import.mode.add") }}</label>
-      <label class="check"><input type="radio" name="mode" value="replace"{% if chosen.mode == "replace" %} checked{% endif %}> {{ t("import.mode.replace", n=owned | count) }}</label>
+      <label class="check"><input type="radio" name="mode" value="add"{% if mode != "replace" %} checked{% endif %}> {{ t("import.mode.add") }}</label>
+      <label class="check"><input type="radio" name="mode" value="replace"{% if mode == "replace" %} checked{% endif %}> {{ t("import.mode.replace", n=owned | count) }}</label>
     </div>
   </fieldset>
 

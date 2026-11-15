@@ -1,6 +1,6 @@
 """Collection statistics (SPEC §9).
 
-One query reads every entry of the chosen scope with the catalog columns it needs; the
+One query reads every entry of the collection with the catalog columns it needs; the
 totals and breakdowns are then counted in Python, which keeps each of them a few lines
 and easy to test. Set completion is the one thing done in SQL.
 """
@@ -31,7 +31,7 @@ _LETTER = {bit: letter.lower() for letter, bit in COLOR_BITS.items()}
 
 @dataclass(frozen=True)
 class Bar:
-    key: str  # what is counted: "r", "mythic", "Creature", "2019", a location name…
+    key: str  # what is counted: "r", "mythic", "Creature", "2019"…
     copies: int
     cards: int  # distinct cards (oracle ids)
 
@@ -61,28 +61,13 @@ class SetProgress:
         return self.owned >= self.total
 
 
-def scope(location: str | int) -> tuple[str, list]:
-    """WHERE clause and parameters for 'everything', 'no location' or one location."""
-    if location == service.UNASSIGNED:
-        return "e.location_id IS NULL", []
-    if location == service.ALL:
-        return "1", []
-    return "e.location_id = ?", [int(location)]
-
-
-def collect(
-    conn: sqlite3.Connection, location: str | int = service.ALL, currency: str = "eur"
-) -> list[sqlite3.Row]:
-    """Every entry in scope, with the card facts and the price of one copy."""
-    where, params = scope(location)
+def collect(conn: sqlite3.Connection, currency: str = "eur") -> list[sqlite3.Row]:
+    """Every entry, with the card facts and the price of one copy."""
     return conn.execute(
         f"SELECT e.id, e.scryfall_id, e.oracle_id, e.name, e.set_code, e.collector_number, "
-        f"e.quantity, e.finish, e.condition, e.language, e.created_at, "
-        f"l.name AS location_name, l.sort_order AS location_order, "
+        f"e.quantity, e.finish, e.created_at, "
         f"p.colors, p.rarity, p.type_line, p.cmc, p.year, {service.price_sql(currency)} AS price "
-        f"FROM entries e LEFT JOIN locations l ON l.id = e.location_id "
-        f"LEFT JOIN cat.printings p ON p.id = e.scryfall_id WHERE {where}",
-        params,
+        f"FROM entries e LEFT JOIN cat.printings p ON p.id = e.scryfall_id"
     ).fetchall()
 
 
@@ -140,10 +125,6 @@ def _ordered(bars: dict[str, Bar], order: tuple[str, ...] | list[str]) -> list[B
 
 
 def breakdowns(rows: list[sqlite3.Row]) -> dict[str, list[Bar]]:
-    locations = sorted(
-        {(row["location_order"], row["location_name"]) for row in rows if row["location_name"]}
-    )
-    by_location = _count(rows, lambda row: [row["location_name"] or ""])
     return {
         "color": _ordered(_count(rows, color_of), COLOR_ORDER),
         "rarity": _ordered(
@@ -153,10 +134,6 @@ def breakdowns(rows: list[sqlite3.Row]) -> dict[str, list[Bar]]:
         "mana_value": _ordered(_count(rows, mana_value_of), MV_BUCKETS),
         "year": _ordered(_count(rows, lambda row: [str(row["year"])] if row["year"] else []), ()),
         "finish": _ordered(_count(rows, lambda row: [row["finish"]]), service.FINISHES),
-        "condition": _ordered(_count(rows, lambda row: [row["condition"]]), service.CONDITIONS),
-        "language": _ordered(_count(rows, lambda row: [row["language"]]), service.LANGUAGES),
-        # in the owner's order, cards without a location last (key "")
-        "location": _ordered(by_location, [name for _, name in locations] + [""]),
     }
 
 
@@ -174,22 +151,16 @@ def recently_added(rows: list[sqlite3.Row], limit: int = TOP) -> list[sqlite3.Ro
 
 
 def set_completion(
-    conn: sqlite3.Connection,
-    location: str | int = service.ALL,
-    sort: str = "percent",
-    set_type: str = "",
+    conn: sqlite3.Connection, sort: str = "percent", set_type: str = ""
 ) -> list[SetProgress]:
     """Progress in every paper set with at least one card owned."""
-    where, params = scope(location)
     # Two small queries joined here: asking SQLite to join entries, printings and sets
     # makes it walk all 120k printings (0.6 s on a 9,000-entry collection). An entry
     # carries the set code and collector number of its printing, so the catalog's
     # printings are not needed at all.
     owned = dict(
         conn.execute(
-            f"SELECT e.set_code, COUNT(DISTINCT e.collector_number) FROM entries e "
-            f"WHERE {where} GROUP BY e.set_code",
-            params,
+            "SELECT set_code, COUNT(DISTINCT collector_number) FROM entries GROUP BY set_code"
         )
     )
     found = conn.execute(
@@ -218,13 +189,11 @@ def set_completion(
     return sets
 
 
-def set_types(conn: sqlite3.Connection, location: str | int = service.ALL) -> list[str]:
+def set_types(conn: sqlite3.Connection) -> list[str]:
     """The kinds of set there is something in, for the filter."""
-    return sorted({progress.set_type for progress in set_completion(conn, location)})
+    return sorted({progress.set_type for progress in set_completion(conn)})
 
 
-def missing_query(code: str, location_name: str | None = None) -> str:
-    """The search that lists what is missing from a set (in one location, if given)."""
-    if location_name:
-        return f'set:{code} -loc:"{location_name}" unique:prints order:set'
+def missing_query(code: str) -> str:
+    """The search that lists what is missing from a set."""
     return f"set:{code} haveprint:no unique:prints order:set"

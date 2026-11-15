@@ -1,29 +1,27 @@
 # Decks
 
-A deck in magic-db is a **list of cards you want to play together**. It is separate from
-your collection: adding a card to a deck does not add it to the collection, and does not
-move it anywhere. What the deck gives you is a comparison with what you own.
-
-(If you want to record that some cards physically sit in a deck box, that is a *location*
-of the collection, not a deck.)
+A deck in magic-db is a **list of cards you want to play together**: a name, notes if
+you like, and the cards with how many of each. There is no format and no sideboard. A
+deck is separate from your collection: adding a card to a deck does not add it to the
+collection, and does not take it out. What the deck gives you is a comparison with what
+you own.
 
 ## Making a deck
 
 On the **Decks** page, press **New deck** (top right). The deck is called "Deck 1",
 "Deck 2" and so on, and its page opens with the name selected: type the one you want
-and, if you like, a format and a note, then *Save*. They stay at the top of the deck's
-page, under *Name, format and notes*. Then add cards in any of these ways:
+and, if you like, a note, then *Save*. They stay at the top of the deck's page, under
+*Name and notes*. Then add cards in any of these ways:
 
-- **One at a time**, on the deck's page: type the card's name (suggestions appear), the
-  quantity, and whether it goes in the main deck or the sideboard.
+- **One at a time**, on the deck's page: type the card's name (suggestions appear) and
+  the quantity.
 - **From a card's page**: "Add to the deck".
 - **From a search, in deck mode**: search as usual (say `t:human c:wg`), then choose
-  **Deck** above the results (as Images or as a List). Pick the deck and the board at
-  the top; on every card, + puts one more copy in it and − takes one out. On images the
-  buttons are faint until you point at the card. The switch *Only
-  cards in this deck* limits the search to the cards already there (it writes
-  `deck:"name"` into the search box); with *Search only my collection* on as well, you
-  see only cards you own.
+  **Deck** above the results (as Images or as a List). Pick the deck at the top; on
+  every card, + puts one more copy in it and − takes one out. On images the buttons are
+  faint until you point at the card. The switch *Only cards in this deck* limits the
+  search to the cards already there (it writes `deck:"name"` into the search box); with
+  *Search only my collection* on as well, you see only cards you own.
 - **By pasting a list**, on the deck's page.
 
 ### Deck lists
@@ -31,24 +29,19 @@ page, under *Name, format and notes*. Then add cards in any of these ways:
 One card per line, as most sites and programs export them:
 
 ```
-4 Lightning Bolt
+1 Miirym, Sentinel Wyrm
 4x Counterspell
 1 Sol Ring (C21) 263
 Brainstorm
-
-Sideboard
-2 Pyroblast
-SB: 1 Red Elemental Blast
 ```
 
 - The number is how many; a line with just a name is one copy.
 - Set codes, collector numbers and foil marks (`(C21) 263`, `[C21]`, `*F*`) are ignored:
   a deck names cards, not printings.
-- `Sideboard` on a line by itself starts the sideboard. `SB:` in front of a line puts
-  that one line there. A blank line does **not** start the sideboard.
-- `Deck`, `Commander` and `Companion` go back to the main deck. A `Maybeboard` section is
-  skipped.
-- Titles such as `Creatures (12)`, comments (`//`, `#`) and blank lines are ignored.
+- A deck has no sideboard: the cards of a `Sideboard` section, or of a line starting
+  with `SB:`, join the list like the others. A `Maybeboard` section is skipped.
+- Titles such as `Deck`, `Commander`, `Creatures (12)`, comments (`//`, `#`) and blank
+  lines are ignored.
 
 Lines that are not card names are shown to you with a suggestion and put back in the box
 to correct; everything else is added.
@@ -56,24 +49,25 @@ to correct; everything else is added.
 ## What the deck tells you
 
 - **Completion**: the round gauge shows how many of the deck's cards you own, as a
-  percentage. Any printing counts, wherever it is. 100 % means you have every copy.
+  percentage. Any printing counts, in any finish. 100 % means you have every copy.
 - **Missing**: cards you do not own enough copies of for this deck.
 - **Contested**: cards you own enough of for this deck alone, but not for all the decks
   that want them. If two decks each want 4 Lightning Bolt and you own 6, both decks are
   complete on their own and the card is contested.
 - **Estimated cost**: what the whole deck would cost, using the cheapest paper printing
   of each card. **To buy the missing** is the same estimate for the cards you lack.
-- **Colour identity**: the colours of the main deck's cards, as mana symbols, next to
-  its name.
+- **Colour identity**, as mana symbols next to its name: the colours of the deck's
+  widest legendary creature — the one with most colours, in practice the commander. A
+  deck with no legendary creature shows the colours of all its cards together. Two
+  partner commanders of different colours show only the wider one.
 
 The Decks page lists your decks one under the other, each with these facts, how many
-cards are in the main deck and the sideboard, and the day it last changed. It also has
-one list of every contested card: how many you own, how many your decks want in total,
-and which decks.
+cards it has, and the day it last changed. It also has one list of every contested
+card: how many you own, how many your decks want in total, and which decks.
 
 ## Statistics
 
-Every deck has a second tab, **Statistics**, about its main deck:
+Every deck has a second tab, **Statistics**:
 
 - how many lands and how many other cards, and the average mana value of the latter;
 - cards by type — an artifact creature counts as both;
@@ -85,7 +79,7 @@ Every deck has a second tab, **Statistics**, about its main deck:
 
 - "See the cards as images" searches for `deck:"name"`; you can combine that filter with
   any other, for example `deck:dragons have:no` for what you still need.
-- "Download as text" gives the list back in the format above.
+- "Download as text" gives the list back, one line per card.
 - A card's page shows which of your decks it is in.
 - Decks are included in the JSON export and in the nightly backup.
 - While the safety lock is on, decks can be looked at but not changed.

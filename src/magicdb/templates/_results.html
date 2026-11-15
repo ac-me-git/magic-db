@@ -55,13 +55,6 @@
       {% endfor %}
     </select>
   </label>
-  <label>{{ t("deck.board") }}
-    <select name="board">
-      {% for b in ("main", "side") %}
-      <option value="{{ b }}"{% if b == deck_choice.board %} selected{% endif %}>{{ t("deck.board." ~ b) }}</option>
-      {% endfor %}
-    </select>
-  </label>
   <noscript><button type="submit">{{ t("fast.apply") }}</button></noscript>
   {% if only %}{{ only_switch(only, t("deckmode.only")) }}{% endif %}
   <a class="deck-open" href="/decks/{{ deck_choice.deck.id }}">{{ t("deckmode.open") }}</a>
@@ -70,34 +63,6 @@
 {% endif %}
 {% elif mode == "input" %}
 {% if locked %}{% include "_locked_notice.html" %}{% endif %}
-<form class="filters fast-settings" method="get" action="/fast/settings"
-      hx-get="/fast/settings" hx-trigger="change" hx-target="#results" hx-swap="innerHTML">
-  <input type="hidden" name="next" value="{{ here }}">
-  <label>{{ t("fast.adding") }}
-    <select name="location">
-      <option value="">{{ t("entry.unassigned") }}</option>
-      {% for place in options.locations %}
-      <option value="{{ place.id }}"{% if place.id == fast_key.location_id %} selected{% endif %}>{{ place.name }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  <label>{{ t("entry.condition") }}
-    <select name="condition">
-      {% for value in options.conditions %}
-      <option value="{{ value }}"{% if value == fast_key.condition %} selected{% endif %}>{{ value }} · {{ t("condition." ~ value) }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  <label>{{ t("entry.language") }}
-    <select name="language">
-      {% for value in options.languages %}
-      <option value="{{ value }}"{% if value == fast_key.language %} selected{% endif %}>{{ t("lang." ~ value) }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  <noscript><button type="submit">{{ t("fast.apply") }}</button></noscript>
-  {% if only %}{{ only_switch(only, t("fast.only")) }}{% endif %}
-</form>
 <p class="hint">{{ t("fast.hint") }}</p>
 {% endif %}
 
@@ -140,7 +105,7 @@
     <tr>
       <th>{{ sorter(t("card.set"), "set") }}</th>
       <th>{{ sorter(t("card.name"), "name") }}</th>
-      <th class="deck-cell">{{ t("deck.board." ~ deck_choice.board) if deck_choice.deck is not none else "" }}</th>
+      <th class="deck-cell">{{ deck_choice.deck.name if deck_choice.deck is not none else "" }}</th>
     </tr>
   </thead>
   <tbody>

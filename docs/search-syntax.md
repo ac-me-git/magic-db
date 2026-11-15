@@ -71,10 +71,7 @@ for a set, a collector number, or add `include:extras`.
 | `have` | I own any printing of this card (yes / no) | `have:yes` |
 | `haveprint` | I own this exact printing (yes / no) | `set:arn haveprint:no` |
 | `qty` | Copies I own of this printing | `qty>=4` |
-| `loc` `location` | I keep it in a location named like | `loc:"blue box"` |
-| `cond` | I own it in this condition | `cond:nm` |
 | `finish` | I own it in this finish | `finish:foil` |
-| `lang` | I own it in this language | `lang:it` |
 | `deck` | In a deck whose name contains | `deck:"dragons"` |
 | `unique` | Show cards (default) or every printing | `unique:prints` |
 | `order` | Sort by: name, mv, released, rarity, price, set, type | `order:price` |

@@ -79,7 +79,7 @@ SYNTAX_MAP: tuple[tuple[str, tuple[str, ...]], ...] = (
         ("set", "settype", "number", "rarity", "year", "date", "artist", "flavor", "is"),
     ),
     ("market", ("format", "eur", "usd")),
-    ("mine", ("have", "haveprint", "qty", "loc", "cond", "finish", "lang", "deck")),
+    ("mine", ("have", "haveprint", "qty", "finish", "deck")),
     ("display", ("unique", "order", "dir", "include")),
 )
 _SYNTAX = re.compile(r'[:=<>()"!]|\bor\b', re.IGNORECASE)
@@ -101,8 +101,8 @@ def render(request: Request, template: str, status: int = 200, **context: object
 
 
 def swap_in_address(address: str, kind: str, old: str, new: str) -> str:
-    """A search address whose search is limited to the location or deck ``old`` (``kind``
-    "loc" or "deck"), now limited to ``new``; any other address as it is."""
+    """A search address whose search is limited to the deck ``old`` (``kind`` "deck"),
+    now limited to ``new``; any other address as it is."""
     parts = urlsplit(address)
     params = parse_qs(parts.query, keep_blank_values=True)
     query = (params.get("q") or [""])[0]
@@ -115,9 +115,9 @@ def swap_in_address(address: str, kind: str, old: str, new: str) -> str:
 
 
 def settings_redirect(request: Request, target: str, changed: bool) -> Response:
-    """Back to the search after a picker above the results changed (fast input's location,
-    deck mode's deck). With HTMX only the results are redrawn — unless the search itself
-    was rewritten, which the search box must show too: then the whole page loads."""
+    """Back to the search after the picker above the results changed (deck mode's deck).
+    With HTMX only the results are redrawn — unless the search itself was rewritten, which
+    the search box must show too: then the whole page loads."""
     if changed and request.headers.get("HX-Request") == "true":
         return Response(status_code=204, headers={"HX-Redirect": target})
     return RedirectResponse(target, status_code=303)
@@ -143,7 +143,6 @@ def panel_options(conn: sqlite3.Connection) -> dict[str, list]:
             "SELECT code, name FROM cat.sets WHERE catalog_count > 0 "
             "ORDER BY released_at DESC, code"
         ).fetchall(),
-        "locations": [r["name"] for r in conn.execute("SELECT name FROM locations ORDER BY name")],
         "orders": list(ORDERS),
     }
 
@@ -246,7 +245,7 @@ def search_page(
         owned = service.owned_counts(conn, [row[key] for row in result.rows], result.unique)
     extra: dict[str, object] = {}
     if result is not None and mode_name == "input":
-        extra = fast_input_context(request, conn, q, result, view)
+        extra = fast_input_context(conn, result)
     elif result is not None and mode_name == "deck":
         extra = deck_mode_context(request, conn, q, result, view)
     partial = request.headers.get("HX-Request") == "true"
@@ -269,34 +268,23 @@ def search_page(
 
 
 def only_switch(q: str, view: str, kind: str, name: str | None) -> dict[str, object] | None:
-    """The switch beside a picker above the results: whether the search is limited to
-    that location or deck, and the search that turns it the other way. None when there
-    is nothing to limit to (no location chosen, no deck)."""
+    """The switch beside deck mode's picker: whether the search is limited to that deck,
+    and the search that turns it the other way. None when there is no deck."""
     if not name:
         return None
     on = search.has_named(q, kind, name)
     return {"on": on, "url": search_url(search.with_named(q, kind, name, not on), 1, view)}
 
 
-def fast_input_context(
-    request: Request, conn: sqlite3.Connection, q: str, result: search.Result, view: str
-) -> dict[str, object]:
-    key = forms.copy_key(request, conn)
-    options = forms.options(conn)
-    place = next((p["name"] for p in options["locations"] if p["id"] == key["location_id"]), None)
-    return {
-        "fast_counts": service.copies_like(conn, [row["id"] for row in result.rows], **key),
-        "fast_key": key,
-        "options": options,
-        "only": only_switch(q, view, "loc", place),
-    }
+def fast_input_context(conn: sqlite3.Connection, result: search.Result) -> dict[str, object]:
+    return {"fast_counts": service.copies_by_finish(conn, [row["id"] for row in result.rows])}
 
 
 def deck_mode_context(
     request: Request, conn: sqlite3.Connection, q: str, result: search.Result, view: str
 ) -> dict[str, object]:
     chosen = mode.choice(request, conn)
-    counts: dict[tuple[str, str], int] = {}
+    counts: dict[str, int] = {}
     if chosen.deck is not None:
         ids = [row["oracle_id"] for row in result.rows]
         counts = decks.copies_in_deck(conn, chosen.deck["id"], ids)
@@ -394,7 +382,7 @@ def card_view(
             "SELECT id, name FROM decks ORDER BY name COLLATE NOCASE"
         ).fetchall(),
         sticky=forms.read_sticky(request),
-        options=forms.options(conn),
+        options=forms.options(),
         error=error,
     )
 

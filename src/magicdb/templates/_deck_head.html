@@ -1,12 +1,11 @@
-{# the top of both tabs of a deck: completion, name, colour identity, format and notes #}
+{# the top of both tabs of a deck: completion, name, colour identity and notes #}
 {% from "_forms.html" import dial with context %}
 <p class="links"><a href="/decks">← {{ t("decks.title") }}</a></p>
 <div class="deck-head">
   {{ dial(deck, "big") }}
   <div>
     <h1 class="page-title">{{ deck.name }}
-      {%- if deck.colours %} <span class="mana identity" title="{{ t('decks.identity') }}">{{ deck.colours | symbols }}</span>{% endif %}
-      {%- if deck.format %} <span class="tag">{{ deck.format }}</span>{% endif %}</h1>
+      {%- if deck.colours %} <span class="mana identity" title="{{ t('decks.identity') }}">{{ deck.colours | symbols }}</span>{% endif %}</h1>
     {% if deck.notes %}<p class="hint deck-notes">{{ deck.notes }}</p>{% endif %}
   </div>
 </div>

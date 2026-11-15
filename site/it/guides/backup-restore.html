@@ -20,7 +20,7 @@
 
 <h1>Backup e ripristino</h1>
 <h2>Cosa viene salvato</h2>
-<p>La collezione, le posizioni, i mazzi e le impostazioni sono un solo file SQLite: <code>collection.db</code>, nella cartella dei dati. Quel file è l'unica cosa che vale la pena salvare. Il catalogo delle carte e le immagini in cache vengono scaricati di nuovo ogni volta che mancano.</p>
+<p>La collezione, i mazzi e le impostazioni sono un solo file SQLite: <code>collection.db</code>, nella cartella dei dati. Quel file è l'unica cosa che vale la pena salvare. Il catalogo delle carte e le immagini in cache vengono scaricati di nuovo ogni volta che mancano.</p>
 <h2>Backup automatici</h2>
 <p>Ogni notte all'ora <code>MAGICDB_BACKUP_HOUR</code> (le 4:00 se non la cambi) AMTG scrive, nella cartella dei backup:</p>
 <ul>
@@ -58,7 +58,7 @@ docker compose run --rm --entrypoint sh magic-db -c \
   "rm -f /data/collection.db-wal /data/collection.db-shm &amp;&amp; \
    cp /data/backups/collection-20261112-040000.db /data/collection.db"
 docker compose start</code></pre>
-<p>Se hai soltanto un'esportazione CSV o JSON, parti da una collezione vuota e ripristinala con <strong>Importa</strong> &mdash; vedi <a href="import-export.html">Importa ed esporta</a>. L'esportazione JSON ripristina anche le posizioni vuote e i mazzi; il CSV no.</p>
+<p>Se hai soltanto un'esportazione CSV o JSON, parti da una collezione vuota e ripristinala con <strong>Importa</strong> &mdash; vedi <a href="import-export.html">Importa ed esporta</a>. L'esportazione JSON ripristina anche i mazzi; il CSV no.</p>
 <h2>Spostarsi su un altro computer</h2>
 <p>Ferma AMTG, copia <code>collection.db</code> (e la cartella <code>backups</code>, se vuoi lo storico) nella cartella dei dati della nuova installazione, e avviala lì. Il catalogo viene scaricato di nuovo da solo.</p>
 

@@ -12,8 +12,7 @@ from fastapi.testclient import TestClient
 from magicdb import db
 from magicdb.app import create_app
 from magicdb.collection import exporters, importers, service, transfer
-from magicdb.collection.importers import Defaults, FileProblem, profiles
-from magicdb.collection.service import CollectionError
+from magicdb.collection.importers import FileProblem, profiles
 from magicdb.config import load_settings
 from tests.conftest import FIXTURES
 
@@ -44,54 +43,42 @@ def pid(conn, name, set_code):
 def snapshot(conn):
     """Everything an export must carry over, in a comparable form."""
     entries = conn.execute(
-        "SELECT e.scryfall_id, e.oracle_id, e.name, e.set_code, e.collector_number, e.quantity, "
-        "e.finish, e.condition, e.language, l.name, e.notes, e.purchase_price, e.created_at "
-        "FROM entries e LEFT JOIN locations l ON l.id = e.location_id"
+        "SELECT scryfall_id, oracle_id, name, set_code, collector_number, quantity, finish, "
+        "notes, purchase_price, created_at FROM entries"
     )
-    places = conn.execute("SELECT name, kind, notes FROM locations ORDER BY sort_order, id")
-    return sorted(tuple(row) for row in entries), [tuple(row) for row in places]
+    return sorted(tuple(row) for row in entries)
 
 
 @pytest.fixture
 def stocked(conn):
-    binder = service.create_location(conn, "Binder 1", "binder", "top shelf")
-    box = service.create_location(conn, "Blue box", "box")
-    deck = service.create_location(conn, "Dragons, the deck", "deck")
-    service.add_entry(conn, pid(conn, "Lightning Bolt", "m10"), 3, location_id=binder)
+    service.add_entry(conn, pid(conn, "Lightning Bolt", "m10"), 3)
     service.add_entry(
         conn,
         pid(conn, "Lightning Bolt", "m10"),
         1,
         finish="foil",
-        condition="EX",
-        language="it",
-        location_id=binder,
         notes='signed, "mint"',
         purchase_price="12,50",
     )
-    service.add_entry(
-        conn, pid(conn, "Jace, the Mind Sculptor", "wwk"), 1, condition="LP", location_id=box
-    )
-    service.add_entry(conn, pid(conn, "Shivan Dragon", "m20"), 2, condition="PO", location_id=deck)
-    service.add_entry(conn, pid(conn, "Sol Ring", "c21"), 4, language="ja")
+    service.add_entry(conn, pid(conn, "Jace, the Mind Sculptor", "wwk"), 1)
+    service.add_entry(conn, pid(conn, "Shivan Dragon", "m20"), 2)
+    service.add_entry(conn, pid(conn, "Sol Ring", "c21"), 4)
     conn.execute("UPDATE entries SET created_at = '2024-0' || id || '-01T10:00:00+00:00'")
     conn.commit()
     return conn
 
 
-def bring_in(conn, data, defaults=None, **options):
+def bring_in(conn, data, **options):
     parsed = importers.parse_file(data if isinstance(data, bytes) else data.encode())
-    importers.resolve(conn, parsed, defaults)
-    result = service.import_entries(
-        conn, importers.to_items(parsed), locations=parsed.locations, **options
-    )
+    importers.resolve(conn, parsed)
+    result = service.import_entries(conn, importers.to_items(parsed), **options)
     return parsed, result
 
 
-def table(text, defaults=None, conn=None):
+def table(text, conn=None):
     """Parse and resolve a small CSV given as text; return its rows."""
     parsed = importers.parse_file(text.encode())
-    importers.resolve(conn, parsed, defaults)
+    importers.resolve(conn, parsed)
     return parsed.rows
 
 
@@ -101,6 +88,7 @@ def table(text, defaults=None, conn=None):
 def test_csv_export(stocked):
     rows = list(csv.reader(io.StringIO(exporters.export_csv(stocked))))
     assert tuple(rows[0]) == exporters.CSV_COLUMNS
+    assert not {"Condition", "Language", "Location"} & set(rows[0])
     assert len(rows) == 6
     foil = next(r for r in rows if r[6] == "foil")
     assert foil == [
@@ -111,32 +99,28 @@ def test_csv_export(stocked):
         pid(stocked, "Lightning Bolt", "m10"),
         "1",
         "foil",
-        "EX",
-        "it",
-        "Binder 1",
-        "binder",
         'signed, "mint"',
         "12.5",
         "2024-02-01T10:00:00+00:00",
     ]
-    # location by location in the owner's order, loose cards last
-    assert [r[9] for r in rows[1:]] == ["Binder 1", "Binder 1", "Blue box", "Dragons, the deck", ""]
+    # by name
+    assert [r[0] for r in rows[1:]] == [
+        "Jace, the Mind Sculptor",
+        "Lightning Bolt",
+        "Lightning Bolt",
+        "Shivan Dragon",
+        "Sol Ring",
+    ]
 
 
 def test_json_export(stocked):
-    service.create_location(stocked, "Empty shelf", "other", "for later")
     dump = json.loads(exporters.export_json(stocked))
-    assert dump["magic_db_export"] == 1 and dump["schema_version"] >= 2
-    assert [loc["name"] for loc in dump["locations"]] == [
-        "Binder 1",
-        "Blue box",
-        "Dragons, the deck",
-        "Empty shelf",
-    ]
-    assert dump["locations"][0] == {"name": "Binder 1", "kind": "binder", "notes": "top shelf"}
+    assert dump["magic_db_export"] == 2 and dump["schema_version"] >= 4
+    assert "locations" not in dump
     assert len(dump["entries"]) == 5
     ring = next(e for e in dump["entries"] if e["name"] == "Sol Ring")
-    assert ring["location"] is None and ring["language"] == "ja" and ring["quantity"] == 4
+    assert ring["quantity"] == 4 and ring["finish"] == "nonfoil"
+    assert not {"condition", "language", "location"} & set(ring)
 
 
 def test_export_of_an_empty_collection(conn):
@@ -158,16 +142,11 @@ def test_csv_round_trip(stocked, other):
             "copies": 11,
         }
         assert (result["entries"], result["copies"]) == (5, 11)
-        entries, places = snapshot(fresh)
-        assert entries == snapshot(stocked)[0]
-        # a CSV knows the locations that hold cards, with their kind but not their notes
-        assert [p[:2] for p in places] == [p[:2] for p in snapshot(stocked)[1]]
+        assert snapshot(fresh) == snapshot(stocked)
         assert exporters.export_csv(fresh) == exported  # and it exports identically
 
 
-def test_json_round_trip_keeps_empty_locations_notes_and_order(stocked, other):
-    service.create_location(stocked, "Empty shelf", "other", "for later")
-    service.shift_location(stocked, 4, -1)
+def test_json_round_trip(stocked, other):
     with closing(db.connect(other)) as fresh:
         bring_in(fresh, exporters.export_json(stocked))
         assert snapshot(fresh) == snapshot(stocked)
@@ -180,7 +159,51 @@ def test_importing_twice_adds_up(stocked, other):
         bring_in(fresh, exported)
         assert fresh.execute("SELECT COUNT(*), SUM(quantity) FROM entries").fetchone()[:] == (5, 22)
         bring_in(fresh, exported, replace=True)
-        assert snapshot(fresh)[0] == snapshot(stocked)[0]
+        assert snapshot(fresh) == snapshot(stocked)
+
+
+OLD_CSV = (
+    "Name,Set code,Set name,Collector number,Scryfall ID,Quantity,Finish,Condition,Language,"
+    "Location,Location kind,Notes,Purchase price,Added\n"
+    "Lightning Bolt,m10,Magic 2010,146,{bolt},2,nonfoil,EX,it,Binder 1,binder,,,"
+    "2024-01-01T10:00:00+00:00\n"
+    "Lightning Bolt,m10,Magic 2010,146,{bolt},3,nonfoil,NM,en,Blue box,box,,,"
+    "2023-01-01T10:00:00+00:00\n"
+)
+
+
+def test_an_export_from_before_still_imports_and_its_copies_merge(conn):
+    """A CSV written when copies had a condition, a language and a location: those
+    columns are not read, and the two rows become one."""
+    bolt = pid(conn, "Lightning Bolt", "m10")
+    parsed, result = bring_in(conn, OLD_CSV.format(bolt=bolt))
+    assert parsed.profile == "native" and importers.summary(parsed)["matched"] == 2
+    rows = conn.execute("SELECT quantity, finish, created_at FROM entries").fetchall()
+    assert [tuple(row) for row in rows] == [(5, "nonfoil", "2023-01-01T10:00:00+00:00")]
+
+
+def test_a_json_export_from_before_still_imports(conn):
+    bolt = pid(conn, "Lightning Bolt", "m10")
+    old = {
+        "magic_db_export": 1,
+        "locations": [{"name": "Binder 1", "kind": "binder", "notes": None}],
+        "decks": [],
+        "entries": [
+            {
+                "name": "Lightning Bolt",
+                "set_code": "m10",
+                "collector_number": "146",
+                "scryfall_id": bolt,
+                "quantity": 2,
+                "finish": "foil",
+                "condition": "EX",
+                "language": "it",
+                "location": "Binder 1",
+            },
+        ],
+    }
+    bring_in(conn, json.dumps(old))
+    assert conn.execute("SELECT quantity, finish FROM entries").fetchone()[:] == (2, "foil")
 
 
 # --- finding the printing -------------------------------------------------------------
@@ -259,8 +282,8 @@ def test_unknown_cards_fail(conn):
 BOLT = "Lightning Bolt,m10,146"
 
 
-def one(conn, header, line, defaults=None):
-    (row,) = table(f"Name,Set code,Collector number,{header}\n{BOLT},{line}\n", defaults, conn)
+def one(conn, header, line):
+    (row,) = table(f"Name,Set code,Collector number,{header}\n{BOLT},{line}\n", conn)
     return row
 
 
@@ -298,87 +321,27 @@ def test_finish_values(conn, value, expected):
         assert (row.problem, row.detail) == ("bad_finish", {"value": "holo"})
 
 
-@pytest.mark.parametrize(
-    ("value", "expected"),
-    [
-        ("MT", "MT"),
-        ("nm", "NM"),
-        ("EX", "EX"),
-        ("Good", "GD"),
-        ("LP", "LP"),
-        ("Light Played", "LP"),
-        ("pl", "PL"),
-        ("Poor", "PO"),
-    ],
-)
-def test_cardmarket_conditions_are_kept(conn, value, expected):
-    assert one(conn, "Condition", value).fields["condition"] == expected
-
-
-US = "Count,Name,Edition,Collector Number,Condition\n1,Lightning Bolt,m10,146,{}\n"
+US = "Count,Name,Edition,Collector Number,Condition,Language\n1,Lightning Bolt,m10,146,{},{}\n"
 
 
 @pytest.mark.parametrize(
-    ("value", "expected"),
+    ("header", "value"),
     [
-        ("Mint", "MT"),
-        ("Near Mint", "NM"),
-        ("NM", "NM"),
-        ("Lightly Played", "EX"),
-        ("LP", "EX"),
-        ("lightly_played", "EX"),
-        ("Moderately Played", "GD"),
-        ("MP", "GD"),
-        ("Heavily Played", "PL"),
-        ("HP", "PL"),
-        ("Damaged", "PO"),
-        ("DMG", "PO"),
+        ("Condition", "EX"),
+        ("Condition", "Pristine"),
+        ("Language", "it"),
+        ("Language", "Klingon"),
+        ("Location", "Blue box"),
     ],
 )
-def test_us_conditions_are_translated(conn, value, expected):
-    (row,) = table(US.format(value), conn=conn)
-    assert row.status == "matched" and row.fields["condition"] == expected
-
-
-def test_the_same_code_means_different_things_in_the_two_scales(conn):
-    assert one(conn, "Condition", "LP").fields["condition"] == "LP"  # Cardmarket: Light Played
-    assert table(US.format("LP"), conn=conn)[0].fields["condition"] == "EX"  # US: Lightly Played
-
-
-def test_unknown_condition_fails_and_blank_uses_the_default(conn):
-    row = one(conn, "Condition", "Pristine")
-    assert (row.status, row.problem, row.detail) == (
-        "failed",
-        "bad_condition",
-        {"value": "Pristine"},
-    )
-    assert table(US.format("EX"), conn=conn)[0].problem == "bad_condition"  # not a US grade
-    assert one(conn, "Condition", "").fields["condition"] == "NM"
-    assert one(conn, "Condition", "", Defaults(condition="GD")).fields["condition"] == "GD"
-    assert one(conn, "Condition", "PL", Defaults(condition="GD")).fields["condition"] == "PL"
-
-
-@pytest.mark.parametrize(
-    ("value", "expected"),
-    [
-        ("en", "en"),
-        ("English", "en"),
-        ("IT", "it"),
-        ("Italian", "it"),
-        ("jp", "ja"),
-        ("Japanese", "ja"),
-        ("Chinese Simplified", "zhs"),
-        ("zh-TW", "zht"),
-        ("Klingon", None),
-    ],
-)
-def test_languages(conn, value, expected):
-    row = one(conn, "Language", value)
-    if expected:
-        assert row.fields["language"] == expected
-    else:
-        assert row.problem == "bad_language"
-    assert one(conn, "Language", "", Defaults(language="it")).fields["language"] == "it"
+def test_condition_language_and_location_columns_are_not_read(conn, header, value):
+    """The collection keeps a printing, a finish and a quantity: what other tools write
+    about condition, language or place is left out, and never makes a row fail."""
+    row = one(conn, header, value)
+    assert row.status == "matched"
+    assert set(row.fields) == {"quantity", "finish", "notes", "purchase_price", "added_at"}
+    (us,) = table(US.format("Heavily Played", "Japanese"), conn=conn)
+    assert us.status == "matched" and us.fields["quantity"] == 1
 
 
 @pytest.mark.parametrize(
@@ -394,24 +357,14 @@ def test_bad_price_fails(conn):
     assert one(conn, "Purchase price", "-3").problem == "bad_price"
 
 
-def test_dates_locations_and_notes(conn):
-    row = one(
-        conn,
-        "Added,Location,Location kind,Notes",
-        "2025-02-11T15:31:46.501Z,  Blue   box ,BOX, signed ",
-    )
+def test_dates_and_notes(conn):
+    row = one(conn, "Added,Notes", "2025-02-11T15:31:46.501Z, signed ")
     assert row.fields["added_at"] == "2025-02-11T15:31:46+00:00"
-    assert (row.fields["location"], row.fields["location_kind"]) == ("Blue box", "box")
     assert row.fields["notes"] == "signed"
     assert one(conn, "Added", "yesterday").fields["added_at"] is None  # unreadable: ignored
     assert (
         one(conn, "Added", "2024-03-01 08:00:00").fields["added_at"] == "2024-03-01T08:00:00+00:00"
     )
-
-    fallback = one(conn, "Location", "", Defaults(location="Binder 9", location_kind="binder"))
-    assert (fallback.fields["location"], fallback.fields["location_kind"]) == ("Binder 9", "binder")
-    own = one(conn, "Location", "Mine", Defaults(location="Binder 9", location_kind="binder"))
-    assert (own.fields["location"], own.fields["location_kind"]) == ("Mine", "")
 
 
 @pytest.mark.parametrize(
@@ -472,25 +425,17 @@ def test_moxfield_export(conn):
     )
     parsed = importers.parse_file(text.encode())
     importers.resolve(conn, parsed)
-    assert (parsed.profile, parsed.scale) == ("moxfield", "us")
+    assert parsed.profile == "moxfield"
     first, second = parsed.rows
     assert first.fields == {
         "quantity": 2,
         "finish": "foil",
-        "condition": "NM",
-        "language": "en",
-        "location": "",
-        "location_kind": "other",
         "notes": None,
         "purchase_price": 1.5,
         "added_at": "2024-05-01T10:00:00+00:00",
     }
     assert first.card["set_code"] == "m10"
-    assert (second.fields["condition"], second.fields["language"], second.fields["finish"]) == (
-        "EX",
-        "it",
-        "nonfoil",
-    )
+    assert second.fields["finish"] == "nonfoil"
     assert second.card["name"] == "Jace, the Mind Sculptor"
 
 
@@ -504,19 +449,10 @@ def test_manabox_export(conn):
     )
     parsed = importers.parse_file(text.encode())
     importers.resolve(conn, parsed)
-    assert (parsed.profile, parsed.scale) == ("manabox", "us")
+    assert parsed.profile == "manabox"
     first, second = parsed.rows
-    assert (first.fields["location"], first.fields["location_kind"]) == ("Red deck", "deck")
-    assert (
-        first.fields["quantity"],
-        first.fields["condition"],
-        first.fields["purchase_price"],
-    ) == (4, "NM", 0.5)
-    assert (second.fields["finish"], second.fields["condition"], second.fields["language"]) == (
-        "etched",
-        "PL",
-        "ja",
-    )
+    assert (first.fields["quantity"], first.fields["purchase_price"]) == (4, 0.5)
+    assert (second.fields["finish"], second.fields["quantity"]) == ("etched", 1)
 
 
 def test_topdecked_sample_has_the_shape_of_the_real_export():
@@ -530,8 +466,8 @@ def test_topdecked_sample_has_the_shape_of_the_real_export():
 
 def test_topdecked_import(conn):
     parsed = importers.parse_file(TOPDECKED.read_bytes())
-    importers.resolve(conn, parsed, Defaults(location="BlueBinders", location_kind="binder"))
-    assert (parsed.profile, parsed.scale) == ("topdecked", "us")
+    importers.resolve(conn, parsed)
+    assert parsed.profile == "topdecked"
     assert importers.summary(parsed) == {
         "rows": 30,
         "matched": 30,
@@ -545,10 +481,6 @@ def test_topdecked_import(conn):
     assert first.fields == {
         "quantity": 1,
         "finish": "nonfoil",
-        "condition": "NM",
-        "language": "en",
-        "location": "BlueBinders",
-        "location_kind": "binder",
         "notes": None,
         "purchase_price": None,
         "added_at": "2025-02-11T15:31:46+00:00",
@@ -556,11 +488,7 @@ def test_topdecked_import(conn):
     assert parsed.rows[6].card["name"] == "Jace, the Mind Sculptor"  # a quoted comma
 
     result = service.import_entries(conn, importers.to_items(parsed), source="topdecked: sample")
-    assert (result["entries"], result["copies"], result["new_locations"]) == (
-        30,
-        30,
-        ["BlueBinders"],
-    )
+    assert (result["entries"], result["copies"]) == (30, 30)
     # one row per copy in the file becomes one entry per printing and finish
     bolts = conn.execute(
         "SELECT finish, quantity FROM entries WHERE name = 'Lightning Bolt' AND set_code = 'm10' "
@@ -589,10 +517,6 @@ def test_topdecked_rows_with_more_columns_filled(conn):
     assert full.fields == {
         "quantity": 2,
         "finish": "foil",
-        "condition": "EX",
-        "language": "it",
-        "location": "",
-        "location_kind": "other",
         "notes": "signed, front",
         "purchase_price": 0.8,
         "added_at": "2025-01-05T09:00:00+00:00",
@@ -683,25 +607,14 @@ def test_import_is_one_transaction_with_one_history_row(conn):
         "replace": False,
         "entries": 30,
         "copies": 30,
-        "new_locations": [],
     }
 
     broken = [dict(items[0]), {**items[1], "finish": "shiny"}]
     before = conn.execute("SELECT COUNT(*), SUM(quantity) FROM entries").fetchone()[:]
-    with pytest.raises(CollectionError):
+    with pytest.raises(service.CollectionError):
         service.import_entries(conn, broken, replace=True)
     assert conn.execute("SELECT COUNT(*), SUM(quantity) FROM entries").fetchone()[:] == before
     assert conn.execute("SELECT COUNT(*) FROM history").fetchone()[0] == 1
-
-
-def test_import_reuses_locations_whatever_the_case(conn):
-    service.create_location(conn, "Blue Box", "box")
-    text = "Name,Set code,Collector number,Location,Location kind\n"
-    text += "Lightning Bolt,m10,146,blue box,deck\nSol Ring,c21,263,New Shelf,shelf\n"
-    _, result = bring_in(conn, text)
-    assert result["new_locations"] == ["New Shelf"]
-    places = [tuple(r) for r in conn.execute("SELECT name, kind FROM locations ORDER BY id")]
-    assert places == [("Blue Box", "box"), ("New Shelf", "other")]  # unknown kind -> other
 
 
 def test_import_keeps_the_earliest_date_when_rows_merge(conn):
@@ -772,10 +685,9 @@ def test_preview_writes_nothing(client, catalog):
     assert page.status_code == 200
     assert "Nothing has been written yet." in page.text
     assert "TopDecked" in page.text and "<strong>30</strong>" in page.text
-    assert "Location for the 30 rows that do not name one" in page.text
-    # the binder's name is offered as a new location
-    assert 'name="new_location" value="BlueBinders"' in page.text
-    assert '<option value="new" selected>' in page.text
+    # nothing to choose but whether to add or replace
+    assert 'name="location"' not in page.text and 'name="condition"' not in page.text
+    assert 'name="language"' not in page.text and 'name="mode"' in page.text
     assert "Import 30 rows" in page.text and ">Lightning Bolt</a>" in page.text
     assert counts(catalog) == (0, 0, 0) and backups(catalog) == []
 
@@ -790,15 +702,7 @@ def test_confirm_backs_up_first_then_writes(client, catalog):
     )
     done = client.post(
         f"/import/{token_of(page)}/confirm",
-        data={
-            "filename": "x.csv",
-            "location": "new",
-            "new_location": "BlueBinders",
-            "new_kind": "binder",
-            "condition": "EX",
-            "language": "it",
-            "mode": "add",
-        },
+        data={"filename": "x.csv", "mode": "add"},
     )
     assert (
         done.status_code == 303
@@ -810,11 +714,6 @@ def test_confirm_backs_up_first_then_writes(client, catalog):
     assert backup.startswith("pre-import-")
     with closing(db.connect(catalog)) as conn:
         assert conn.execute("SELECT SUM(quantity) FROM entries").fetchone()[0] == 32
-        imported = conn.execute(
-            "SELECT DISTINCT e.condition, e.language, l.name, l.kind FROM entries e "
-            "JOIN locations l ON l.id = e.location_id"
-        ).fetchall()
-        assert [tuple(row) for row in imported] == [("EX", "it", "BlueBinders", "binder")]
         assert [r[0] for r in conn.execute("SELECT action FROM history")] == ["add", "import"]
     # the backup holds the collection as it was before the import
     import sqlite3
@@ -828,26 +727,23 @@ def _first_id(settings):
         return pid(conn, "Sol Ring", "c21")
 
 
-def test_replace_mode_and_existing_location(client, catalog):
-    client.post("/locations", data={"name": "Shelf", "kind": "other"})
+def test_replace_mode(client, catalog):
     client.post("/add", data={"printing": _first_id(catalog), "quantity": "5"})
     page = upload(client, TOPDECKED.read_bytes())
     assert "Remove them first (1 entries)" in page.text
-    assert '<option value="new" selected>' not in page.text  # no binder name in this file name
-    client.post(f"/import/{token_of(page)}/confirm", data={"location": "1", "mode": "replace"})
+    client.post(f"/import/{token_of(page)}/confirm", data={"mode": "replace"})
     with closing(db.connect(catalog)) as conn:
         assert conn.execute("SELECT SUM(quantity) FROM entries").fetchone()[0] == 30
-        assert conn.execute("SELECT DISTINCT location_id FROM entries").fetchall()[0][0] == 1
 
 
 def test_problem_rows_are_listed_and_downloadable(client, catalog):
     text = (
-        "Name,Set code,Collector number,Quantity,Condition\n"
-        "Lightning Bolt,m10,146,2,NM\n"
-        "Lightning Bolt,,,1,NM\n"
-        "Not A Card,,,1,NM\n"
-        "Sol Ring,c21,263,three,NM\n"
-        "Sol Ring,c21,263,1,Pristine\n"
+        "Name,Set code,Collector number,Quantity,Finish\n"
+        "Lightning Bolt,m10,146,2,nonfoil\n"
+        "Lightning Bolt,,,1,nonfoil\n"
+        "Not A Card,,,1,nonfoil\n"
+        "Sol Ring,c21,263,three,nonfoil\n"
+        "Sol Ring,c21,263,1,shiny\n"
     )
     page = upload(client, text)
     assert "Rows that will not be imported (4)" in page.text
@@ -855,7 +751,7 @@ def test_problem_rows_are_listed_and_downloadable(client, catalog):
         "6 printings have this name and the file does not say which.",
         "No such card in the catalog.",
         "The quantity is not a whole number from 1 to 9999.",
-        "Unknown condition: Pristine",
+        "Unknown finish: shiny",
     ]:
         assert message in page.text
     assert "Import 1 rows" in page.text
@@ -869,7 +765,7 @@ def test_problem_rows_are_listed_and_downloadable(client, catalog):
         "Set code",
         "Collector number",
         "Quantity",
-        "Condition",
+        "Finish",
         "Line",
         "Problem",
     ]
@@ -909,19 +805,12 @@ def test_upload_too_big(client, monkeypatch):
     assert page.status_code == 400 and "The file is too big." in page.text
 
 
-def test_confirm_with_a_bad_choice_shows_the_preview_again(client, catalog):
+def test_confirm_with_a_bad_mode_adds(client, catalog):
+    client.post("/add", data={"printing": _first_id(catalog), "quantity": "5"})
     page = upload(client, TOPDECKED.read_bytes())
-    token = token_of(page)
-    for data in ({"location": "new", "new_location": "  "}, {"location": "99"}, {"location": "x"}):
-        again = client.post(f"/import/{token}/confirm", data=data)
-        assert again.status_code == 400 and "Import 30 rows" in again.text
-    assert (
-        "A location needs a name"
-        in client.post(
-            f"/import/{token}/confirm", data={"location": "new", "new_location": ""}
-        ).text
-    )
-    assert counts(catalog) == (0, 0, 0) and backups(catalog) == []
+    client.post(f"/import/{token_of(page)}/confirm", data={"mode": "nonsense"})
+    with closing(db.connect(catalog)) as conn:  # nothing was replaced
+        assert conn.execute("SELECT SUM(quantity) FROM entries").fetchone()[0] == 35
 
 
 @pytest.mark.parametrize("token", ["0" * 32, "nonsense", "..%2F..%2Fcollection"])
@@ -948,23 +837,12 @@ def test_old_uploads_are_forgotten(client, catalog):
 
 
 def test_round_trip_through_the_pages(client, catalog, other):
-    client.post("/locations", data={"name": "Binder 1", "kind": "binder"})
-    client.post(
-        "/add",
-        data={
-            "printing": _first_id(catalog),
-            "quantity": "3",
-            "location": "1",
-            "finish": "foil",
-            "condition": "GD",
-            "language": "de",
-        },
-    )
+    client.post("/add", data={"printing": _first_id(catalog), "quantity": "3", "finish": "foil"})
     exported = client.get("/export/csv").content
 
     fresh = TestClient(create_app(other), follow_redirects=False)
     page = upload(fresh, exported, "magic-db-collection.csv")
-    assert "magic-db" in page.text and "Location for the 0 rows" in page.text
+    assert "magic-db" in page.text
     fresh.post(f"/import/{token_of(page)}/confirm", data={})
     assert fresh.get("/export/csv").content == exported
 

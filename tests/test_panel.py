@@ -39,8 +39,8 @@ CASES = [
     (fields(r=["u", "c", "x"]), "(r:c or r:u)"),
     (fields(set="MH3", format="modern"), "set:mh3 f:modern"),
     (fields(set="mh3 or 1=1"), ""),
-    (fields(owned="1", location="Blue box"), 'have:yes loc:"Blue box"'),
-    (fields(location="Deck (draghi)"), 'loc:"Deck (draghi)"'),
+    (fields(owned="1", location="Blue box"), "have:yes"),  # no locations any more
+    (fields(location="Deck (draghi)"), ""),
     (fields(unique="prints", order="price", dir="asc"), "unique:prints order:price dir:asc"),
     (fields(unique="cards", order="name", dir=""), ""),
     (fields(order="nonsense", dir="sideways", color_mode="??"), ""),

@@ -4,29 +4,17 @@
 {% from "_charts.html" import chart with context %}
 
 {% macro sort_link(value) -%}
-<a href="/stats?{{ {'location': location, 'sets': value, 'set_type': set_type} | urlencode }}#sets"
+<a href="/stats?{{ {'sets': value, 'set_type': set_type} | urlencode }}#sets"
    {%- if sets_sort == value %} aria-current="true"{% endif %}>{{ t("stats.sets.sort." ~ value) }}</a>
 {%- endmacro %}
 
 {% block content %}
 <h1 class="page-title">{{ t("collection.title") }}</h1>
 <p class="links">
-  <a href="/locations">{{ t("locations.title") }}</a> ·
   <a href="/import">{{ t("import.title") }}</a> ·
   <a href="/export">{{ t("export.title") }}</a>
 </p>
 <h2 class="section-title">{{ t("stats.title") }}</h2>
-
-<form class="filters" method="get" action="/stats">
-  <select name="location" aria-label="{{ t('entry.location') }}">
-    <option value="">{{ t("collection.filter.everywhere") }}</option>
-    <option value="none"{% if location == "none" %} selected{% endif %}>{{ t("entry.unassigned") }}</option>
-    {% for place in options.locations %}
-    <option value="{{ place.id }}"{% if place.id | string == location %} selected{% endif %}>{{ place.name }}</option>
-    {% endfor %}
-  </select>
-  <button type="submit">{{ t("stats.show") }}</button>
-</form>
 
 {% if not totals.entries %}
 <div class="empty"><p>{{ t("stats.empty") }}</p></div>
@@ -43,7 +31,7 @@
 <p class="hint">{{ t("stats.legend") }}</p>
 
 <div class="charts">
-  {% for name in ("color", "rarity", "type", "mana_value", "year", "finish", "condition", "language", "location") %}
+  {% for name in ("color", "rarity", "type", "mana_value", "year", "finish") %}
   {{ chart(name, charts[name], t("stats.chart." ~ name)) }}
   {% endfor %}
 </div>
@@ -52,7 +40,6 @@
   <h2 class="section-title">{{ t("stats.sets.title", n=sets | length) }}</h2>
   <p class="hint">{{ t("stats.sets.hint") }}</p>
   <form class="filters" method="get" action="/stats#sets">
-    <input type="hidden" name="location" value="{{ location }}">
     <input type="hidden" name="sets" value="{{ sets_sort }}">
     <select name="set_type" aria-label="{{ t('stats.sets.type') }}">
       <option value="">{{ t("stats.sets.all_types") }}</option>
@@ -103,7 +90,6 @@
             <span class="narrow sub"><span class="set-code">{{ entry.set_code }}</span> {{ entry.collector_number }}{% if entry.finish != "nonfoil" %} · {{ t("finish." ~ entry.finish) }}{% endif %}</span></td>
         <td class="wide nowrap"><span class="set-code">{{ entry.set_code }}</span> {{ entry.collector_number }}</td>
         <td class="wide">{% if entry.finish != "nonfoil" %}<span class="tag">{{ t("finish." ~ entry.finish) }}</span>{% endif %}</td>
-        <td class="wide">{{ entry.location_name or t("entry.unassigned") }}</td>
         <td class="num nowrap">{% if show_date %}{{ entry.created_at[:10] }}{% else %}{{ (entry.quantity * entry.price) | money }}{% endif %}</td>
       </tr>
       {% endfor %}

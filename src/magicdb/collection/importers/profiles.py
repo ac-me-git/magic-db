@@ -1,8 +1,8 @@
 """File formats the import understands (SPEC §8).
 
-A profile turns a table (header + rows) into ``Row`` objects with plain text fields; it
-also says which condition scale its source uses, because ``LP`` means different things
-in the US scale and in Cardmarket's.
+A profile turns a table (header + rows) into ``Row`` objects with plain text fields.
+Columns for condition, language or location, which other tools write, are not read: the
+collection keeps a printing, a finish and a quantity (SPEC §5).
 
 ``native`` is this app's own export. ``topdecked`` was written from a real export.
 ``moxfield`` and ``manabox`` follow those tools' documented column names.
@@ -24,10 +24,6 @@ TEXT_FIELDS = (
     "scryfall_id",
     "quantity",
     "finish",
-    "condition",
-    "language",
-    "location",
-    "location_kind",
     "notes",
     "purchase_price",
     "added_at",
@@ -45,10 +41,6 @@ class Row:
     scryfall_id: str = ""
     quantity: str = "1"
     finish: str = ""
-    condition: str = ""
-    language: str = ""
-    location: str = ""
-    location_kind: str = ""
     notes: str = ""
     purchase_price: str = ""
     added_at: str = ""
@@ -64,7 +56,6 @@ class Row:
 @dataclass(frozen=True)
 class Profile:
     name: str
-    scale: str  # "cardmarket" | "us"
     detect: Callable[[list[str]], bool]
     parse: Callable[[list[str], list[list[str]]], list[Row]]
 
@@ -108,10 +99,6 @@ NATIVE_COLUMNS = {
     "scryfall_id": ("scryfall id",),
     "quantity": ("quantity", "qty", "count"),
     "finish": ("finish", "foil"),
-    "condition": ("condition",),
-    "language": ("language", "lang"),
-    "location": ("location", "binder name"),
-    "location_kind": ("location kind", "binder type"),
     "notes": ("notes",),
     "purchase_price": ("purchase price",),
     "added_at": ("added",),
@@ -125,8 +112,6 @@ MOXFIELD_COLUMNS = {
     "collector_number": ("collector number",),
     "quantity": ("count",),
     "finish": ("foil",),
-    "condition": ("condition",),
-    "language": ("language",),
     "purchase_price": ("purchase price",),
     "added_at": ("last modified",),
 }
@@ -141,10 +126,6 @@ MANABOX_COLUMNS = {
     "scryfall_id": ("scryfall id",),
     "quantity": ("quantity",),
     "finish": ("foil",),
-    "condition": ("condition",),
-    "language": ("language",),
-    "location": ("binder name",),
-    "location_kind": ("binder type",),
     "purchase_price": ("purchase price",),
 }
 
@@ -165,11 +146,11 @@ MANABOX_COLUMNS = {
 _TOPDECKED_TAIL = (
     "added_at",  # ACQUIRED DATE
     "purchase_price",  # ACQUIRED PRICE
-    "language",  # LANG
+    None,  # LANG
     None,  # PRICE SALE
     None,  # SIGNING
     None,  # ALTERATION
-    "condition",  # CONDITION
+    None,  # CONDITION
     "notes",  # NOTES
     None,  # TAGS
 )
@@ -213,14 +194,13 @@ def parse_topdecked(header: list[str], rows: list[list[str]]) -> list[Row]:
 
 
 PROFILES = (
-    Profile("manabox", "us", has("manabox id"), by_columns(MANABOX_COLUMNS)),
-    Profile(
-        "native", "cardmarket", has("scryfall id", "location kind"), by_columns(NATIVE_COLUMNS)
-    ),
-    Profile("topdecked", "us", has("setcode", "acquired date"), parse_topdecked),
-    Profile("moxfield", "us", has("count", "edition"), by_columns(MOXFIELD_COLUMNS)),
+    Profile("manabox", has("manabox id"), by_columns(MANABOX_COLUMNS)),
+    # this app's export, also the ones written before 2.0 with a location column
+    Profile("native", has("scryfall id", "set code", "finish"), by_columns(NATIVE_COLUMNS)),
+    Profile("topdecked", has("setcode", "acquired date"), parse_topdecked),
+    Profile("moxfield", has("count", "edition"), by_columns(MOXFIELD_COLUMNS)),
     # last resort: any sheet with a name column is read with the native column names
-    Profile("native", "cardmarket", has("name"), by_columns(NATIVE_COLUMNS)),
+    Profile("native", has("name"), by_columns(NATIVE_COLUMNS)),
 )
 
 

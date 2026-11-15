@@ -2,18 +2,27 @@
 
 ## Unreleased
 
-- **Deck mode** in the search results: − N + on every card. A picker at the top
-  chooses the deck and the board (main deck or sideboard); + puts one more copy there,
-  − takes one out. The number is the copies already in that board.
-- Fast input and deck mode are now modes, each shown as Images or as a List. On
-  images their controls lie over the card, faint until you point at it, so the grid
-  looks like a plain search; in the list − N + sits where fast input's boxes are.
-  Pressing a mode's link again turns it off.
-- Beside the deck picker, a switch *Only cards in this deck* writes `deck:"name"` into
-  the search, or takes it out; fast input has the same switch beside its location,
-  *Only cards in this location*, which writes `loc:"name"`. Picking another deck or
-  location while the switch is on moves the search to it.
-- Fast input keeps its pickers on screen when the search finds nothing.
+- **A simpler collection.** A copy no longer has a location, a condition or a language:
+  the collection keeps, for every printing and finish, how many you own. The
+  Locations page, the location, condition and language fields of the card page, the
+  pickers above fast input, the import's choices for them and the statistics by
+  location, condition and language are gone, and so are the search filters `loc:`,
+  `cond:` and `lang:`. On the first start the database is upgraded: copies that only
+  those told apart become one, their quantities added (a backup of the old file is
+  made first). Imports ignore those columns, so exports from other tools and from
+  earlier versions still work.
+- **Simpler decks.** A deck is a name, notes and a list of cards: no format and no
+  sideboard. A sideboard's cards join the list (when upgrading, pasting a list or
+  importing an old export). The colour identity is now the one of the deck's widest
+  legendary creature — in practice the commander — or, without one, of all its cards.
+- **Deck mode** in the search results: − N + on every card adds it to the deck picked
+  at the top or takes it out. A switch *Only cards in this deck* writes `deck:"name"`
+  into the search, or takes it out; picking another deck while it is on moves the
+  search to it.
+- Fast input and deck mode are modes, each shown as Images or as a List. On images
+  their controls lie over the card art, faint until you point at it, so the grid looks
+  like a plain search; in the list − N + sits where fast input's boxes are. Pressing a
+  mode's link again turns it off.
 - The footer has a *Contact me* link with the Reddit icon, beside *Buy me a coffee*.
 
 ## 1.3.0 — 2026-11-15

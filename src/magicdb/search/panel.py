@@ -99,8 +99,6 @@ def build_query(fields: Fields) -> str:
 
     if _one(fields, "owned"):
         terms.append("have:yes")
-    if location := _clean(_one(fields, "location")):
-        terms.append(f"loc:{_value(location)}")
 
     if _one(fields, "unique") == "prints":
         terms.append("unique:prints")

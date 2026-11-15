@@ -4,9 +4,6 @@
 {% if chart in ("color", "pips") %}{{ t("color." ~ key) }}
 {%- elif chart == "rarity" %}{{ t("rarity." ~ key, default=key) }}
 {%- elif chart == "finish" %}{{ t("finish." ~ key) }}
-{%- elif chart == "condition" %}{{ key }} · {{ t("condition." ~ key) }}
-{%- elif chart == "language" %}{{ t("lang." ~ key, default=key) }}
-{%- elif chart == "location" %}{{ key or t("entry.unassigned") }}
 {%- else %}{{ key }}{% endif %}
 {%- endmacro %}
 

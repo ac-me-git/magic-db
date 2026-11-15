@@ -1,4 +1,4 @@
-{% from "_forms.html" import copy_fields, location_select, problem with context %}
+{% from "_forms.html" import copy_fields, problem with context %}
 <tr class="editing" id="e{{ entry.id }}">
   <td colspan="7">
     <p class="editing-title"><strong>{{ entry.name }}</strong>
@@ -8,7 +8,7 @@
     <form method="post" action="/collection/{{ entry.id }}">
       <input type="hidden" name="next" value="{{ next }}">
       <div class="fields">
-        {{ copy_fields(entry, options, entry.quantity, entry.location_id or "") }}
+        {{ copy_fields(entry, options, entry.quantity) }}
         <label>{{ t("entry.notes") }}
           <input type="text" name="notes" value="{{ entry.notes or '' }}" maxlength="500">
         </label>
@@ -20,17 +20,6 @@
         <button type="submit" class="primary">{{ t("entry.save") }}</button>
         <a class="button" href="{{ next }}">{{ t("entry.cancel") }}</a>
       </div>
-    </form>
-
-    <form class="inline-form" method="post" action="/collection/{{ entry.id }}/move">
-      <input type="hidden" name="next" value="{{ next }}">
-      <label>{{ t("entry.move") }}
-        <input type="number" name="quantity" value="{{ entry.quantity }}" min="1" max="{{ entry.quantity }}" inputmode="numeric" required>
-      </label>
-      <label>{{ t("entry.move_to") }}
-        {{ location_select(options, "", "location", entry.location_id) }}
-      </label>
-      <button type="submit">{{ t("entry.move_submit") }}</button>
     </form>
 
     <form class="inline-form" method="post" action="/collection/{{ entry.id }}/remove">

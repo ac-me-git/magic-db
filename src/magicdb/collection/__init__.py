@@ -1,1 +1,1 @@
-"""The owner's collection: entries, locations and their history."""
+"""The owner's collection: entries (a printing, a finish, a quantity) and their history."""

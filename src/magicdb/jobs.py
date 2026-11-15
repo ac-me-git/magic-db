@@ -180,8 +180,8 @@ def _record_end(conn: sqlite3.Connection, run_id: int, result: JobResult) -> Non
 
 def _backup(conn: sqlite3.Connection, settings: Settings, now: datetime) -> JobResult:
     entries = conn.execute("SELECT COUNT(*) FROM entries").fetchone()[0]
-    locations = conn.execute("SELECT COUNT(*) FROM locations").fetchone()[0]
-    if not entries and not locations:
+    decks = conn.execute("SELECT COUNT(*) FROM decks").fetchone()[0]
+    if not entries and not decks:
         return JobResult("skipped", "the collection is empty")
     path = db.backup_collection(conn, settings, "collection")
     with closing(sqlite3.connect(path)) as copy:

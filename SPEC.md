@@ -226,15 +226,11 @@ WAL mode, `foreign_keys=ON`. Schema changes only through numbered files in
 `src/magicdb/migrations/`, applied at startup and tracked with `PRAGMA user_version`. A backup is
 taken automatically before applying any migration.
 
-```sql
-CREATE TABLE locations (
-  id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE COLLATE NOCASE,
-  kind TEXT NOT NULL DEFAULT 'other' CHECK (kind IN ('binder','box','deck','other')),
-  notes TEXT, sort_order INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL
-);
+The collection keeps, for every printing and finish, how many copies are owned: no
+place, condition or language (the owner's choice of 2026-11-15, migration `0004`;
+before it a copy also had a condition, a language and a location, see below).
 
+```sql
 CREATE TABLE entries (
   id INTEGER PRIMARY KEY,
   scryfall_id TEXT NOT NULL,
@@ -243,20 +239,15 @@ CREATE TABLE entries (
   set_code TEXT NOT NULL, collector_number TEXT NOT NULL,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   finish TEXT NOT NULL DEFAULT 'nonfoil' CHECK (finish IN ('nonfoil','foil','etched')),
-  condition TEXT NOT NULL DEFAULT 'NM' CHECK (condition IN ('MT','NM','EX','GD','LP','PL','PO')),  -- Cardmarket scale
-  language TEXT NOT NULL DEFAULT 'en',
-  location_id INTEGER REFERENCES locations(id) ON DELETE RESTRICT,   -- NULL = unassigned
   notes TEXT, purchase_price REAL,
   created_at TEXT NOT NULL, updated_at TEXT NOT NULL
 );
-CREATE UNIQUE INDEX ux_entries ON entries
-  (scryfall_id, finish, condition, language, COALESCE(location_id, 0));
+CREATE UNIQUE INDEX ux_entries ON entries (scryfall_id, finish);
 CREATE INDEX ix_entries_oracle ON entries(oracle_id);
-CREATE INDEX ix_entries_loc ON entries(location_id);
 
 CREATE TABLE history (       -- append-only audit trail
   id INTEGER PRIMARY KEY, ts TEXT NOT NULL,
-  action TEXT NOT NULL,      -- add | edit | move | remove | import | location
+  action TEXT NOT NULL,      -- add | edit | remove | import (move, location: before 0004)
   detail TEXT NOT NULL       -- JSON
 );
 
@@ -273,24 +264,22 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 
 Rules:
 
-- **Add**: if a row with the same (printing, finish, condition, language, location)
-  exists, increase its quantity; otherwise insert.
-- **Edit**: if changing a row makes it collide with another, merge them.
-- **Move** *n* copies to another location: decrease the source (delete it at 0), add to
-  the destination with the merge rule. One transaction. A whole row with nothing to
-  merge into only changes its `location_id`: it keeps its id and its "added on" date.
-  Moving to where the copies already are does nothing.
+- **Add**: if a row with the same printing and finish exists, increase its quantity;
+  otherwise insert. The earliest "added on" date is kept.
+- **Edit**: if changing the finish makes a row collide with another, merge them.
 - When rows merge, notes are joined with `; ` (without repeating a note already there)
   and a purchase price given with the new copies replaces the old one.
 - Problems the user can cause raise `CollectionError(code, **params)`; pages show
   `t("error." + code)`. All collection SQL lives in `collection/service.py`.
-- A location with entries cannot be deleted; the UI offers "move everything to…" first.
 - The finish must be one of the printing's `finishes`; otherwise warn but allow.
-- Languages offered: `en it fr de es pt ja ko ru zhs zht ph`.
-- **Condition** uses the Cardmarket scale, best to worst: `MT` Mint, `NM` Near Mint,
-  `EX` Excellent, `GD` Good, `LP` Light Played, `PL` Played, `PO` Poor. The UI always
-  shows code and full name together, and lists them in this order (not alphabetically).
 - Every write also appends a `history` row in the same transaction.
+- **Migration 0004** (2026-11-15) drops the table `locations` and the columns
+  `condition`, `language` and `location_id` of `entries`, and the deck's `format` and
+  `board` (§14). Rows that only those told apart become one per printing and finish:
+  quantities added, the lowest id kept, the earliest "added on" and the latest change,
+  notes joined with `; `, the first purchase price found. A sideboard's copies join
+  the deck's list. Like every migration it runs after a `pre-migration-` backup, which
+  keeps the old file whole.
 
 ### Connections
 
@@ -348,10 +337,7 @@ parameter** — never interpolate user text into SQL. An unknown key or a bad va
 | `have:` | `yes`/`no` — I own **any printing** of this card | card level |
 | `haveprint:` | `yes`/`no` — I own **this printing** | printing level |
 | `qty` | copies owned of this printing | numeric, sum over entries |
-| `loc:` | owned in a location whose name contains | |
-| `cond:` | owned in this condition | |
 | `finish:` | owned in this finish | |
-| `lang:` | owned in this language | |
 | `deck:` | in a deck whose name contains | card level |
 | `unique:` | `cards` (default) or `prints` | directive |
 | `order:` | `name mv released rarity price set` | directive, default `name` |
@@ -401,9 +387,10 @@ wherever they are written, including inside `or` and parentheses, so that append
 one to any query works. They cannot follow a `-`, and each can be given once.
 
 Collection filters compile to subqueries on `entries`, e.g. `have:yes` →
-`p.oracle_id IN (SELECT oracle_id FROM entries)`; `loc:"blue box"` →
-`EXISTS (SELECT 1 FROM entries e JOIN locations l ON l.id = e.location_id
-WHERE e.scryfall_id = p.id AND l.name LIKE ?)`.
+`p.oracle_id IN (SELECT oracle_id FROM entries)`; `finish:foil` →
+`EXISTS (SELECT 1 FROM entries e WHERE e.scryfall_id = p.id AND e.finish = ?)`.
+`loc:`, `cond:` and `lang:` were removed with locations, conditions and languages
+(2026-11-15): a search that uses them now says the key is unknown.
 
 60 results per page. Every result shows a small badge with the owned quantity.
 
@@ -414,7 +401,7 @@ text against `cat.names` with `rapidfuzz` and show "Did you mean…" with up to 
 
 A form next to the search box: colour checkboxes with a mode (including / exactly / at
 most), colour identity, mana value range, type / subtype / keyword pickers fed by
-`cat.facets`, rarity, set, format, power/toughness, "only cards I own", location.
+`cat.facets`, rarity, set, format, power/toughness, "only cards I own".
 Submitting it **builds a query string** and goes to `/search?q=…`; the generated query
 is shown in the search box so the syntax teaches itself. The form is a plain `GET` to
 `/filter`, which builds the query (`search/panel.py`) and redirects, so it works without
@@ -430,10 +417,9 @@ a search, edit the text in the search box.
 | `/filter?…` | the filter panel's form target: redirects to `/search?q=…` |
 | `/search?q=&page=&view=grid\|list` | results |
 | `/card/{scryfall_id}` | large image (flip for back face), full text, legalities, prices, all printings, my copies of this card, add form |
-| `POST /add` | the card page's add form: copies of one printing in the catalog. Finish, condition, language and location stay as they were for the next add. There is no add page |
-| `/collection/{id}/edit` | edit, move or remove the copies of one entry, reached from the card page (`POST /collection/{id}`, `…/move`, `…/remove`). There is no list of entries: the collection is searched like every card (`haveprint:yes`, `loc:`, `qty`…) |
-| `/locations` | create, rename, reorder, delete; card count and value per location |
-| `/stats` | "My collection": links to locations, import and export, then the statistics (§9) |
+| `POST /add` | the card page's add form: copies of one printing in the catalog, a quantity and a finish. The finish stays as it was for the next add. There is no add page |
+| `/collection/{id}/edit` | edit or remove the copies of one entry, reached from the card page (`POST /collection/{id}`, `…/remove`). There is no list of entries: the collection is searched like every card (`haveprint:yes`, `qty`, `finish:`…) |
+| `/stats` | "My collection": links to import and export, then the statistics (§9) |
 | `/import`, `/export` | see §8 |
 | `/admin` | software version (check, and install on Windows), catalog and backup status, last job runs, "update now", "back up now", download latest backup; what the home page shows |
 | `/syntax` | search syntax reference, generated from the same table the parser uses |
@@ -451,8 +437,9 @@ from a card's page, from fast input or by importing a file, and only as printing
 catalog has: a card Scryfall does not list cannot be added. The card page's add form
 (`POST /add`) goes back to `/card/{id}#mine`; a refused add shows the card page again,
 status 400, with the reason above the form, and a printing the catalog does not have
-gets 404. The form keeps finish, condition, language and location of the last add in
-the `magicdb_add` cookie. HTMX only loads fragments (name suggestions, the boxes of
+gets 404. The form asks for a quantity and a finish, and keeps the finish of the last
+add in the `magicdb_add` cookie. There are no locations, conditions or languages (§5):
+`/locations` and `/fast/settings` are gone (404). HTMX only loads fragments (name suggestions, the boxes of
 fast input); all of it also works as plain page loads. Without a `next`, a change to
 an entry goes back to `/stats`. Search results show a
 badge with the copies owned: of every printing in card mode, of that printing in print
@@ -554,17 +541,13 @@ usual (`set:xyz`), sort by collector number or by name, and tick boxes.
   for non-foil and foil; on an image the two boxes carry the finish's name under them.
   Clicks on one card are queued per row or per image.
 - A box is ticked when the collection has at least one copy of that printing in that
-  finish *with the condition, language and location shown above the table*. Ticking
-  adds one copy with those traits; unticking takes one back. A cell holds the box and
+  finish. Ticking adds one copy; unticking takes one back. A cell holds the box and
   nothing else: fast input records at most one copy per finish, and `action=add` does
   nothing when the box is already ticked (a double click must not add a hidden second
   copy). More copies, and etched, go through the card's page. A finish the printing was
   never made in has a disabled box (unless such a copy is recorded: it can be unticked).
-- Condition, language and location are the ones the card page's add form remembers
-  (same cookie); the selectors above the table change them (`GET /fast/settings`, a
-  cookie only, so allowed while locked). A remembered location that no longer exists
-  counts as none.
-- The badge beside the name still counts every copy of the printing, wherever it is.
+- There is nothing to choose above the list: just a line of help.
+- The badge beside the name counts every copy of the printing.
 - `POST /fast/toggle` (`printing`, `finish`, `action=add|remove`, `next`): with HTMX
   it answers with the clicked box and, out of band, the badge beside the name — never
   the whole row; without, it redirects to `next`. Clicks in one row are queued
@@ -574,36 +557,31 @@ usual (`set:xyz`), sort by collector number or by name, and tick boxes.
 - While the safety lock is on the boxes are shown disabled, with the usual notice.
 - Fast input is only a view of the search results: no page or link of its own leads to
   it.
-- The pickers stay above the table when the search finds nothing. Beside them, once a
-  location is chosen, a switch *Only cards in this location* (a link drawn as a switch)
-  reloads the search with `loc:"<name>"` written in, or taken out — the same rules as
-  the collection switch (`search.with_named`); it is on when the whole search is
-  limited to that location. Choosing another location while it is on rewrites the term
-  to the new one; with HTMX the answer is then `HX-Redirect`, so the search box shows
-  the new search. `loc:` matches names that *contain* the text (§6.2), unchanged.
-
 **Deck mode** (`view=deck` or `deck-list`). For building a deck from a search: look for
 white and green humans, press + on the ones you want.
 
 - One image or row per *card* (as `unique:cards`, whatever the query says): a deck
   names cards, not printings (§14). On each, − N + (over the image, or in the last
-  column of the list, whose heading names the board): N is the copies of the card in
-  the chosen board of the chosen deck. + adds one copy (`decks.service.add_card`), −
+  column of the list, headed by the deck's name): N is the copies of the card in the
+  chosen deck. + adds one copy (`decks.service.add_card`), −
   takes one out and the last one takes the row away (`take_card`); − is disabled at 0.
   The owned badge on the image is the usual one.
-- Above the grid: the deck (every deck, by name) and the board (main deck or
-  sideboard), kept in the `magicdb_deckmode` cookie (`GET /deckmode/settings`, a cookie
+- Above the grid: the deck (every deck, by name), kept in the `magicdb_deckmode` cookie (`GET /deckmode/settings`, a cookie
   only, so allowed while locked). With no choice, or a deck that no longer exists, the
   deck changed last is used. Without decks the view says so and links to `/decks`.
   A link opens the chosen deck.
-- Beside the pickers, a switch *Only cards in this deck* writes `deck:"<name>"`, as
-  fast input's location switch does (and follows a change of deck the same way). With
+- Beside the picker, a switch *Only cards in this deck* (a link drawn as a switch)
+  reloads the search with `deck:"<name>"` written in, or taken out — the same rules as
+  the collection switch (`search.with_named`). Choosing another deck while it is on
+  rewrites the term to the new one; with HTMX the answer is then `HX-Redirect`, so the
+  search box shows the new search. The picker stays when the search finds nothing.
+  `deck:` matches names that *contain* the text (§6.2). With
   the collection switch on as well, the search shows the cards of the deck that are in
   the collection; without the deck switch, any card can be added.
-- `POST /deckmode/card` (`deck`, `printing`, `board`, `action=add|remove`, `next`): with
+- `POST /deckmode/card` (`deck`, `printing`, `action=add|remove`, `next`): with
   HTMX it answers with the card's − N + only; without, it redirects to `next`. Clicks on
   one card are queued (`hx-sync`); each is relative (one more, one less), so the order
-  they arrive in does not matter. An unknown deck, printing, board or action is 404.
+  they arrive in does not matter. An unknown deck, printing or action is 404.
 - A deck never changes the collection (§14), but the safety lock still refuses these
   writes like any other (423): while locked the buttons are shown disabled, with the
   usual notice.
@@ -655,8 +633,8 @@ or with Escape. It holds, in this order:
 - "Search syntax", with an *i* in a circle, and "Administration", with a gear.
 
 The link to the page being shown is marked. The statistics page, titled "My
-collection" like its link, is the collection's landing page and links to locations,
-import and export; the administration page links to them too.
+collection" like its link, is the collection's landing page and links to import and
+export; the administration page links to them too.
 
 **Footer.** On every page, and nothing else: the Fan Content Policy notice, its
 copyright line followed by the credit to Scryfall, then "Buy me a coffee". "Wizards"
@@ -710,7 +688,7 @@ table (migration 0002) so that it survives a restart, and mirrored in
 
 - While locked, cards and the collection can be searched, browsed, exported, counted
   in the statistics and backed up; the card catalog can be updated. Nothing can change
-  the collection: adding, editing, moving, removing, importing, managing locations.
+  the collection or the decks: adding, editing, removing, importing.
 - Enforcement is on the server, in one place: a middleware refuses every request that
   is not a plain read (`GET`, `HEAD`, `OPTIONS`) with status 423 and a page that offers
   to unlock, except `POST /lock` itself, `POST /theme` and `POST /admin/…`. It denies
@@ -774,9 +752,13 @@ from the same context processor.
 ### Export
 
 - **CSV** (`/export/csv`): one row per entry —
-  `Name, Set code, Set name, Collector number, Scryfall ID, Quantity, Finish, Condition, Language, Location, Location kind, Notes, Purchase price, Added`.
-- **JSON** (`/export/json`): locations, entries and schema version — a complete,
-  re-importable dump.
+  `Name, Set code, Set name, Collector number, Scryfall ID, Quantity, Finish, Notes, Purchase price, Added`,
+  by name.
+- **JSON** (`/export/json`, `magic_db_export: 2`): entries, decks and schema version —
+  a complete, re-importable dump.
+- Files exported before 2026-11-15 (CSV with Condition, Language, Location columns;
+  JSON version 1 with locations) still import: those columns are not read, and copies
+  of the same printing and finish merge.
 
 ### Import
 
@@ -787,8 +769,9 @@ table) then **confirm**. Confirm takes a backup first, then writes in one transa
 Formats are *profiles* (a mapping from column names to fields plus value translations)
 in `collection/importers/profiles.py`: `native` (the export above, and as a last resort
 any CSV with a `Name` column), `topdecked`, `moxfield`, `manabox`. The JSON dump is
-recognised by its `magic_db_export` key and also restores empty locations, their notes
-and their order.
+recognised by its `magic_db_export` key and also restores the decks. Columns that
+other tools write about condition, language or place are not read (§5), and never make
+a row fail.
 
 **TopDecked.** The profile was written from a real 9,385-row binder export.
 `tests/fixtures/topdecked-sample.csv` reproduces its structure with cards of the test
@@ -801,40 +784,21 @@ fixture (`scripts/make_topdecked_sample.py`). Two quirks, present in every row:
 So the header is not trusted for positions: the first six fields are fixed
 (quantity, name, set code, set name, collector number, finish), the Scryfall id is
 found by its shape, and the fields after it are read in header order (acquired date,
-acquired price, language, …, condition, notes), re-joining split prices. Some rows (40
+acquired price, …, notes; language and condition are skipped), re-joining split prices. Some rows (40
 of 493 in a real export) write the acquired date as JavaScript's `Date.toString()`,
 `Sat May 03 2025 17:21:51 GMT+0200 (…)`; it is read as well. The file has
-one row per copy and no location: it is the export of one binder, whose name is in the
-file name (`binder-<name>-<uuid>.csv`) and is offered as a new location.
+one row per copy: the rows of one printing and finish become one entry.
 
 The `moxfield` and `manabox` profiles follow those tools' documented column names and
 have **not** been checked against real exports.
 
-**Defaults.** Rows that give no location, condition or language get the ones chosen on
-the preview page (`Defaults`).
+**Preview.** The only choice is the mode: add to the collection, or replace it.
 
 **Upload.** Between preview and confirm the file waits in `data/tmp/import-<token>.upload`
 (random token, forgotten after a day, 20 MB at most). Confirm re-reads it, so the
 preview and the import always agree. `service.import_entries` writes everything in one
 transaction with one `import` row in `history`; the imported "added on" date is kept,
 and when rows merge the earliest date wins.
-
-**Condition translation.** Files from tools that use the US (TCGplayer) scale are
-converted on import:
-
-| US scale | Cardmarket |
-|---|---|
-| Mint | `MT` |
-| Near Mint (NM) | `NM` |
-| Lightly Played (LP) | `EX` |
-| Moderately Played (MP) | `GD` |
-| Heavily Played (HP) | `PL` |
-| Damaged (DMG) | `PO` |
-
-Beware: `LP` exists in both scales with different meanings. Each profile declares which
-scale its source uses; never translate by guessing from the code alone. The `native`
-profile does no translation. An unrecognised condition makes the row "failed" in the
-preview; it is never silently defaulted.
 
 Each row is resolved to a printing in this order: Scryfall ID → set code + collector
 number → name + set code → name + set name → name alone (only if the card has a single
@@ -897,11 +861,8 @@ the menu.
 ## 9. Statistics (`/stats`)
 
 Computed with SQL on entries joined to the catalog; charts are server-rendered
-SVG/CSS bars, no JavaScript library. A selector limits everything to one location.
-The page is titled "My collection" and opens with links to locations, import and
-export. On the locations page each place's name is a search for what it holds
-(`loc:"<name>"`, `templating.location_search`); copies without a location have no
-search, since no filter means "no location".
+SVG/CSS bars, no JavaScript library. The page is titled "My collection" and opens with
+links to import and export.
 
 - **Totals**: copies, distinct printings, distinct cards, estimated value.
 - **Value**: `quantity × price`, where non-foil uses `price_eur`, foil uses
@@ -909,8 +870,7 @@ search, since no filter means "no location".
   back to the non-foil price when missing. Entries with no price are counted and
   reported as "not priced".
 - **Breakdowns** (copies and distinct cards): colour (W, U, B, R, G, multicolour,
-  colourless), rarity, card type, mana value, **release year of the printing**, finish,
-  condition, language, location.
+  colourless), rarity, card type, mana value, **release year of the printing**, finish.
 - **Set completion**: for every set with at least one owned card — owned distinct
   collector numbers / `sets.catalog_count`, percentage, progress bar; sortable by name,
   date, percentage; filter by set type; digital-only sets excluded. Each row links to
@@ -918,7 +878,7 @@ search, since no filter means "no location".
 - **Top 20** most valuable entries.
 - **Recently added**: last 20 entries.
 
-How it is built (`stats.py`): one query reads every entry in scope with the catalog
+How it is built (`stats.py`): one query reads every entry with the catalog
 columns it needs, and the totals and breakdowns are counted in Python. Details settled
 while building it:
 
@@ -928,13 +888,10 @@ while building it:
   colourless for none.
 - The mana-value chart leaves lands out (they would all sit at 0); 7 and more share a
   bucket.
-- Set completion never rounds up: 100 % means complete. With a location selected, a
-  set's "missing" link lists what is not in that location (`-loc:"name"`).
+- Set completion never rounds up: 100 % means complete.
 - Set completion is two small queries joined in Python. One SQL join of entries,
   printings and sets made SQLite walk all 120k printings: 580 ms against 6 ms on a
   9,000-entry collection. The whole page takes about 0.2 s on that collection.
-- Location names cannot contain a double quote (it becomes an apostrophe), because a
-  quote cannot be written inside `loc:"…"`.
 
 ## 10. Distribution
 
@@ -1006,71 +963,77 @@ trade lists and wishlists.
 ## 14. Decks
 
 Lists of cards to build, kept apart from the collection (`decks/`). Added at the
-owner's request after milestone 8; a physical deck box is still a *location* (§5),
-a deck here is a *list*.
+owner's request after milestone 8. A deck is a name, notes and a list of cards: no
+format and no sideboard (the owner's choice of 2026-11-15, migration `0004`).
 
 ```sql
--- migration 0003
+-- migration 0003, as 0004 left it
 CREATE TABLE decks (
   id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE COLLATE NOCASE,
-  format TEXT, notes TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+  notes TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
 );
 CREATE TABLE deck_cards (
   id INTEGER PRIMARY KEY,
   deck_id INTEGER NOT NULL REFERENCES decks(id) ON DELETE CASCADE,
   oracle_id TEXT NOT NULL, name TEXT NOT NULL,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
-  board TEXT NOT NULL DEFAULT 'main' CHECK (board IN ('main','side')),
-  UNIQUE (deck_id, oracle_id, board)
+  UNIQUE (deck_id, oracle_id)
 );
 ```
 
 Rules:
 
 - A deck names **cards, not printings** (`oracle_id`). What is owned of a card is every
-  copy in the collection: any printing, finish, condition and location.
+  copy in the collection: any printing and finish.
 - A deck **never changes the collection**, and writes no `history`.
 - Cards are added one at a time by exact name (with suggestions from the catalog)
   or from a card's page, or by **pasting a deck list** (`decks/text.py`): `4 Lightning
   Bolt`, `4x Lightning Bolt`, a bare name for one copy; a trailing `(SET) number`,
-  `[SET]`, `*F*` and `#tags` are dropped; `Fire / Ice` is read as `Fire // Ice`. A line
-  saying `Sideboard` starts the sideboard and `SB:` puts one line there; `Deck`,
-  `Commander`, `Companion` go back to the main deck; `Maybeboard`, `Tokens` and Arena's
-  `About` block are skipped; type groups like `Creatures (12)`, comments (`//`, `#`)
-  and blank lines are ignored. Blank lines never start the sideboard. Lines that are
+  `[SET]`, `*F*` and `#tags` are dropped; `Fire / Ice` is read as `Fire // Ice`. The
+  cards of a `Sideboard` section, or after `SB:`, join the list like the others;
+  `Maybeboard`, `Tokens` and Arena's `About` block are skipped; section titles (`Deck`,
+  `Commander`…), type groups like `Creatures (12)`, comments (`//`, `#`) and blank
+  lines are ignored. Lines that are
   not cards are reported with a "did you mean" and handed back in the box to correct;
   the rest is added. Tokens and other extras are not deck cards.
-- **Completion** of a deck = copies it can count on ÷ copies it asks for, both boards
-  together, rounded down (100 % means complete). A card in both boards counts its
-  copies in the main board first.
+- **Completion** of a deck = copies it can count on ÷ copies it asks for, rounded down
+  (100 % means complete).
 - For a card in two or more decks, the copies owned are compared with what **all decks
   together** ask for. A row is *missing* when there are not enough copies for this deck;
   *contested* when there are enough for this deck alone but not for all of them;
   otherwise it is fine. "Missing" wins over "contested".
 - `/decks` shows the decks one under the other. Each has a round gauge of its
-  completion, its colour identity (of the main deck, as mana symbols; `{C}` when
-  colourless), its format, the copies in the main deck and in the sideboard, the cards
-  missing and contested, the **estimated cost** (every copy at the price of its
+  completion, its colour identity (as mana symbols; `{C}` when colourless), the copies
+  it asks for, the cards missing and contested, the **estimated cost** (every copy at the price of its
   cheapest paper printing), the cost of completing it, the day of its last change and
   its notes. Below them, one list of the cards that several decks want and the
   collection cannot give to all, with the copies owned, the copies wanted and which
-  decks want how many. `/decks/{id}` lists the deck by board and card type with the
+  decks want how many. `/decks/{id}` lists the deck by card type with the
   copies owned of every row — red when missing, in the accent colour when contested,
   the state itself in the number's tooltip and on the row's edge — the estimated cost of the deck and of what is missing, a download
   as text and a link to see the cards as images (`deck:"name"`). A card's page lists
   the decks it is in.
 - A **New deck** button, at the top right of `/decks`, makes an empty deck named
   "Deck *n*" in the interface language — *n* is one more than the decks there are, or
-  higher if that name is taken — and opens it with its name selected. Name, format
-  and notes are edited at the top of the deck's page; deleting it is at the bottom.
-- `/decks/{id}/stats`, the second tab of a deck, describes the **main deck** (the
-  sideboard is counted but not analysed): cards, lands, other cards, average mana
+  higher if that name is taken — and opens it with its name selected. Name and notes
+  are edited at the top of the deck's page; deleting it is at the bottom.
+- **Colour identity** (`service.identity_of`): the identity of the deck's widest
+  legendary creature — the one with most colours; on a tie the first by name — which in
+  practice is the commander. A legendary creature is one whose front face's type line
+  has both words; a legendary planeswalker is not one. A deck without legendary
+  creatures takes the colours of all its cards together. Cards the catalog does not
+  know are left out; with none known there is no identity. The owner chose this rule
+  (2026-11-15); two partner commanders of different colours show only the wider one.
+- `/decks/{id}/stats`, the second tab of a deck, describes it: cards, lands, other
+  cards, average mana
   value, and four bar charts — by card type (a card counts under each of its types),
   by mana value and by colour (both leave lands out: they are colourless and cost
   nothing, and would bury the rest), and the coloured mana symbols in the costs (a
   hybrid symbol counts for both its colours; generic and `X` are not colours). The
   charts are the ones of the collection statistics (`_charts.html`).
-- The JSON export carries the decks, and importing it recreates the ones whose name is
-  not already there. The CSV export does not.
+- The JSON export carries the decks (name, notes, cards), and importing it recreates
+  the ones whose name is not already there; in an older export the format is dropped
+  and the sideboard joins the list. The CSV export does not carry decks. A deck's text
+  download is one line per card, no sections.
 - Deck names cannot contain a double quote (it becomes an apostrophe), so that
   `deck:"name"` can always be written.

@@ -55,7 +55,7 @@ Two databases:
 - `data/catalog/cards-<timestamp>.db` — the card catalog. Disposable, rebuilt from
   Scryfall, never migrated: a new one simply replaces the old. Attached read-only to
   every connection as `cat`.
-- `data/collection.db` — the collection, locations, decks, settings, history. Precious.
+- `data/collection.db` — the collection, decks, settings, history. Precious.
   Changes to its schema are numbered SQL files in `src/magicdb/migrations/`, applied at
   startup; a backup is taken first.
 

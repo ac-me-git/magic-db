@@ -9,12 +9,12 @@ from magicdb import db
 from magicdb.app import create_app
 from magicdb.decks import service
 
-# Main deck: 4 Lightning Bolt {R}, 2 Serra Angel {3}{W}{W}, 1 Niv-Mizzet Reborn {W}{U}{B}{R}{G},
+# 4 Lightning Bolt {R}, 2 Serra Angel {3}{W}{W}, 1 Niv-Mizzet Reborn {W}{U}{B}{R}{G},
 # 3 Boros Reckoner {R/W}{R/W}{R/W}, 1 Sol Ring {1}, 1 Fireball {X}{R}, 1 Dryad Arbor (a land
-# that is also a green creature), 10 Mountain. Sideboard: 2 Counterspell {U}{U}.
+# that is also a green creature), 10 Mountain.
 LISTING = (
     "4 Lightning Bolt\n2 Serra Angel\n1 Niv-Mizzet Reborn\n3 Boros Reckoner\n1 Sol Ring\n"
-    "1 Fireball\n1 Dryad Arbor\n10 Mountain\nSideboard\n2 Counterspell\n"
+    "1 Fireball\n1 Dryad Arbor\n10 Mountain\n"
 )
 
 
@@ -41,7 +41,7 @@ def as_dict(bars):
 
 def test_totals(conn, deck):
     stats = stats_of(conn, deck)
-    assert (stats.copies, stats.cards, stats.sideboard) == (23, 8, 2)
+    assert (stats.copies, stats.cards) == (23, 8)
     assert (stats.lands, stats.spells) == (11, 12)
     # spells: 4×1 + 2×5 + 1×5 + 3×3 + 1×1 + 1×1 = 30 over 12 cards
     assert stats.average_mv == pytest.approx(30 / 12)
@@ -86,26 +86,15 @@ def test_mana_symbols_in_costs(conn, deck):
         "r": (4 + 1 + 3 * 3 + 1, 4),  # Bolt, Niv-Mizzet, Reckoner, Fireball
         "g": (1, 1),
     }
-    # generic and X mana are not colours; the sideboard's blue is not counted
+    # generic and X mana are not colours
     assert pips["u"] == (1, 1)
 
 
-def test_sideboard_is_not_analysed(conn, deck):
-    with_side = stats_of(conn, deck)
-    side = next(r for r in service.deck_rows(conn, deck) if r.board == "side")
-    service.remove_card(conn, deck, side.id)
-    without = stats_of(conn, deck)
-    assert without.sideboard == 0
-    assert (without.copies, without.charts) == (with_side.copies, with_side.charts)
-
-
-def test_empty_deck_and_sideboard_only(conn):
+def test_empty_deck(conn):
     empty = service.create_deck(conn, "Empty")
     stats = stats_of(conn, empty)
     assert (stats.copies, stats.lands, stats.spells, stats.average_mv) == (0, 0, 0, None)
     assert all(bars == [] for bars in stats.charts.values())
-    service.add_card(conn, empty, name="Counterspell", quantity=2, board="side")
-    assert (stats_of(conn, empty).copies, stats_of(conn, empty).sideboard) == (0, 2)
 
 
 def test_lands_only(conn):
@@ -156,8 +145,6 @@ def test_deck_statistics_page(client):
         "<dd>11</dd>",
         "<dd>12</dd>",
         "<dd>2.50</dd>",
-        "These numbers are about the main deck.",
-        "The sideboard (2 cards) is not counted.",
         "By card type",
         "By mana value (lands excluded)",
         "By colour (lands excluded)",
@@ -169,6 +156,7 @@ def test_deck_statistics_page(client):
     ]:
         assert expected in body, expected
     assert body.count('<section class="chart">') == 4
+    assert "sideboard" not in body.lower() and "main deck" not in body.lower()
 
 
 def test_deck_statistics_page_when_empty_missing_or_locked(client):
@@ -191,7 +179,6 @@ def test_deck_statistics_in_italian(client):
         "Valore di mana medio",
         "<dd>2,50</dd>",
         "Simboli di mana nei costi",
-        "La sideboard (2 carte) non è contata.",
     ]:
         assert expected in body, expected
 
@@ -201,4 +188,4 @@ def test_collection_statistics_still_use_the_shared_charts(client, fixture_cards
     client.post("/add", data={"printing": bolt, "quantity": "3"})
     body = client.get("/stats").text
     assert "By colour" in body and 'class="bar color-r" style="width: 100.0%"' in body
-    assert body.count('<section class="chart">') >= 8
+    assert body.count('<section class="chart">') == 6

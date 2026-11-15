@@ -20,8 +20,8 @@ from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from magicdb import db, i18n, web
-from magicdb.collection import exporters, forms, importers, service
-from magicdb.collection.importers import Defaults, FileProblem, Parsed
+from magicdb.collection import exporters, importers, service
+from magicdb.collection.importers import FileProblem, Parsed
 from magicdb.collection.importers.profiles import Row
 from magicdb.collection.service import CollectionError
 from magicdb.config import Settings
@@ -36,7 +36,6 @@ KEEP_SECONDS = 24 * 60 * 60
 SHOWN_PROBLEMS = 200
 SHOWN_MATCHES = 15
 _TOKEN = re.compile(r"[0-9a-f]{32}")
-_BINDER_FILE = re.compile(r"binder-(.+)-[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\.csv", re.I)
 
 
 def settings_of(request: Request) -> Settings:
@@ -57,48 +56,12 @@ def forget_old_uploads(settings: Settings) -> None:
             continue
 
 
-def suggested_location(filename: str) -> str:
-    """TopDecked names its files binder-<Binder name>-<id>.csv: offer the binder's name."""
-    match = _BINDER_FILE.fullmatch(filename)
-    return match.group(1).replace("_", " ").strip()[: service.MAX_NAME] if match else ""
-
-
-def defaults_from(
-    conn: sqlite3.Connection,
-    location: str,
-    new_location: str,
-    new_kind: str,
-    condition: str,
-    language: str,
-) -> Defaults:
-    """What the confirm form chose for rows that do not say for themselves."""
-    name, kind = "", "other"
-    if location == "new":
-        name = " ".join(new_location.split())
-        kind = new_kind if new_kind in service.KINDS else "other"
-        if not name or len(name) > service.MAX_NAME:
-            raise CollectionError("bad_location_name")
-    elif location:
-        row = conn.execute(
-            "SELECT name FROM locations WHERE id = ?", (forms.location_id(location),)
-        ).fetchone()
-        if row is None:
-            raise CollectionError("unknown_location")
-        name = row["name"]
-    return Defaults(
-        condition=condition if condition in service.CONDITIONS else "NM",
-        language=language if language in service.LANGUAGES else "en",
-        location=name,
-        location_kind=kind,
-    )
-
-
-def load(conn: sqlite3.Connection, settings: Settings, token: str, defaults: Defaults) -> Parsed:
+def load(conn: sqlite3.Connection, settings: Settings, token: str) -> Parsed:
     path = upload_path(settings, token)
     if path is None or not path.exists():
         raise FileProblem("expired")
     parsed = importers.parse_file(path.read_bytes())
-    importers.resolve(conn, parsed, defaults)
+    importers.resolve(conn, parsed)
     return parsed
 
 
@@ -128,7 +91,7 @@ def preview_page(
     token: str,
     parsed: Parsed,
     filename: str,
-    chosen: dict[str, str],
+    mode: str,
     error: CollectionError | None = None,
 ) -> HTMLResponse:
     problems = [row for row in parsed.rows if row.status != "matched"]
@@ -144,14 +107,8 @@ def preview_page(
         problems=problems[:SHOWN_PROBLEMS],
         hidden_problems=max(0, len(problems) - SHOWN_PROBLEMS),
         sample=matched[:SHOWN_MATCHES],
-        without={
-            "location": sum(not row.location.strip() for row in matched),
-            "condition": sum(not row.condition.strip() for row in matched),
-            "language": sum(not row.language.strip() for row in matched),
-        },
-        chosen=chosen,
+        mode=mode,
         owned=service.totals(conn)["entries"],
-        options=forms.options(conn),
         error=error,
     )
 
@@ -174,16 +131,7 @@ def upload(request: Request, conn: web.Conn, file: Annotated[UploadFile, File()]
     settings.tmp_dir.mkdir(parents=True, exist_ok=True)
     forget_old_uploads(settings)
     upload_path(settings, token).write_bytes(data)
-    suggestion = suggested_location(filename)
-    chosen = {
-        "location": "new" if suggestion else "",
-        "new_location": suggestion,
-        "new_kind": "binder",
-        "condition": "NM",
-        "language": "en",
-        "mode": "add",
-    }
-    return preview_page(request, conn, token, parsed, filename, chosen)
+    return preview_page(request, conn, token, parsed, filename, "add")
 
 
 @router.post("/import/{token}/confirm")
@@ -192,40 +140,25 @@ def confirm(
     conn: web.Conn,
     token: str,
     filename: Field = "",
-    location: Field = "",
-    new_location: Field = "",
-    new_kind: Field = "binder",
-    condition: Field = "NM",
-    language: Field = "en",
     mode: Field = "add",
 ) -> Response:
     settings = settings_of(request)
-    chosen = {
-        "location": location,
-        "new_location": new_location,
-        "new_kind": new_kind,
-        "condition": condition,
-        "language": language,
-        "mode": mode,
-    }
+    mode = mode if mode in ("add", "replace") else "add"
     try:
-        parsed = load(conn, settings, token, Defaults())
+        parsed = load(conn, settings, token)
     except FileProblem as problem:
         return RedirectResponse("/import?" + urlencode({"error": problem.code}), status_code=303)
     try:
-        defaults = defaults_from(conn, location, new_location, new_kind, condition, language)
-        importers.resolve(conn, parsed, defaults)
         db.backup_collection(conn, settings, "pre-import")
         result = service.import_entries(
             conn,
             importers.to_items(parsed),
             replace=mode == "replace",
-            locations=parsed.locations,
             source=f"{parsed.profile}: {filename}"[:200],
         )
         decks.restore(conn, parsed.decks)
     except CollectionError as error:
-        return preview_page(request, conn, token, parsed, filename, chosen, error)
+        return preview_page(request, conn, token, parsed, filename, mode, error)
     counts = importers.summary(parsed)
     done = {
         "entries": result["entries"],
@@ -257,7 +190,7 @@ def done(
 @router.get("/import/{token}/unresolved.csv")
 def unresolved(request: Request, conn: web.Conn, token: str) -> Response:
     try:
-        parsed = load(conn, settings_of(request), token, Defaults())
+        parsed = load(conn, settings_of(request), token)
     except FileProblem:
         return web.render(request, "not_found.html", 404)
     return download(

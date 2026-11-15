@@ -170,10 +170,9 @@ def with_collection(query: str, on: bool) -> str:
     return _switched(query, _is_collection_term, COLLECTION_TERM, on)
 
 
-# The switches beside fast input's location and deck mode's deck write the existing
-# filters loc:"name" and deck:"name". Names of locations and decks never hold a double
-# quote, so the term can always be written.
-_NAMED_KEYS = {"loc": ("loc", "location"), "deck": ("deck",)}
+# The switch beside deck mode's deck writes the existing filter deck:"name". Deck names
+# never hold a double quote, so the term can always be written.
+_NAMED_KEYS = {"deck": ("deck",)}
 
 
 def _named(kind: str, name: str) -> Callable[[Token], bool]:
@@ -182,25 +181,24 @@ def _named(kind: str, name: str) -> Callable[[Token], bool]:
 
 
 def named_term(kind: str, name: str) -> str:
-    """``loc:"name"`` or ``deck:"name"``."""
+    """``deck:"name"``."""
     return f'{kind}:"{name.strip()}"'
 
 
 def has_named(query: str, kind: str, name: str) -> bool:
-    """True when the whole search is limited to this location (``kind`` "loc") or deck
-    ("deck")."""
+    """True when the whole search is limited to this deck (``kind`` "deck")."""
     return bool(name.strip()) and _has(query, _named(kind, name))
 
 
 def with_named(query: str, kind: str, name: str, on: bool) -> str:
-    """The same search limited to this location or deck, or no longer limited to it."""
+    """The same search limited to this deck, or no longer limited to it."""
     if not name.strip():
         return query
     return _switched(query, _named(kind, name), named_term(kind, name), on)
 
 
 def swap_named(query: str, kind: str, old: str, new: str) -> str:
-    """When the search is limited to the location or deck ``old``, the same search
+    """When the search is limited to the deck ``old``, the same search
     limited to ``new`` instead; otherwise the search as it is."""
     if not has_named(query, kind, old) or not new.strip():
         return query

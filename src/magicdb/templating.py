@@ -1,7 +1,6 @@
 """Jinja environment shared by every page, and the per-visitor interface language."""
 
 import hashlib
-import re
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlencode
@@ -30,16 +29,6 @@ def search_url(q: str, page: int = 1, view: str = "grid") -> str:
     if view != "grid":
         params["view"] = view
     return "/search?" + urlencode(params)
-
-
-def location_search(name: str) -> str:
-    """The search for what is kept in a location.
-
-    ``loc:`` matches the names that contain the text, so a place whose name is part of
-    another's (Box, Blue box) lists that one's cards too.
-    """
-    value = f'"{name}"' if re.search(r"[\s()]", name) else name
-    return search_url(f"loc:{value}")
 
 
 def safe_next(target: str | None, default: str = "/") -> str:
@@ -138,7 +127,6 @@ def build_templates(settings: Settings) -> Jinja2Templates:
         search_url=search_url,
         asset=asset,
         theme_choices=THEME_CHOICES,
-        location_search=location_search,
     )
     templates.env.filters.update(money=money, count=count, symbols=render_symbols)
     return templates

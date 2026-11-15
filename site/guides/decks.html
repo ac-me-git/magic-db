@@ -19,44 +19,39 @@
 <main class="wrap">
 
 <h1>Decks</h1>
-<p class="lead">A deck in AMTG is a <strong>list of cards you want to play together</strong>. It is separate from your collection: adding a card to a deck does not add it to the collection, and does not move it anywhere. What the deck gives you is a comparison with what you own.</p>
-<p>(If you want to record that some cards physically sit in a deck box, that is a <em>location</em> of the collection, not a deck.)</p>
+<p class="lead">A deck in AMTG is a <strong>list of cards you want to play together</strong>: a name, notes if you like, and the cards with how many of each. There is no format and no sideboard. A deck is separate from your collection: adding a card to a deck does not add it to the collection, and does not take it out. What the deck gives you is a comparison with what you own.</p>
 <h2>Making a deck</h2>
-<p>On the <strong>Decks</strong> page, press <strong>New deck</strong> (top right). The deck is called “Deck 1”, “Deck 2” and so on, and its page opens with the name selected: type the one you want and, if you like, a format and a note, then <em>Save</em>. They stay at the top of the deck's page, under <em>Name, format and notes</em>. Then add cards in any of these ways:</p>
+<p>On the <strong>Decks</strong> page, press <strong>New deck</strong> (top right). The deck is called “Deck 1”, “Deck 2” and so on, and its page opens with the name selected: type the one you want and, if you like, a note, then <em>Save</em>. They stay at the top of the deck's page, under <em>Name and notes</em>. Then add cards in any of these ways:</p>
 <ul>
-<li><strong>One at a time</strong>, on the deck's page: type the card's name (suggestions appear), the quantity, and whether it goes in the main deck or the sideboard.</li>
+<li><strong>One at a time</strong>, on the deck's page: type the card's name (suggestions appear) and the quantity.</li>
 <li><strong>From a card's page</strong>: “Add to the deck”.</li>
+<li><strong>From a search, in deck mode</strong>: search as usual (say <code>t:human c:wg</code>), then choose <strong>Deck</strong> above the results, as images or as a list. Pick the deck at the top; on every card, + puts one more copy in it and − takes one out. On images the buttons are faint until you point at the card. The switch <em>Only cards in this deck</em> limits the search to the cards already there; with <em>Search only my collection</em> on as well, you see only cards you own.</li>
 <li><strong>By pasting a list</strong>, on the deck's page.</li>
 </ul>
 <h3>Deck lists</h3>
 <p>One card per line, as most sites and programs export them:</p>
-<pre><code>4 Lightning Bolt
+<pre><code>1 Miirym, Sentinel Wyrm
 4x Counterspell
 1 Sol Ring (C21) 263
-Brainstorm
-
-Sideboard
-2 Pyroblast
-SB: 1 Red Elemental Blast</code></pre>
+Brainstorm</code></pre>
 <ul>
 <li>The number is how many; a line with just a name is one copy.</li>
 <li>Set codes, collector numbers and foil marks (<code>(C21) 263</code>, <code>[C21]</code>, <code>*F*</code>) are ignored: a deck names cards, not printings.</li>
-<li><code>Sideboard</code> on a line by itself starts the sideboard. <code>SB:</code> in front of a line puts that one line there. A blank line does <strong>not</strong> start the sideboard.</li>
-<li><code>Deck</code>, <code>Commander</code> and <code>Companion</code> go back to the main deck. A <code>Maybeboard</code> section is skipped.</li>
-<li>Titles such as <code>Creatures (12)</code>, comments (<code>//</code>, <code>#</code>) and blank lines are ignored.</li>
+<li>A deck has no sideboard: the cards of a <code>Sideboard</code> section, or of a line starting with <code>SB:</code>, join the list like the others. A <code>Maybeboard</code> section is skipped.</li>
+<li>Titles such as <code>Deck</code>, <code>Commander</code>, <code>Creatures (12)</code>, comments (<code>//</code>, <code>#</code>) and blank lines are ignored.</li>
 </ul>
 <p>Lines that are not card names are shown to you with a suggestion and put back in the box to correct; everything else is added.</p>
 <h2>What the deck tells you</h2>
 <ul>
-<li><strong>Completion</strong>: the round gauge shows how many of the deck's cards you own, as a percentage. Any printing counts, wherever it is. 100&nbsp;% means you have every copy.</li>
+<li><strong>Completion</strong>: the round gauge shows how many of the deck's cards you own, as a percentage. Any printing counts, in any finish. 100&nbsp;% means you have every copy.</li>
 <li><strong>Missing</strong>: cards you do not own enough copies of for this deck.</li>
 <li><strong>Contested</strong>: cards you own enough of for this deck alone, but not for all the decks that want them. If two decks each want 4 Lightning Bolt and you own 6, both decks are complete on their own and the card is contested.</li>
 <li><strong>Estimated cost</strong>: what the whole deck would cost, using the cheapest paper printing of each card. <strong>To buy the missing</strong> is the same estimate for the cards you lack.</li>
-<li><strong>Colour identity</strong>: the colours of the main deck's cards, as mana symbols, next to its name.</li>
+<li><strong>Colour identity</strong>, as mana symbols next to its name: the colours of the deck's widest legendary creature, in practice the commander. A deck with no legendary creature shows the colours of all its cards together.</li>
 </ul>
-<p>The Decks page lists your decks one under the other, each with these facts, how many cards are in the main deck and the sideboard, and the day it last changed. It also has one list of every contested card: how many you own, how many your decks want in total, and which decks.</p>
+<p>The Decks page lists your decks one under the other, each with these facts, how many cards it has, and the day it last changed. It also has one list of every contested card: how many you own, how many your decks want in total, and which decks.</p>
 <h2>Statistics</h2>
-<p>Every deck has a second tab, <strong>Statistics</strong>, about its main deck:</p>
+<p>Every deck has a second tab, <strong>Statistics</strong>:</p>
 <ul>
 <li>how many lands and how many other cards, and the average mana value of the latter;</li>
 <li>cards by type (an artifact creature counts as both);</li>
@@ -66,7 +61,7 @@ SB: 1 Red Elemental Blast</code></pre>
 <h2>Other things</h2>
 <ul>
 <li>“See the cards as images” searches for <code>deck:"name"</code>; combine it with any other filter, for example <code>deck:dragons have:no</code> for what you still need.</li>
-<li>“Download as text” gives the list back in the format above.</li>
+<li>“Download as text” gives the list back, one line per card.</li>
 <li>A card's page shows which of your decks it is in.</li>
 <li>Decks are included in the JSON export and in the nightly backup.</li>
 <li>While the safety lock is on, decks can be looked at but not changed.</li>
