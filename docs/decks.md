@@ -25,7 +25,7 @@ and, if you like, a note, then *Save*. They stay at the top of the deck's page, 
   building**, then search as usual (say `t:human c:wg`), as Images or as a List. Pick
   the deck at the top; on every card, + puts one more copy in it and − takes one out.
   On images the buttons are faint until you point at the card. The switch *Only cards in this deck* limits the
-  search to the cards already there (it writes `deck:"name"` into the search box); with
+  search to the cards already there (it writes `deck="name"` into the search box); with
   *Search my collection* (the ▾ beside Search) as well, you see only cards you own.
 - **By pasting a list**, on the deck's page.
 
@@ -82,8 +82,9 @@ Every deck has a second tab, **Statistics**:
 
 ## Other things
 
-- "See the cards as images" searches for `deck:"name"`; you can combine that filter with
-  any other, for example `deck:dragons have:no` for what you still need.
+- "See the cards as images" searches for `deck="name"`, that deck only (`deck:dragons`
+  would find every deck whose name contains "dragons"); you can combine it with any
+  other filter, for example `deck="Dragons" have:no` for what you still need.
 - "Download as text" gives the list back, one line per card.
 - A card's page shows which of your decks it is in.
 - Decks are included in the JSON export and in the nightly backup.

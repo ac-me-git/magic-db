@@ -64,7 +64,7 @@
 {% if deck.unpriced %}<p class="hint">{{ t("deck.unpriced", n=deck.unpriced | count) }}</p>{% endif %}
 {% if deck.contested %}<p class="hint">{{ t("deck.contested_note", n=deck.contested | count) }}</p>{% endif %}
 <p class="links">
-  <a href="{{ search_url('deck:"' ~ deck.name ~ '"') }}">{{ t("deck.view_cards") }}</a> ·
+  <a href="{{ search_url('deck="' ~ deck.name ~ '"') }}">{{ t("deck.view_cards") }}</a> ·
   <a href="/decks/{{ deck.id }}/export.txt">{{ t("deck.export") }}</a>
 </p>
 {% else %}

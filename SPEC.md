@@ -271,7 +271,10 @@ Rules:
   and a purchase price given with the new copies replaces the old one.
 - Problems the user can cause raise `CollectionError(code, **params)`; pages show
   `t("error." + code)`. All collection SQL lives in `collection/service.py`.
-- The finish must be one of the printing's `finishes`; otherwise warn but allow.
+- The card page's add form offers only the finishes the printing was made in (all three
+  when the catalog lists none); the remembered finish is used when the form offers it,
+  else the first one offered. The service still accepts another finish (an import may
+  bring one, and the edit page lets a copy keep it).
 - Every write also appends a `history` row in the same transaction.
 - **Migration 0004** (2026-11-15) drops the table `locations` and the columns
   `condition`, `language` and `location_id` of `entries`, and the deck's `format` and
@@ -338,7 +341,7 @@ parameter** — never interpolate user text into SQL. An unknown key or a bad va
 | `haveprint:` | `yes`/`no` — I own **this printing** | printing level |
 | `qty` | copies owned of this printing | numeric, sum over entries |
 | `finish:` | owned in this finish | |
-| `deck:` | in a deck whose name contains | card level |
+| `deck:` `deck=` | in a deck whose name contains / the deck with exactly this name | card level; `=` ignores case, like deck names |
 | `unique:` | `cards` (default) or `prints` | directive |
 | `order:` | `name mv released rarity price set` | directive, default `name` |
 | `dir:` | `asc` / `desc` | directive |
@@ -583,11 +586,12 @@ white and green humans, press + on the ones you want.
   deck changed last is used. Without decks the view says so and links to `/decks`.
   A link opens the chosen deck.
 - Beside the picker, a switch *Only cards in this deck* (a link drawn as a switch)
-  reloads the search with `deck:"<name>"` written in, or taken out — the same rules as
+  reloads the search with `deck="<name>"` written in, or taken out — the same rules as
   collection dropdown (`search.with_named`). Choosing another deck while it is on
   rewrites the term to the new one; with HTMX the answer is then `HX-Redirect`, so the
   search box shows the new search. The picker stays when the search finds nothing.
-  `deck:` matches names that *contain* the text (§6.2). With
+  It writes `=`, the exact name, because `deck:` matches every name that *contains* the
+  text (§6.2) and "Deck 1" would also show "Deck 10"; only `deck=` turns it on. With
   "Search my collection" as well, the search shows the cards of the deck that are in
   the collection; without the deck switch, any card can be added.
 - `POST /deckmode/card` (`deck`, `printing`, `action=add|remove`, `next`): with
@@ -1032,7 +1036,7 @@ Rules:
   decks want how many. `/decks/{id}` lists the deck by card type with the
   copies owned of every row — red when missing, in the accent colour when contested,
   the state itself in the number's tooltip and on the row's edge — the estimated cost of the deck and of what is missing, a download
-  as text and a link to see the cards as images (`deck:"name"`). A card's page lists
+  as text and a link to see the cards as images (`deck="name"`). A card's page lists
   the decks it is in.
 - A **New deck** button, at the top right of `/decks`, makes an empty deck named
   "Deck *n*" in the interface language — *n* is one more than the decks there are, or
@@ -1057,4 +1061,4 @@ Rules:
   and the sideboard joins the list. The CSV export does not carry decks. A deck's text
   download is one line per card, no sections.
 - Deck names cannot contain a double quote (it becomes an apostrophe), so that
-  `deck:"name"` can always be written.
+  `deck="name"` can always be written.

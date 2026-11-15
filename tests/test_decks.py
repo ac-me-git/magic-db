@@ -605,6 +605,23 @@ def test_deck_search_filter(decks):
     assert search.run(conn, "-deck:burn t:angel").total > 0
 
 
+def test_deck_equals_is_that_deck_only(conn):
+    """deck:"Deck 1" also finds the cards of "Deck 10"; deck="Deck 1" does not."""
+    one, ten = service.create_deck(conn, "Deck 1"), service.create_deck(conn, "Deck 10")
+    service.add_card(conn, one, name="Lightning Bolt")
+    service.add_card(conn, ten, name="Serra Angel")
+
+    def names(query):
+        return {row["name"] for row in search.run(conn, query).rows}
+
+    assert names('deck:"Deck 1"') == {"Lightning Bolt", "Serra Angel"}
+    assert names('deck="Deck 1"') == {"Lightning Bolt"}
+    assert names("deck=deck 1") == set()  # a bare value stops at the space: deck="deck"
+    assert names('deck="DECK 10"') == {"Serra Angel"}  # deck names ignore case
+    assert names('deck="Deck"') == set()
+    assert names('-deck="Deck 1" deck:deck') == {"Serra Angel"}
+
+
 def test_json_export_and_import_carry_the_decks(decks, catalog, tmp_path):
     conn, burn, control = decks
     dump = exporters.export_json(conn)
@@ -764,7 +781,7 @@ def test_deck_page(site):
         '<a href="/decks/2">Control</a> ×4',
         "To buy the missing",
         'href="/decks/1/export.txt"',
-        "deck%3A%22Burn%22",
+        "deck%3D%22Burn%22",
         ">Instant</th>",
         ">Creature</th>",
         'alt="{R}"',
@@ -901,6 +918,25 @@ def test_export_a_deck_as_text(site):
     assert response.headers["content-type"] == "text/plain; charset=utf-8"
     assert 'filename="Control.txt"' in response.headers["content-disposition"]
     assert response.text == "2 Fire // Ice\n4 Lightning Bolt\n2 Sol Ring\n"
+
+
+@pytest.mark.parametrize(
+    ("name", "plain", "full"),
+    [
+        ("Burn", "Burn", "Burn.txt"),
+        ("Дракон 🐉", "deck", "%D0%94%D1%80%D0%B0%D0%BA%D0%BE%D0%BD.txt"),
+        ("Miirym ❤ dragons", "Miirym _ dragons", "Miirym%20_%20dragons.txt"),
+        ("Jötun Grunt", "J_tun Grunt", "J%C3%B6tun%20Grunt.txt"),
+    ],
+)
+def test_a_deck_with_any_name_can_be_downloaded(site, name, plain, full):
+    assert site.post("/decks/1", data={"name": name}).status_code == 303
+    response = site.get("/decks/1/export.txt")
+    assert response.status_code == 200
+    header = response.headers["content-disposition"]
+    assert f'filename="{plain}.txt"' in header
+    assert f"filename*=UTF-8''{full}" in header
+    assert "4 Lightning Bolt\n" in response.text
 
 
 @pytest.mark.parametrize("state", ["locked", "input"])

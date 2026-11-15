@@ -74,7 +74,7 @@ def test_add_then_the_finish_sticks(client, catalog, ids):
 
     # every card page's add form is ready for the next copies: quantity 1, the same finish,
     # and nothing to say about condition, language or place
-    page = client.get(f"/card/{ids('Sol Ring', 'c21')}").text
+    page = client.get(f"/card/{ids('Wrath of God', '10e')}").text
     form = page.split('action="/add"')[1].split("</form>")[0]
     assert 'name="quantity" value="1"' in form and selected(form, "finish") == "foil"
     for gone in ("condition", "language", "location"):
@@ -118,6 +118,31 @@ def test_unusual_finish_is_still_added(client, catalog, ids):
     response = add(client, ids("Lightning Bolt", "lea"), finish="foil")
     assert response.status_code == 303
     assert rows(catalog)[0][3] == "foil"
+
+
+def offered(html):
+    """The finishes the card page's add form offers."""
+    form = html.split('action="/add"')[1].split("</form>")[0]
+    return re.findall(
+        r'<option value="(\w+)"', form.split('name="finish"')[1].split("</select>")[0]
+    )
+
+
+def test_the_add_form_offers_only_the_finishes_the_printing_was_made_in(client, ids, fixture_cards):
+    lea = ids("Lightning Bolt", "lea")  # non-foil only
+    assert offered(client.get(f"/card/{lea}").text) == ["nonfoil"]
+    assert offered(client.get(f"/card/{ids('Lightning Bolt', 'm10')}").text) == [
+        "nonfoil",
+        "foil",
+    ]
+    etched = next(c for c in fixture_cards if c.get("finishes") == ["etched"])
+    page = client.get(f"/card/{etched['id']}").text
+    assert offered(page) == ["etched"] and selected(page, "finish") == "etched"
+
+    # the remembered finish is kept for the next card that has it
+    add(client, ids("Lightning Bolt", "m10"), finish="foil")
+    assert selected(client.get(f"/card/{lea}").text, "finish") == "nonfoil"
+    assert selected(client.get(f"/card/{ids('Lightning Bolt', 'm10')}").text, "finish") == "foil"
 
 
 def test_adding_needs_the_catalog(settings):

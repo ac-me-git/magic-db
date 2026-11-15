@@ -144,7 +144,7 @@ class Shortage:
 
 
 def _deck_fields(name: object, notes: object) -> tuple[str, str | None]:
-    # no double quote, so that deck:"name" can always be written in a search
+    # no double quote, so that deck="name" can always be written in a search
     name = " ".join(str(name or "").replace('"', "'").split())
     if not name or len(name) > MAX_NAME:
         raise CollectionError("bad_deck_name")

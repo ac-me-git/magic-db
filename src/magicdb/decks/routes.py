@@ -1,7 +1,9 @@
 """Deck pages (SPEC §14). Thin: read the form, call the service, render or redirect."""
 
 import sqlite3
+from collections.abc import Callable
 from typing import Annotated
+from urllib.parse import quote
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -267,12 +269,22 @@ def export_deck(request: Request, conn: web.Conn, deck_id: str) -> Response:
         name = service.get_deck(conn, as_id(deck_id))["name"]
     except CollectionError:
         return web.render(request, "not_found.html", 404)
-    filename = "".join(ch if ch.isalnum() or ch in " -_" else "_" for ch in name).strip() or "deck"
     return Response(
         listing,
         media_type="text/plain; charset=utf-8",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}.txt"',
-            "Cache-Control": "no-store",
-        },
+        headers={"Content-Disposition": attachment(name), "Cache-Control": "no-store"},
     )
+
+
+def attachment(name: str) -> str:
+    """The download header for a deck's text file. A header holds only Latin-1, so the
+    name is given twice: plain ASCII for old browsers, and in full (RFC 6266) for the
+    others — a deck can be called "Дракон"."""
+
+    def safe(keep: Callable[[str], bool]) -> str:
+        cleaned = "".join(ch if keep(ch) or ch in " -_" else "_" for ch in name)
+        return cleaned.strip(" _") or "deck"
+
+    plain = safe(lambda ch: ch.isascii() and ch.isalnum())
+    full = safe(str.isalnum)
+    return f"attachment; filename=\"{plain}.txt\"; filename*=UTF-8''{quote(full + '.txt')}"

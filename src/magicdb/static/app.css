@@ -635,7 +635,8 @@ main {
 }
 
 /* on a phone the sliders show their icons only, so that the count, both sliders and the
-   (i) share one line; the menu has room for the names */
+   (i) share one line, and the switch at the bottom of the card page fits the screen
+   ("Costruzione mazzi" is long); each button keeps its name in aria-label and title */
 @media (max-width: 40rem) {
   .results-bar,
   .views {
@@ -657,12 +658,12 @@ main {
     white-space: nowrap;
   }
 
-  .views .slider-label {
+  .slider .slider-label {
     display: none;
   }
 
-  .views .slider a,
-  .views .slider button {
+  .slider a,
+  .slider button {
     padding: 0 0.6rem;
   }
 }

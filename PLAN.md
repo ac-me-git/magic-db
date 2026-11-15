@@ -49,6 +49,83 @@ Read `SPEC.md` first; section numbers below (§) refer to it.
 | + | Owner request: the safety lock becomes a three-way switch — locked, collection input, deck building — that also chooses the mode of the search results; Images or List as a slider; one (i) | done 2026-11-15 | Tests green (`tests/test_lock.py` rewritten; the test clients of the other modules choose the position they need through `tests.conftest.editing`). The switch is server-wide like the lock was, saved under `edit_mode` in `settings` (no schema change); the old `locked` key is ignored and every database starts Locked. `lock.needs(path)`: paths under `/deck` need Deck building, `/mode`, `/theme`, `/admin/…` nothing, anything else Collection input. `view=` is now only `grid` or `list`; old mode names keep their layout. TODO(owner): a new database starts Locked, so a first import needs a click on Collection input first (the import page offers it). |
 | + | Owner request: icons in the sliders (icons only on a phone, one line); a shorter sort line; where to search as a dropdown on the Search button instead of a switch in the menu | done 2026-11-15 | Tests green. Below 40rem the slider names are hidden (each control keeps an `aria-label`). Sort line: name, set and number, price. The dropdown is a `<details class="search-scope">` joined to Search; its two buttons send `scope=all|collection`, as the switch did. |
 | + | Owner request: the switch leaves the menu; on the card page, at the bottom, the switch and the form it allows (collection, or a deck from a list) | done 2026-11-15 | Tests green. The card page's last section `#add`; the deck list starts on deck mode's deck (`decks.mode.choice`), and `POST /deck-cards` remembers the deck in the same cookie. |
+| + | Review before the public release: defects 1, 2, 3, 5 of the checklist below | done 2026-11-15 | 1130 tests green (6 new). Deck download: the header carries an ASCII name and the full name (`filename*`, RFC 6266; `decks.routes.attachment`). `deck=` is now the exact deck name (`= ?` on `decks.name`, which is NOCASE); `deck:` still contains. The switch writes and recognises only `deck="name"` (deck mode was never released, so no saved address uses `deck:`); the deck page's link too. SPEC §6.2, §7, §14, docs and both website guides follow; `docs/search-syntax.md` regenerated. Phone: `.slider .slider-label` is hidden under 40rem for both sliders, so the card page's switch fits (checked at 390 px in Italian, all three positions). Card page: `forms.made_in` offers only the printing's finishes; the remembered finish is used when offered; the service still accepts any finish (SPEC §5 rule rewritten). `test_add_then_the_finish_sticks` now uses Wrath of God (10e): Sol Ring c21 was never made in foil. Defect 4 waits for the owner's Reddit address. |
+
+
+## Review before the public release (2026-11-15)
+
+A review of the whole project after many changes, asked for by the owner, who wants a
+release tonight. Every item is ticked when done; decisions waiting for the owner are
+marked **owner**.
+
+**Defects (first)**
+
+- [x] 1. Exporting a deck whose name is not Latin text (`Дракон 🐉`) answers 500: the
+  file name goes into a header that only takes Latin-1.
+- [x] 2. `deck:"Deck 1"` also finds the cards of "Deck 10", so the switch *Only cards in
+  this deck* is wrong once there are ten decks. `deck="name"` becomes the exact name
+  and the switch (and the deck page's link) write it. Changes §6.2: approved by the
+  owner on 2026-11-15 ("cominciamo con le cinque importanti").
+- [x] 3. On a phone, in Italian, the edit switch at the bottom of the card page is wider
+  than the screen (the labels are hidden only above the search results).
+- [ ] 4. "Contact me" links to `https://www.reddit.com/` itself, in the app's footer and
+  on 16 pages of the website. **owner**: the real address.
+- [x] 5. The card page's add form offers every finish, also one the printing was never
+  made in, and the warning the service computes is never shown: offer only the
+  printing's finishes.
+
+**Half-finished**
+
+- [ ] `history` is written by every change and read by nothing; there is no undo.
+  **owner**: keep, show (latest changes on My collection) or drop later.
+- [ ] Notes and purchase price are only on the edit page and in the export; not on the
+  card page or in the statistics. **owner**, with the item above.
+- [ ] Importing a JSON dump recreates decks while the switch is on Collection input,
+  which is meant to keep the decks unchanged.
+- [ ] `/api/autocomplete` is called by no page any more (its function is used inside).
+- [ ] The entry edit page is still a table row with `colspan=7`, left from the removed
+  collection list.
+
+**Database** (no schema change before the release)
+
+- [ ] Catalog columns never read: `printings.color_count`, `sets.card_count`,
+  `sets.parent_code`, `sets.icon_svg_uri`. Can go after the release, without a
+  migration (the catalog is rebuilt). **owner**
+- [ ] Collection: `history` (above) and `entries.updated_at` are written, never read.
+
+**Leftovers to clean up** (no change in behaviour)
+
+- [ ] Unused strings: `nav.filters`, `entry.value`, `admin.times_utc`,
+  `collection.hub.hint`; `deckmode.copies` still says "board" / "sezione".
+- [ ] Unused CSS `.tile-bar`; a CSS comment still speaks of fast input's location.
+- [ ] Unused Python: `TEXT_FIELDS`, `OPERATORS`, `Added.merged` / `Added.unusual_finish`;
+  the `kind` parameter of `search.*_named` and `web.swap_in_address` (only "deck" is
+  left); `layout` duplicates `view` in `web.search_page`; the deck picker still has
+  the class `fast-settings`.
+- [ ] Docs: `README.md` says the language is chosen at the bottom of the page (it is
+  in the menu); `docs/search-syntax.md` speaks of the switch beside Search (it is a
+  dropdown); SPEC §7 still mentions the collection list's headers; a comment in
+  `importers/profiles.py` speaks of "before 2.0".
+
+**Technical**
+
+- [ ] `uv.lock` is committed (2026-11-15), but the Docker image and the executable
+  still install with `pip install .` and the `>=` ranges of `pyproject.toml`: build
+  them from the lock.
+- [ ] The catalog's `schema_version` is written and never checked: a catalog of an
+  older schema should be rebuilt by itself.
+- [ ] Administration: a long data folder path is wider than a phone's screen.
+- [ ] `/stats` computes set completion twice (once for the set types).
+
+**Release** (**owner**)
+
+- [ ] What "open to the public" means: the repository and the website (ready), or an
+  instance anyone can reach (needs `MAGICDB_PASSWORD` or a gateway: without it anyone
+  can move the switch, change the collection and download backups).
+- [ ] Version number: 2.0.0 proposed (database upgrade, three filters gone, export
+  format 2).
+- [ ] Branch: `CLAUDE.md` says `main`, this session was set up on
+  `ccr-b454176f-ogs7w6`.
 
 ---
 

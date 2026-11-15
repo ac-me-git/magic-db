@@ -170,19 +170,20 @@ def with_collection(query: str, on: bool) -> str:
     return _switched(query, _is_collection_term, COLLECTION_TERM, on)
 
 
-# The switch beside deck mode's deck writes the existing filter deck:"name". Deck names
-# never hold a double quote, so the term can always be written.
+# The switch beside deck mode's deck writes deck="name": that deck only, not every deck
+# whose name contains it ("Deck 1" would also be "Deck 10"). Deck names never hold a
+# double quote, so the term can always be written.
 _NAMED_KEYS = {"deck": ("deck",)}
 
 
 def _named(kind: str, name: str) -> Callable[[Token], bool]:
     keys, wanted = _NAMED_KEYS[kind], name.strip().lower()
-    return lambda token: token.key in keys and token.op == ":" and token.value.lower() == wanted
+    return lambda token: token.key in keys and token.op == "=" and token.value.lower() == wanted
 
 
 def named_term(kind: str, name: str) -> str:
-    """``deck:"name"``."""
-    return f'{kind}:"{name.strip()}"'
+    """``deck="name"``."""
+    return f'{kind}="{name.strip()}"'
 
 
 def has_named(query: str, kind: str, name: str) -> bool:

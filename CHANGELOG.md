@@ -43,6 +43,13 @@
   list (the deck used last comes first).
 - The header has a background of its own, a shade apart from the page.
 - The footer has a *Contact me* link with the Reddit icon, beside *Buy me a coffee*.
+- `deck="name"` finds the cards of that deck only; `deck:name` still finds every deck
+  whose name contains the text. The switch *Only cards in this deck* and the deck
+  page's "See the cards as images" use `=`, so "Deck 1" no longer shows "Deck 10" too.
+- Fixed: downloading a deck whose name is not in Latin letters (say "Дракон") failed.
+- Fixed: on a phone the switch at the bottom of a card's page was wider than the
+  screen; it now shows its icons only, like the one above the search results.
+- A card's page offers only the finishes that printing was made in.
 
 ## 1.3.0 — 2026-11-15
 

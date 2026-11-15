@@ -72,7 +72,7 @@ for a set, a collector number, or add `include:extras`.
 | `haveprint` | I own this exact printing (yes / no) | `set:arn haveprint:no` |
 | `qty` | Copies I own of this printing | `qty>=4` |
 | `finish` | I own it in this finish | `finish:foil` |
-| `deck` | In a deck whose name contains | `deck:"dragons"` |
+| `deck` | In a deck whose name contains (= for the exact name) | `deck:dragons` `deck="Miirym"` |
 | `unique` | Show cards (default) or every printing | `unique:prints` |
 | `order` | Sort by: name, mv, released, rarity, price, set, type | `order:price` |
 | `dir` | Sort direction: asc or desc | `dir:desc` |

@@ -354,6 +354,10 @@ def card_view(
         card = conn.execute("SELECT * FROM cat.printings WHERE id = ?", (card_id,)).fetchone()
     if card is None:
         return render(request, "not_found.html", 404)
+    finishes = [f for f in card["finishes"].strip("|").split("|") if f]
+    # the add form offers only the finishes this printing was made in (an import may
+    # still bring another: the service accepts it)
+    offered = forms.made_in(finishes)
     printings = conn.execute(
         "SELECT id, set_code, set_name, collector_number, rarity, released_at, finishes, "
         "is_digital, price_eur, price_eur_foil, price_usd, price_usd_foil "
@@ -368,14 +372,14 @@ def card_view(
         card=card,
         faces=json.loads(card["faces_json"]) if card["faces_json"] else [],
         legal=[f for f in card["legal_in"].strip("|").split("|") if f],
-        finishes=[f for f in card["finishes"].strip("|").split("|") if f],
+        finishes=finishes,
         printings=printings,
         copies=service.copies_of_card(conn, card["oracle_id"]),
         in_decks=decks.decks_with_card(conn, card["oracle_id"]),
         # the deck the form at the bottom offers first: the one deck mode fills
         deck_choice=mode.choice(request, conn),
-        sticky=forms.read_sticky(request),
-        options=forms.options(),
+        sticky=forms.read_sticky(request, offered),
+        options=forms.options(offered),
         error=error,
     )
 

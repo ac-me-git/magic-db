@@ -12,11 +12,14 @@ ONE_YEAR = 365 * 24 * 60 * 60
 DEFAULTS = {"finish": "nonfoil"}
 
 
-def read_sticky(request: Request) -> dict[str, str]:
-    """The finish of the last copies added from a card's page."""
+def read_sticky(request: Request, offered: tuple[str, ...] = service.FINISHES) -> dict[str, str]:
+    """The finish of the last copies added from a card's page, if this form offers it;
+    else the first one it offers."""
     stored = parse_qs(request.cookies.get(STICKY_COOKIE, ""))
     finish = (stored.get("finish") or [""])[0]
-    return {"finish": finish if finish in service.FINISHES else DEFAULTS["finish"]}
+    if finish not in service.FINISHES:
+        finish = DEFAULTS["finish"]
+    return {"finish": finish if finish in offered else offered[0]}
 
 
 def write_sticky(response: Response, finish: object) -> None:
@@ -24,5 +27,11 @@ def write_sticky(response: Response, finish: object) -> None:
     response.set_cookie(STICKY_COOKIE, value, max_age=ONE_YEAR, samesite="lax", path="/")
 
 
-def options() -> dict[str, object]:
-    return {"finishes": service.FINISHES}
+def made_in(finishes: list[str]) -> tuple[str, ...]:
+    """The finishes a printing was made in, in the usual order; every finish when the
+    catalog does not say."""
+    return tuple(f for f in service.FINISHES if f in finishes) or service.FINISHES
+
+
+def options(finishes: tuple[str, ...] = service.FINISHES) -> dict[str, object]:
+    return {"finishes": finishes}

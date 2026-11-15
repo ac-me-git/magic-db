@@ -221,7 +221,7 @@ def test_the_deck_switch_writes_the_deck_filter_into_the_search(client, card, ot
     deck = make_deck(client, "Human Army")
     click(client, deck, card)
     on, address = only(search_page(client, "mv>=0"))
-    assert not on and query_of(address) == 'mv>=0 deck:"Human Army"'
+    assert not on and query_of(address) == 'mv>=0 deck="Human Army"'
     page = client.get(address).text
     on, back = only(page)
     assert on and query_of(back) == "mv>=0"
@@ -235,7 +235,7 @@ def test_the_deck_switch_works_with_the_collection_switch(client, catalog, card,
     click(client, deck, other)
     editing(client, "input").post("/add", data={"printing": card["id"]})
     editing(client, "deck")
-    q = f'deck:"Humans" {search.COLLECTION_TERM}'
+    q = f'deck="Humans" {search.COLLECTION_TERM}'
     page = search_page(client, q)
     assert only(page)[0] and page.count('class="deck-count"') == 1
     assert f'value="{card["id"]}"' in page
@@ -245,15 +245,15 @@ def test_picking_another_deck_moves_the_switch_to_it(client):
     first = make_deck(client, "Humans")
     second = make_deck(client, "Elves")
     client.get("/deckmode/settings", params={"deck": first})
-    here = "/search?" + "&".join(["q=t%3Acreature+deck%3A%22Humans%22", "view=deck"])
+    here = "/search?" + "&".join(["q=t%3Acreature+deck%3D%22Humans%22", "view=deck"])
     answer = client.get("/deckmode/settings", params={"deck": second, "next": here})
     assert answer.status_code == 303
-    assert query_of(answer.headers["location"]) == 't:creature deck:"Elves"'
+    assert query_of(answer.headers["location"]) == 't:creature deck="Elves"'
     # with HTMX the whole page loads, so that the search box shows the new search
     client.get("/deckmode/settings", params={"deck": first})
     answer = client.get("/deckmode/settings", params={"deck": second, "next": here}, headers=HTMX)
     assert answer.status_code == 204
-    assert query_of(answer.headers["HX-Redirect"]) == 't:creature deck:"Elves"'
+    assert query_of(answer.headers["HX-Redirect"]) == 't:creature deck="Elves"'
 
 
 def test_picking_another_deck_leaves_a_search_without_the_filter_alone(client):
@@ -267,7 +267,7 @@ def test_picking_another_deck_leaves_a_search_without_the_filter_alone(client):
 
 def test_with_nothing_found_the_switch_stays_so_it_can_be_turned_off(client):
     make_deck(client, "Empty")
-    on, back = only(search_page(client, 'deck:"Empty"'))
+    on, back = only(search_page(client, 'deck="Empty"'))
     assert on and query_of(back) == ""
 
 
@@ -282,15 +282,15 @@ def test_fast_input_has_no_switch_and_no_pickers(client, card):
 @pytest.mark.parametrize(
     ("query", "expected"),
     [
-        ('deck:"Humans"', True),
-        ("deck:humans", True),
-        ('t:elf deck:"HUMANS"', True),
-        ('deck:"Human"', False),  # another deck
-        ('-deck:"Humans"', False),
-        ('(t:elf deck:"Humans")', False),
-        ('t:elf or deck:"Humans"', False),
-        ('deck="Humans"', False),
-        ('deck:"Humans', False),  # cannot be read
+        ('deck="Humans"', True),
+        ("deck=humans", True),
+        ('t:elf deck="HUMANS"', True),
+        ('deck="Human"', False),  # another deck
+        ('-deck="Humans"', False),
+        ('(t:elf deck="Humans")', False),
+        ('t:elf or deck="Humans"', False),
+        ('deck:"Humans"', False),  # every deck whose name contains Humans
+        ('deck="Humans', False),  # cannot be read
     ],
 )
 def test_has_named(query, expected):
@@ -298,22 +298,22 @@ def test_has_named(query, expected):
 
 
 def test_with_named_adds_and_takes_out_the_term():
-    assert search.with_named("t:elf", "deck", "Humans", True) == 't:elf deck:"Humans"'
-    assert search.with_named("", "deck", "Humans", True) == 'deck:"Humans"'
+    assert search.with_named("t:elf", "deck", "Humans", True) == 't:elf deck="Humans"'
+    assert search.with_named("", "deck", "Humans", True) == 'deck="Humans"'
     assert search.with_named("t:elf or t:goblin", "deck", "Box", True) == (
-        '(t:elf or t:goblin) deck:"Box"'
+        '(t:elf or t:goblin) deck="Box"'
     )
-    assert search.with_named('t:elf deck:"Humans" c:w', "deck", "Humans", False) == "t:elf c:w"
-    assert search.with_named('t:elf deck:"Humans"', "deck", "Humans", True) == (
-        't:elf deck:"Humans"'
+    assert search.with_named('t:elf deck="Humans" c:w', "deck", "Humans", False) == "t:elf c:w"
+    assert search.with_named('t:elf deck="Humans"', "deck", "Humans", True) == (
+        't:elf deck="Humans"'
     )
     assert search.with_named("t:elf", "deck", "", True) == "t:elf"
 
 
 def test_swap_named_only_moves_a_term_that_is_there():
-    assert search.swap_named('t:elf deck:"A"', "deck", "A", "B") == 't:elf deck:"B"'
+    assert search.swap_named('t:elf deck="A"', "deck", "A", "B") == 't:elf deck="B"'
     assert search.swap_named("t:elf", "deck", "A", "B") == "t:elf"
-    assert search.swap_named('t:elf deck:"C"', "deck", "A", "B") == 't:elf deck:"C"'
+    assert search.swap_named('t:elf deck="C"', "deck", "A", "B") == 't:elf deck="C"'
 
 
 def test_the_collection_switch_still_works(client):
@@ -377,7 +377,7 @@ def test_on_a_phone_the_sliders_are_icons_on_one_line(client):
 
     css = (Path(magicdb.__file__).parent / "static" / "app.css").read_text(encoding="utf-8")
     phone = css.split("@media (max-width: 40rem) {", 1)[1].split("\n}\n", 1)[0]
-    assert ".views .slider-label {\n    display: none;" in phone
+    assert ".slider .slider-label {\n    display: none;" in phone  # also on the card page
     assert "flex-wrap: nowrap;" in phone
 
 

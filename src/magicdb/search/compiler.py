@@ -282,11 +282,14 @@ def finish(ctx: Context, op: str, value: str) -> Sql:
 
 
 def deck(ctx: Context, op: str, value: str) -> Sql:
+    """``deck:x`` a deck whose name contains x; ``deck="x"`` the deck called x (deck
+    names ignore case, so ``=`` does too)."""
+    match, param = ("= ?", value) if op == "=" else (LIKE, _contains(value))
     sql = (
         "p.oracle_id IN (SELECT dc.oracle_id FROM deck_cards dc "
-        f"JOIN decks d ON d.id = dc.deck_id WHERE d.name {LIKE})"
+        f"JOIN decks d ON d.id = dc.deck_id WHERE d.name {match})"
     )
-    return sql, [_contains(value)]
+    return sql, [param]
 
 
 def unique(ctx: Context, op: str, value: str) -> None:
@@ -387,7 +390,14 @@ FILTERS: tuple[FilterDef, ...] = (
     ),
     _def("qty", "qty", NUMERIC_OPS, quantity, "Copies I own of this printing", "qty>=4"),
     _def("finish", "finish", TEXT, finish, "I own it in this finish", "finish:foil"),
-    _def("deck", "deck", TEXT, deck, "In a deck whose name contains", 'deck:"dragons"'),
+    _def(
+        "deck",
+        "deck",
+        TEXT,
+        deck,
+        "In a deck whose name contains (= for the exact name)",
+        'deck:dragons  deck="Miirym"',
+    ),
     _directive("unique", unique, "Show cards (default) or every printing", "unique:prints"),
     _directive("order", order, "Sort by: " + ", ".join(ORDERS), "order:price"),
     _directive("dir", direction, "Sort direction: asc or desc", "dir:desc"),
