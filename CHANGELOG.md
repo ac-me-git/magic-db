@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.0 — 2026-11-15
 
 - **A simpler collection.** A copy no longer has a location, a condition or a language:
   the collection keeps, for every printing and finish, how many you own. The
