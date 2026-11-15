@@ -9,7 +9,7 @@
           aria-checked="{{ 'true' if have else 'false' }}"
           aria-label="{{ card.name }} — {{ t('finish.' ~ finish) }}"
           {%- if not printed and not have %} title="{{ t('fast.not_printed') }}"{% endif %}
-          {%- if locked or (not printed and not have) %} disabled{% endif %}><span aria-hidden="true">✓</span></button>
+          {%- if locked_collection or (not printed and not have) %} disabled{% endif %}><span aria-hidden="true">✓</span></button>
 </span>
 {%- endmacro %}
 

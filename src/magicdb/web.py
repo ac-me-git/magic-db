@@ -34,19 +34,13 @@ from magicdb.templating import (
 router = APIRouter()
 Conn = Annotated[sqlite3.Connection, Depends(db.get_conn)]
 
-# A view of the search results is a layout (images or a list) and a mode: none, fast
-# input (boxes to tick) or deck mode (+ and −). The names are what ``view=`` says in the
-# address; "input" and "deck" keep the meaning they had before modes had both layouts.
-VIEW_NAMES: dict[tuple[str, str], str] = {
-    ("grid", ""): "grid",
-    ("list", ""): "list",
-    ("list", "input"): "input",
-    ("grid", "input"): "input-grid",
-    ("grid", "deck"): "deck",
-    ("list", "deck"): "deck-list",
-}
-VIEW_PARTS = {name: parts for parts, name in VIEW_NAMES.items()}
-VIEWS = tuple(VIEW_PARTS)
+# The search results are shown as images or as a list (``view=`` in the address). What
+# the controls on them do — fast input, deck mode or nothing — follows the edit switch
+# (lock.py), not the address. Addresses saved when a view also chose the mode keep
+# their layout.
+LAYOUTS = ("grid", "list")
+OLD_VIEWS = {"input": "list", "input-grid": "grid", "deck": "grid", "deck-list": "list"}
+SEARCH_MODES = {"input": "input", "deck": "deck"}  # edit switch -> controls on the results
 SCOPES = ("all", "collection")  # what the switch beside the search box sends
 FAST_PER_PAGE = 500  # fast input: a whole set on one page
 AUTOCOMPLETE_LIMIT = 15
@@ -216,8 +210,9 @@ def search_page(
 ) -> HTMLResponse:
     if not db.has_catalog(conn):
         return no_catalog(request)
-    view = view if view in VIEWS else "grid"
-    layout, mode_name = VIEW_PARTS[view]
+    view = view if view in LAYOUTS else OLD_VIEWS.get(view, "grid")
+    layout = view
+    mode_name = SEARCH_MODES.get(request.app.state.edit_mode, "")
     page_number = int(page) if page.isascii() and page.isdigit() and len(page) < 7 else 1
     scope = request.query_params.get("scope")
     if scope in SCOPES:
@@ -259,7 +254,6 @@ def search_page(
         view=view,
         layout=layout,
         mode=mode_name,
-        views=VIEW_NAMES,
         result=result,
         error=error,
         owned=owned,

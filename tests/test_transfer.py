@@ -14,7 +14,7 @@ from magicdb.app import create_app
 from magicdb.collection import exporters, importers, service, transfer
 from magicdb.collection.importers import FileProblem, profiles
 from magicdb.config import load_settings
-from tests.conftest import FIXTURES
+from tests.conftest import FIXTURES, editing
 
 TOPDECKED = FIXTURES / "topdecked-sample.csv"
 
@@ -632,7 +632,9 @@ def test_import_keeps_the_earliest_date_when_rows_merge(conn):
 
 @pytest.fixture
 def client(catalog):
-    return TestClient(create_app(catalog), follow_redirects=False)
+    client = TestClient(create_app(catalog), follow_redirects=False)
+    client.post("/mode", data={"state": "input"})  # what these tests change
+    return client
 
 
 def upload(client, data, name="collection.csv"):
@@ -840,7 +842,7 @@ def test_round_trip_through_the_pages(client, catalog, other):
     client.post("/add", data={"printing": _first_id(catalog), "quantity": "3", "finish": "foil"})
     exported = client.get("/export/csv").content
 
-    fresh = TestClient(create_app(other), follow_redirects=False)
+    fresh = editing(TestClient(create_app(other), follow_redirects=False), "input")
     page = upload(fresh, exported, "magic-db-collection.csv")
     assert "magic-db" in page.text
     fresh.post(f"/import/{token_of(page)}/confirm", data={})
@@ -857,7 +859,7 @@ def test_import_pages_in_italian(client):
 
 
 def test_import_needs_the_catalog(settings):
-    client = TestClient(create_app(settings))
+    client = editing(TestClient(create_app(settings)), "input")
     assert client.get("/import").status_code == 503
     assert upload(client, "Name\nx\n").status_code == 400
     assert client.get("/export").status_code == 200  # exporting works without it

@@ -8,7 +8,7 @@
 <div class="error" role="alert"><p>{{ t("import.error." ~ error) }}</p></div>
 {% endif %}
 
-{% if locked %}{% include "_locked_notice.html" %}{% else %}
+{% if locked_collection %}{% with needed="input" %}{% include "_locked_notice.html" %}{% endwith %}{% else %}
 <form class="panel" method="post" action="/import" enctype="multipart/form-data">
   <label>{{ t("import.file") }}
     <input type="file" name="file" accept=".csv,.json,.txt,text/csv,application/json" required>

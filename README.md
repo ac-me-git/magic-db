@@ -23,7 +23,7 @@ Docker container, and you use it from any browser — phone included.
 - **Statistics**: by colour, rarity, type, year; value; set completion.
 - **Your data stays yours**: one SQLite file, exported as CSV or JSON whenever you want,
   backed up automatically every night.
-- **A safety lock** so that browsing on a phone cannot change the collection by accident.
+- **A three-way switch** — locked, collection input, deck building — so that browsing on a phone cannot change the collection or the decks by accident.
 - Interface in English and Italian.
 
 No account, no subscription, no telemetry. The only things it asks the internet for are
@@ -105,25 +105,29 @@ uv run magicdb
 |---|---|
 | **The logo** (home) | A map of the search syntax with examples to press, and the codes of the last five years' expansions. Or, if you choose so in Administration, the filter panel: build a search by picking colours, types, sets… |
 | **The search box** | On every page. Suggests card names as you type |
-| **The menu** (☰, top right) | *Search only my collection*; the safety lock (a padlock on the ☰ says when it is on); My collection; My decks; the language; light, dark or automatic pages; Search syntax, every filter with examples you can click; Administration |
+| **The menu** (☰, top right) | *Search only my collection*; the switch of what may change (a padlock on the ☰ says when it is locked); My collection; My decks; the language; light, dark or automatic pages; Search syntax, every filter with examples you can click; Administration |
 | **My collection** | Statistics, and from there: import, export |
 | **My decks** | Deck lists and how complete each one is |
 | **Administration** | Whether a newer version is out (and, on Windows, install it); catalog and backup status, run them now, download a backup; whether the home page shows the syntax map or the filter panel |
 
 In the list view, click a column's heading to sort by it; click again to reverse.
 
-**Fast input** is for entering a new set: search for it (`set:xyz`), choose *Fast
-input* above the results, and every card gets two big boxes, non-foil and foil. Tick a
-box and that copy is in your collection; untick it to take it back. Fast input records
-one copy per finish; for more copies of the same card, use the form on the card's page.
+A switch with three positions, above the search results and in the menu, says what
+may change:
 
-**Deck mode** builds a deck from a search: choose *Deck* above the results, pick the
-deck, and press + or − on any card. A switch beside the deck limits the search to the
-cards already in it. Both modes work with the images and with the list.
+- **Locked** (the padlock, where a new database starts): you can look at everything but
+  change nothing, and the ☰ button shows a small padlock.
+- **Collection input**: the collection can change, the decks cannot. The search
+  results become *fast input*, made for entering a new set: search for it (`set:xyz`)
+  and every printing gets two big boxes, non-foil and foil. Tick a box and that copy is
+  in your collection; untick it to take it back. Fast input records one copy per
+  finish; for more copies of the same card, use the form on the card's page.
+- **Deck building**: the decks can change, the collection cannot. The search results
+  become *deck mode*: pick the deck, and press + or − on any card. A switch beside the
+  deck limits the search to the cards already in it.
 
-The switch with the padlock, in the menu, locks the collection and the decks: while
-it is on you can look at everything but change nothing, and the ☰ button shows a
-small padlock.
+Both modes work with the images and with the list (the Images | List slider beside the
+switch); the *i* next to them explains each position.
 
 More in [`docs/`](docs/):
 [search syntax](docs/search-syntax.md) ·
@@ -174,8 +178,8 @@ Behind a reverse proxy, pass the public host name to the app (`Host`, or
 `X-Forwarded-Host`): magic-db refuses changes that do not come from its own pages, and
 it recognises its own pages by that name.
 
-The safety lock is not access control. It stops accidents, not people: anyone who can
-open the site can switch it off.
+The switch is not access control. It stops accidents, not people: anyone who can open
+the site can move it.
 
 ## Limits
 

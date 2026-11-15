@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from magicdb import db
 from magicdb.app import create_app
 from magicdb.decks import service
+from tests.conftest import editing
 
 # 4 Lightning Bolt {R}, 2 Serra Angel {3}{W}{W}, 1 Niv-Mizzet Reborn {W}{U}{B}{R}{G},
 # 3 Boros Reckoner {R/W}{R/W}{R/W}, 1 Sol Ring {1}, 1 Fireball {X}{R}, 1 Dryad Arbor (a land
@@ -123,7 +124,9 @@ def test_cards_unknown_to_the_catalog_do_not_break_it(settings):
 
 @pytest.fixture
 def client(catalog, deck):
-    return TestClient(create_app(catalog), follow_redirects=False)
+    client = TestClient(create_app(catalog), follow_redirects=False)
+    client.post("/mode", data={"state": "deck"})  # what these tests change
+    return client
 
 
 def test_deck_has_two_tabs(client):
@@ -185,7 +188,7 @@ def test_deck_statistics_in_italian(client):
 
 def test_collection_statistics_still_use_the_shared_charts(client, fixture_cards):
     bolt = next(c["id"] for c in fixture_cards if c["name"] == "Lightning Bolt")
-    client.post("/add", data={"printing": bolt, "quantity": "3"})
+    editing(client, "input").post("/add", data={"printing": bolt, "quantity": "3"})
     body = client.get("/stats").text
     assert "By colour" in body and 'class="bar color-r" style="width: 100.0%"' in body
     assert body.count('<section class="chart">') == 6

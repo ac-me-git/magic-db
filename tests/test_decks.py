@@ -13,6 +13,7 @@ from magicdb.collection import exporters, importers
 from magicdb.collection import service as collection
 from magicdb.collection.service import CollectionError
 from magicdb.decks import service, text
+from tests.conftest import editing
 
 # --- reading a deck list --------------------------------------------------------------
 
@@ -643,7 +644,9 @@ def test_json_export_and_import_carry_the_decks(decks, catalog, tmp_path):
 
 @pytest.fixture
 def client(catalog):
-    return TestClient(create_app(catalog), follow_redirects=False)
+    client = TestClient(create_app(catalog), follow_redirects=False)
+    client.post("/mode", data={"state": "deck"})  # what these tests change
+    return client
 
 
 @pytest.fixture
@@ -656,6 +659,7 @@ def ids(fixture_cards):
 @pytest.fixture
 def site(client, ids):
     """The same two decks as above, made through the pages."""
+    editing(client, "input")
     for name, set_code, copies in [
         ("Lightning Bolt", "m10", 4),
         ("Lightning Bolt", "lea", 2),
@@ -663,6 +667,7 @@ def site(client, ids):
         ("Sol Ring", "c21", 5),
     ]:
         client.post("/add", data={"printing": ids(name, set_code), "quantity": str(copies)})
+    editing(client, "deck")
     assert (
         client.post("/decks", data={"name": "Burn", "notes": "Modern"}).headers["location"]
         == "/decks/1"
@@ -873,8 +878,9 @@ def test_export_a_deck_as_text(site):
     assert response.text == "2 Fire // Ice\n4 Lightning Bolt\n2 Sol Ring\n"
 
 
-def test_decks_are_read_only_while_locked(site, catalog):
-    site.post("/lock", data={"state": "on"})
+@pytest.mark.parametrize("state", ["locked", "input"])
+def test_decks_are_read_only_unless_building_decks(site, catalog, state):
+    editing(site, state)
     for path, data in [
         ("/decks", {"name": "New"}),
         ("/decks/1", {"name": "Renamed"}),

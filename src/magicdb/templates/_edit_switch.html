@@ -1,0 +1,16 @@
+{# The three-way switch of what may change (lock.py): locked, collection input, deck
+   building. Three buttons of one form, the one in use pressed: it works without a
+   script, and a whole page comes back, since the search results follow it. #}
+{% macro edit_switch(next) -%}
+<form class="slider edit-switch" method="post" action="/mode" role="group" aria-label="{{ t('mode.switch') }}">
+  <input type="hidden" name="next" value="{{ next }}">
+  {%- for state in ("locked", "input", "deck") %}
+  <button type="submit" name="state" value="{{ state }}" aria-pressed="{{ 'true' if edit_mode == state else 'false' }}"
+          title="{{ t('mode.' ~ state ~ '.title') }}"{% if state == "locked" %} aria-label="{{ t('mode.locked') }}"{% endif %}>
+    {%- if state == "locked" -%}
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/></svg>
+    {%- else %}{{ t("mode." ~ state) }}{% endif -%}
+  </button>
+  {%- endfor %}
+</form>
+{%- endmacro %}

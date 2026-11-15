@@ -66,7 +66,7 @@ def create_app(
 
     db.migrate(settings)
     publish.cleanup_old(settings)
-    app.state.locked = lock.load(settings)
+    app.state.edit_mode = lock.load(settings)
     app.state.home = web.load_home(settings)
 
     app.mount("/static", StaticFiles(directory=_PKG / "static"), name="static")
@@ -76,17 +76,16 @@ def create_app(
         return {"status": "ok"}
 
     # Middlewares run in the reverse of the order they are added here:
-    # password first, then same origin, then the safety lock.
+    # password first, then same origin, then the edit switch.
 
     @app.middleware("http")
-    async def safety_lock(request: Request, call_next: RequestResponseEndpoint) -> Response:
-        """While the collection is locked, refuse whatever could change it."""
-        if (
-            app.state.locked
-            and request.method not in SAFE_METHODS
-            and not lock.allowed_while_locked(request.url.path)
-        ):
-            return web.render(request, "locked.html", 423)
+    async def edit_switch(request: Request, call_next: RequestResponseEndpoint) -> Response:
+        """Refuse a change that the switch (locked, collection input, deck building)
+        does not allow."""
+        if request.method not in SAFE_METHODS:
+            needed = lock.needs(request.url.path)
+            if needed is not None and app.state.edit_mode != needed:
+                return web.render(request, "locked.html", 423, needed=needed)
         return await call_next(request)
 
     @app.middleware("http")

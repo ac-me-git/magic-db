@@ -487,8 +487,9 @@ main {
 
 .views {
   display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
 }
 
 /* the same room as the count beside it, a <p> */
@@ -496,10 +497,65 @@ main {
   margin: 1em 0;
 }
 
-.views a[aria-current] {
+/* sliders: Images or List, and the switch of what may change (locked, collection
+   input, deck building). A track, and the choice in use raised on it like a knob; both
+   the same height, so that they line up. */
+.slider {
+  display: inline-flex;
+  flex: none;
+  align-items: stretch;
+  height: 2rem;
+  margin: 0;
+  padding: 0.15rem;
+  border-radius: 1rem;
+  background: var(--switch-off);
+}
+
+.slider a,
+.slider button {
+  display: grid;
+  place-items: center;
+  padding: 0 0.8rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: none;
   color: var(--text);
-  font-weight: 600;
+  font-size: 0.85rem;
+  line-height: 1;
   text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s;
+}
+
+.slider a:hover,
+.slider button:hover {
+  color: var(--accent);
+}
+
+.slider [aria-current="true"],
+.slider [aria-pressed="true"],
+.slider [aria-current="true"]:hover,
+.slider [aria-pressed="true"]:hover {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 35%);
+}
+
+/* locked in the amber of the old lock switch */
+.edit-switch [value="locked"][aria-pressed="true"] {
+  background: var(--switch-on);
+  color: #ffffff;
+}
+
+/* in the menu the switch fills the row */
+.menu-switch .slider {
+  width: 100%;
+}
+
+.menu-switch .slider button {
+  flex: 1 1 auto;
+  padding: 0 0.5rem;
 }
 
 .card-grid {
@@ -1241,7 +1297,7 @@ button:disabled {
   font-weight: 600;
 }
 
-/* --- switches: the safety lock and "only my collection" (both in the menu) ------- */
+/* --- switches: "only my collection" (in the menu) and "only cards in this deck" -- */
 
 .switch {
   position: relative;
@@ -1852,15 +1908,6 @@ a.switch {
   white-space: nowrap;
 }
 
-.views-gap {
-  display: inline-block;
-  width: 0.75rem;
-}
-
-.views a {
-  white-space: nowrap;
-}
-
 .deck-count {
   display: flex;
   align-items: center;
@@ -1928,6 +1975,14 @@ a.switch {
 .info[open] > summary {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.info-item {
+  display: block;
+}
+
+.info-item + .info-item {
+  margin-top: 0.4rem;
 }
 
 .info-panel {

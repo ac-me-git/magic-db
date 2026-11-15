@@ -4,7 +4,7 @@
 {% block content %}
 {% include "_deck_head.html" %}
 
-{% if not locked %}
+{% if not locked_decks %}
 <details class="panel fold deck-edit"{% if editing %} open{% endif %}>
   <summary>{{ t("deck.details") }}</summary>
   {% if editing == "new" %}<p class="hint">{{ t("deck.details_new") }}</p>{% endif %}
@@ -80,7 +80,7 @@
       <th>{{ t("card.name") }}</th>
       <th class="wide">{{ t("card.cost") }}</th>
       <th class="num">{{ t("decks.owned") }}</th>
-      {% if not locked %}<th></th>{% endif %}
+      {% if not locked_decks %}<th></th>{% endif %}
     </tr>
   </thead>
   <tbody>
@@ -88,7 +88,7 @@
     {% for row in rows %}
     {% if row.group != shown.group %}
     {% set shown.group = row.group %}
-    <tr class="group-row"><th colspan="{{ 4 if locked else 5 }}">{{ row.group }}</th></tr>
+    <tr class="group-row"><th colspan="{{ 4 if locked_decks else 5 }}">{{ row.group }}</th></tr>
     {% endif %}
     <tr class="{{ 'is-missing' if row.missing else ('is-contested' if row.contested else '') }}">
       <td class="num">{{ row.quantity }}</td>
@@ -100,7 +100,7 @@
       {% if row.missing %}<td class="num owned-short" title="{{ t('deck.state.missing', n=row.missing) }}">
       {%- elif row.contested %}<td class="num owned-shared" title="{{ t('deck.state.contested', owned=row.owned, wanted=row.wanted) }}">
       {%- else %}<td class="num">{% endif %}{{ row.owned }}</td>
-      {% if not locked %}
+      {% if not locked_decks %}
       <td class="num">
         <details class="row-edit">
           <summary>{{ t("entry.edit") }}</summary>
@@ -123,7 +123,7 @@
 </div>
 {% endif %}
 
-{% if locked %}{% include "_locked_notice.html" %}{% else %}
+{% if locked_decks %}{% with needed="deck" %}{% include "_locked_notice.html" %}{% endwith %}{% else %}
 <form class="panel" method="post" action="/decks/{{ deck.id }}/cards">
   <h2>{{ t("deck.add_title") }}</h2>
   <div class="fields">

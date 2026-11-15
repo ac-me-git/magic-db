@@ -12,6 +12,7 @@
 
 {% from "_deck_box.html" import deck_form, only_switch with context %}
 {% from "_fast_box.html" import fast_form, fast_badge with context %}
+{% from "_edit_switch.html" import edit_switch with context %}
 
 {% macro badge(card) -%}
 {% set have = owned.get(card.id if result.unique == "prints" else card.oracle_id) %}
@@ -31,24 +32,23 @@
   </p>
   {# a <div>: the (i) is a <details>, which a <p> cannot hold #}
   <div class="views">
-    {{ nav(t("results.view.grid"), result.page, views[("grid", mode)], current=(layout == "grid")) }}
-    {{ nav(t("results.view.list"), result.page, views[("list", mode)], current=(layout == "list")) }}
-    <span class="views-gap" aria-hidden="true"></span>
-    {# a mode is turned on and off by its own link; the layout stays as it is #}
-    {% for name in ("input", "deck") %}
-    {{ nav(t("results.view." ~ name), 1, views[(layout, "" if mode == name else name)], current=(mode == name), title=(t("results.mode.off") if mode == name else none)) }}
-    {%- if mode == name and not (name == "deck" and deck_choice.deck is none) %}
+    <span class="slider layout-switch">
+      {{- nav(t("results.view.grid"), result.page, "grid", current=(layout == "grid")) -}}
+      {{- nav(t("results.view.list"), result.page, "list", current=(layout == "list")) -}}
+    </span>
+    {{ edit_switch(here) }}
     <details class="info">
       <summary title="{{ t('results.mode.help') }}" aria-label="{{ t('results.mode.help') }}">i</summary>
-      <span class="info-panel">{{ t("deckmode.hint" if name == "deck" else "fast.hint") }}</span>
+      <span class="info-panel">
+        {%- for state, hint in (("locked", "mode.locked.hint"), ("input", "fast.hint"), ("deck", "deckmode.hint")) %}
+        <span class="info-item"><strong>{{ t("mode." ~ state) }}</strong> {{ t(hint) }}</span>
+        {%- endfor %}
+      </span>
     </details>
-    {%- endif %}
-    {% endfor %}
   </div>
 </div>
 
 {% if mode == "deck" %}
-{% if locked %}{% include "_locked_notice.html" %}{% endif %}
 {% if deck_choice.deck is none %}
 <p class="hint">{{ t("deckmode.no_decks") }} <a href="/decks">{{ t("nav.decks") }}</a></p>
 {% else %}
@@ -67,8 +67,6 @@
   <a class="deck-open" href="/decks/{{ deck_choice.deck.id }}">{{ t("deckmode.open") }}</a>
 </form>
 {% endif %}
-{% elif mode == "input" %}
-{% if locked %}{% include "_locked_notice.html" %}{% endif %}
 {% endif %}
 
 {% if not result.rows %}

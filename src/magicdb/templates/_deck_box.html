@@ -3,11 +3,11 @@
 <span class="deck-count" id="deck-count-{{ card.oracle_id }}">
   <button type="submit" name="action" value="remove" class="deck-step"
           aria-label="{{ t('deckmode.remove', name=card.name) }}" title="{{ t('deckmode.remove', name=card.name) }}"
-          {%- if locked or not n %} disabled{% endif %}><span aria-hidden="true">−</span></button>
+          {%- if locked_decks or not n %} disabled{% endif %}><span aria-hidden="true">−</span></button>
   <output class="deck-n{% if n %} is-in{% endif %}" title="{{ t('deckmode.copies', n=n) }}">{{ n }}</output>
   <button type="submit" name="action" value="add" class="deck-step"
           aria-label="{{ t('deckmode.add', name=card.name) }}" title="{{ t('deckmode.add', name=card.name) }}"
-          {%- if locked %} disabled{% endif %}><span aria-hidden="true">+</span></button>
+          {%- if locked_decks %} disabled{% endif %}><span aria-hidden="true">+</span></button>
 </span>
 {%- endmacro %}
 

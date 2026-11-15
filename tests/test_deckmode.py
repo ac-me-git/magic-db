@@ -10,13 +10,16 @@ from fastapi.testclient import TestClient
 
 from magicdb import db, search
 from magicdb.app import create_app
+from tests.conftest import editing
 
 HTMX = {"HX-Request": "true"}
 
 
 @pytest.fixture
 def client(catalog):
-    return TestClient(create_app(catalog), follow_redirects=False)
+    client = TestClient(create_app(catalog), follow_redirects=False)
+    client.post("/mode", data={"state": "deck"})  # what these tests change
+    return client
 
 
 @pytest.fixture
@@ -58,7 +61,7 @@ def shown(html):
     return int(re.search(r'<output class="deck-n[^"]*"[^>]*>(\d+)</output>', html).group(1))
 
 
-def search_page(client, q, view="deck"):
+def search_page(client, q, view="grid"):
     return client.get("/search", params={"q": q, "view": view}).text
 
 
@@ -69,17 +72,21 @@ def query_of(address):
 # --- the view -------------------------------------------------------------------------
 
 
-def test_results_offer_deck_mode_as_a_fourth_view(client):
+def test_deck_mode_follows_the_switch(client):
+    make_deck(client, "Humans")
     page = client.get("/search?q=bolt").text
-    assert ">Deck</a>" in page and "view=deck" in page
-    assert "deck-count" not in page  # the buttons are only in that view
+    assert ">Deck building</button>" in page and "deck-count" in page
+    assert re.search(r'value="deck" aria-pressed="true"', page)
+    editing(client, "locked")
+    page = client.get("/search?q=bolt").text
+    assert "deck-count" not in page  # the buttons are only there while building decks
+    assert re.search(r'value="locked" aria-pressed="true"', page)
 
 
 def test_without_decks_the_view_says_so_and_links_to_the_decks(client):
     page = search_page(client, "bolt")
     assert "You have no decks yet" in page and 'href="/decks"' in page
     assert "deck-count" not in page and 'action="/deckmode/settings"' not in page
-    assert 'class="info"' not in page  # nothing to explain yet
 
 
 def test_the_view_shows_the_deck_picker_and_buttons_per_card(client, card):
@@ -147,13 +154,13 @@ def test_nonsense_is_not_found_and_changes_nothing(client, catalog, card, change
     assert deck_cards(catalog) == []
 
 
-def test_locked_collection_shows_the_buttons_disabled_and_refuses_clicks(client, catalog, card):
+@pytest.mark.parametrize("state", ["locked", "input"])
+def test_out_of_deck_building_the_buttons_go_and_clicks_are_refused(client, catalog, card, state):
     deck = make_deck(client, "Humans")
     click(client, deck, card)
-    client.post("/lock", data={"state": "on"})
+    editing(client, state)
     page = search_page(client, f'!"{card["name"]}"')
-    assert "locked-notice" in page
-    assert len(re.findall(r'class="deck-step"[^>]*disabled', page)) == 2
+    assert "deck-count" not in page and "locked-notice" not in page
     assert click(client, deck, card).status_code == 423
     assert deck_cards(catalog) == [(deck, card["oracle_id"], 1)]
     # choosing the deck is only a cookie: allowed
@@ -215,7 +222,6 @@ def test_the_deck_switch_writes_the_deck_filter_into_the_search(client, card, ot
     click(client, deck, card)
     on, address = only(search_page(client, "mv>=0"))
     assert not on and query_of(address) == 'mv>=0 deck:"Human Army"'
-    assert "view=deck" in address
     page = client.get(address).text
     on, back = only(page)
     assert on and query_of(back) == "mv>=0"
@@ -227,7 +233,8 @@ def test_the_deck_switch_works_with_the_collection_switch(client, catalog, card,
     deck = make_deck(client, "Humans")
     click(client, deck, card)
     click(client, deck, other)
-    client.post("/add", data={"printing": card["id"]})
+    editing(client, "input").post("/add", data={"printing": card["id"]})
+    editing(client, "deck")
     q = f'deck:"Humans" {search.COLLECTION_TERM}'
     page = search_page(client, q)
     assert only(page)[0] and page.count('class="deck-count"') == 1
@@ -329,21 +336,35 @@ def views_links(page):
     return found
 
 
-def test_a_mode_keeps_the_layout_and_turns_off_with_its_own_link(client):
-    links = views_links(search_page(client, "bolt", view="grid"))
-    assert links["Fast input"] == ("input-grid", False) and links["Deck"] == ("deck", False)
-    links = views_links(search_page(client, "bolt", view="list"))
-    assert links["Fast input"] == ("input", False) and links["Deck"] == ("deck-list", False)
-    links = views_links(search_page(client, "bolt", view="input-grid"))
-    assert links["Images"] == ("input-grid", True) and links["List"] == ("input", False)
-    assert links["Fast input"] == ("grid", True)  # pressed again: off, still images
-    assert links["Deck"] == ("deck", False)  # one mode at a time
-    links = views_links(search_page(client, "bolt", view="deck-list"))
-    assert links["Deck"] == ("list", True) and links["Images"] == ("deck", False)
+def test_images_or_list_is_a_slider_that_keeps_the_mode(client):
+    make_deck(client, "Humans")
+    images = search_page(client, "bolt", view="grid")
+    assert views_links(images) == {"Images": ("grid", True), "List": ("list", False)}
+    assert '<span class="slider layout-switch">' in images
+    listed = search_page(client, "bolt", view="list")
+    assert views_links(listed) == {"Images": ("grid", False), "List": ("list", True)}
+    assert "deck-list" in listed  # the mode comes from the switch, not the address
+    # addresses saved when the view also chose the mode keep their layout
+    for old, layout in (("input", "list"), ("input-grid", "grid"), ("deck", "grid")):
+        assert views_links(search_page(client, "bolt", view=old))[
+            {"grid": "Images", "list": "List"}[layout]
+        ] == (layout, True)
+    assert "deck-list" in search_page(client, "bolt", view="deck-list")
+
+
+def test_the_switch_and_the_slider_are_the_same_height():
+    from pathlib import Path
+
+    import magicdb
+
+    css = (Path(magicdb.__file__).parent / "static" / "app.css").read_text(encoding="utf-8")
+    slider = re.search(r"\n\.slider \{([^}]*)\}", css).group(1)
+    assert "height: 2rem;" in slider
 
 
 def test_fast_input_as_images_lays_the_boxes_over_the_cards(client, card):
-    page = search_page(client, f"set:{card['set']}", view="input-grid")
+    editing(client, "input")
+    page = search_page(client, f"set:{card['set']}", view="grid")
     assert 'class="sort-line"' in page and 'class="card-grid"' in page  # as a plain search
     assert "fast-list" not in page
     items = page.split('<ul class="card-grid">')[1].split("</ul>")[0].split("<li>")[1:]
@@ -359,16 +380,17 @@ def test_fast_input_as_images_lays_the_boxes_over_the_cards(client, card):
 def test_a_box_on_an_image_ticks_like_one_in_the_list(client, card, fixture_cards):
     paper = next(c for c in fixture_cards if "nonfoil" in c["finishes"] and not c["digital"])
     data = {"printing": paper["id"], "finish": "nonfoil", "action": "add"}
+    editing(client, "input")
     answer = client.post("/fast/toggle", data=data, headers=HTMX)
     assert 'aria-checked="true"' in answer.text
-    page = search_page(client, f'!"{paper["name"]}" set:{paper["set"]}', view="input-grid")
+    page = search_page(client, f'!"{paper["name"]}" set:{paper["set"]}', view="grid")
     assert 'class="bigcheck is-on"' in page
 
 
 def test_deck_mode_as_a_list_puts_the_buttons_where_the_boxes_are(client, card):
     deck = make_deck(client, "Humans")
     click(client, deck, card)
-    page = search_page(client, f'!"{card["name"]}" unique:prints', view="deck-list")
+    page = search_page(client, f'!"{card["name"]}" unique:prints', view="list")
     assert 'class="card-list fast-list deck-list"' in page and "card-grid" not in page
     row = page.split("<tbody>")[1].split("</tbody>")[0]
     assert row.count("<tr>") == 1  # one row per card
@@ -380,7 +402,7 @@ def test_deck_mode_as_a_list_puts_the_buttons_where_the_boxes_are(client, card):
 
 def test_deck_mode_as_images_lays_the_buttons_over_the_card(client, card):
     make_deck(client, "Humans")
-    page = search_page(client, f'!"{card["name"]}"', view="deck")
+    page = search_page(client, f'!"{card["name"]}"', view="grid")
     face = page.split('<div class="card-face">')[1].split('<span class="caption">')[0]
     assert '<div class="card-tools deck-tools">' in face and 'class="deck-count"' in face
     assert f'<span class="set-code">{card["set"]}</span>' in page.split("card-grid")[1]

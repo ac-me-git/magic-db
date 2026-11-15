@@ -8,6 +8,10 @@ you own.
 
 ## Making a deck
 
+Decks change only while the switch of what may change (above the search results, and
+in the ☰ menu) is on **Deck building**; in the other positions the deck pages show a
+button to move it there.
+
 On the **Decks** page, press **New deck** (top right). The deck is called "Deck 1",
 "Deck 2" and so on, and its page opens with the name selected: type the one you want
 and, if you like, a note, then *Save*. They stay at the top of the deck's page, under
@@ -16,10 +20,10 @@ and, if you like, a note, then *Save*. They stay at the top of the deck's page, 
 - **One at a time**, on the deck's page: type the card's name (suggestions appear) and
   the quantity.
 - **From a card's page**: "Add to the deck".
-- **From a search, in deck mode**: search as usual (say `t:human c:wg`), then choose
-  **Deck** above the results (as Images or as a List). Pick the deck at the top; on
-  every card, + puts one more copy in it and − takes one out. On images the buttons are
-  faint until you point at the card. The switch *Only cards in this deck* limits the
+- **From a search, in deck mode**: set the switch above the results to **Deck
+  building**, then search as usual (say `t:human c:wg`), as Images or as a List. Pick
+  the deck at the top; on every card, + puts one more copy in it and − takes one out.
+  On images the buttons are faint until you point at the card. The switch *Only cards in this deck* limits the
   search to the cards already there (it writes `deck:"name"` into the search box); with
   *Search only my collection* on as well, you see only cards you own.
 - **By pasting a list**, on the deck's page.
@@ -82,4 +86,5 @@ Every deck has a second tab, **Statistics**:
 - "Download as text" gives the list back, one line per card.
 - A card's page shows which of your decks it is in.
 - Decks are included in the JSON export and in the nightly backup.
-- While the safety lock is on, decks can be looked at but not changed.
+- Decks can be changed only with the switch on *Deck building*; otherwise they can be
+  looked at but not changed.

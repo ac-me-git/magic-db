@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-head">
   <h1 class="page-title">{{ t("decks.title") }}</h1>
-  {% if not locked %}
+  {% if not locked_decks %}
   <form method="post" action="/decks">
     <button type="submit" class="primary">+ {{ t("decks.new") }}</button>
   </form>
@@ -71,5 +71,5 @@
 </section>
 {% endif %}
 
-{% if locked %}{% include "_locked_notice.html" %}{% endif %}
+{% if locked_decks %}{% with needed="deck" %}{% include "_locked_notice.html" %}{% endwith %}{% endif %}
 {% endblock %}

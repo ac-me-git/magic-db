@@ -1,8 +1,10 @@
+{# Set `needed` ("input" or "deck") before including: the position of the switch that
+   would allow what this page changes. #}
 <div class="notice locked-notice" role="status">
-  <p>{{ t("lock.notice") }}</p>
-  <form method="post" action="/lock">
-    <input type="hidden" name="state" value="off">
+  <p>{{ t("lock.notice." ~ needed) }}</p>
+  <form method="post" action="/mode">
+    <input type="hidden" name="state" value="{{ needed }}">
     <input type="hidden" name="next" value="{{ here }}">
-    <button type="submit" class="primary">{{ t("lock.unlock") }}</button>
+    <button type="submit" class="primary">{{ t("lock.switch_to." ~ needed) }}</button>
   </form>
 </div>

@@ -70,3 +70,9 @@ def no_release_check(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(selfupdate, "_get", offline)
     monkeypatch.setattr(selfupdate, "_stream", offline)
     monkeypatch.setattr(selfupdate, "state", selfupdate.State())
+
+
+def editing(client: TestClient, state: str) -> TestClient:
+    """Move the switch of what may change (``lock.py``): "locked", "input" or "deck"."""
+    client.post("/mode", data={"state": state})
+    return client

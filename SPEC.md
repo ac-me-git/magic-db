@@ -258,7 +258,7 @@ CREATE TABLE job_runs (
   message TEXT
 );
 
--- migration 0002: what the owner switches from the pages (the safety lock)
+-- migration 0002: what the owner switches from the pages (the edit switch, `edit_mode`)
 CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 ```
 
@@ -507,16 +507,19 @@ released one and when that was last asked.
     (`selfupdate.newer_edge`: the published commit is not the running one).
   - A newer release is still announced, with its notes, but without the commands to
     update to it: a development version is brought up to date as a development version.
-- The safety lock does not block these (`/admin/…` is exempt); the same-origin check
+- The edit switch does not block these (`/admin/…` is exempt); the same-origin check
   and the optional password do apply.
 
-**Layouts and modes of the results.** A view is a layout — Images or List — and a mode:
-none, Fast input or Deck mode. The links above the results show both: Images · List,
-then Fast input · Deck. A mode's link turns it on, keeping the layout; pressed again
-(it says so in its tooltip) it turns it off. One mode at a time. `view=` names the
-pair: `grid`, `list`, `input` (fast input as a list), `input-grid`, `deck` (deck mode
-as images), `deck-list` — `input` and `deck` keep the meaning they had before modes
-had both layouts, so saved addresses still work (`web.VIEW_NAMES`).
+**Layouts and modes of the results.** The results are shown as Images or as a List
+(`view=grid|list`), and with the controls of a mode: none, Fast input or Deck mode. The
+mode is not chosen in the address: it is the position of the edit switch (*Edit
+switch*, below) — Collection input gives fast input, Deck building gives deck mode,
+Locked gives neither. Above the results, on the right: a slider Images | List (two
+links, the one in use raised on the track), the edit switch drawn the same way and the
+same height (a padlock, *Collection input*, *Deck building*), and one *i* in a circle,
+always there, whose panel (a `<details>`, closed by a click elsewhere or Escape) says
+in a line what each position does. Addresses saved when `view=` also named the mode
+(`input`, `input-grid`, `deck`, `deck-list`) keep their layout (`web.OLD_VIEWS`).
 
 - In **List** layout a mode uses fast input's table: set and number, name with the type
   under it, then the mode's controls (two boxes, or − N +) in the last columns.
@@ -533,7 +536,7 @@ had both layouts, so saved addresses still work (`web.VIEW_NAMES`).
   controls are forms beside the link, not inside it, and the gaps between them let a
   click through to the image.
 
-**Fast input** (`view=input` or `input-grid`). For entering a new set quickly: search as
+**Fast input** (the switch on Collection input). For entering a new set quickly: search as
 usual (`set:xyz`), sort by collector number or by name, and tick boxes.
 
 - Always one row (or image) per *printing* (as `unique:prints`), up to 500 per page so
@@ -546,7 +549,7 @@ usual (`set:xyz`), sort by collector number or by name, and tick boxes.
   nothing when the box is already ticked (a double click must not add a hidden second
   copy). More copies, and etched, go through the card's page. A finish the printing was
   never made in has a disabled box (unless such a copy is recorded: it can be unticked).
-- There is nothing to choose above the list: just a line of help.
+- There is nothing to choose above the list; the *i* explains the boxes.
 - The badge beside the name counts every copy of the printing.
 - `POST /fast/toggle` (`printing`, `finish`, `action=add|remove`, `next`): with HTMX
   it answers with the clicked box and, out of band, the badge beside the name — never
@@ -554,10 +557,10 @@ usual (`set:xyz`), sort by collector number or by name, and tick boxes.
   (`hx-sync`), and `action` is a hidden field inside the redrawn box, so a queued click
   sends what its box shows by the time it goes out. Every change goes
   through the collection service, so it is merged, logged and undoable like any other.
-- While the safety lock is on the boxes are shown disabled, with the usual notice.
 - Fast input is only a view of the search results: no page or link of its own leads to
   it.
-**Deck mode** (`view=deck` or `deck-list`). For building a deck from a search: look for
+
+**Deck mode** (the switch on Deck building). For building a deck from a search: look for
 white and green humans, press + on the ones you want.
 
 - One image or row per *card* (as `unique:cards`, whatever the query says): a deck
@@ -567,7 +570,7 @@ white and green humans, press + on the ones you want.
   takes one out and the last one takes the row away (`take_card`); − is disabled at 0.
   The owned badge on the image is the usual one.
 - Above the grid: the deck (every deck, by name), kept in the `magicdb_deckmode` cookie (`GET /deckmode/settings`, a cookie
-  only, so allowed while locked). With no choice, or a deck that no longer exists, the
+  only). With no choice, or a deck that no longer exists, the
   deck changed last is used. Without decks the view says so and links to `/decks`.
   A link opens the chosen deck.
 - Beside the picker, a switch *Only cards in this deck* (a link drawn as a switch)
@@ -582,17 +585,16 @@ white and green humans, press + on the ones you want.
   HTMX it answers with the card's − N + only; without, it redirects to `next`. Clicks on
   one card are queued (`hx-sync`); each is relative (one more, one less), so the order
   they arrive in does not matter. An unknown deck, printing or action is 404.
-- A deck never changes the collection (§14), but the safety lock still refuses these
-  writes like any other (423): while locked the buttons are shown disabled, with the
-  usual notice.
+- A deck never changes the collection (§14). Out of Deck building the server refuses
+  these writes like any other deck change (423).
 
 **Home page.** The page has no title, tagline or catalog status line of its own: the
 name is in the header, and how many printings the catalog holds and when it was built
 are in Administration. It shows one of two things, chosen in Administration
 ("Home page": two buttons, `POST /admin/home` with `view=map|filters`). The choice is
 one for the whole server, saved in the `settings` table under `home` and mirrored in
-`app.state.home` (`web.load_home`, `web.save_home`), like the safety lock, and can be
-changed while the collection is locked. Nothing saved, or a value that is not one of
+`app.state.home` (`web.load_home`, `web.save_home`), like the edit switch, and can be
+changed in any position of it. Nothing saved, or a value that is not one of
 the two, is the map.
 
 *The filter panel* (§6.4), open, and nothing else.
@@ -626,7 +628,7 @@ so it opens and closes without JavaScript; `app.js` only closes it on a click el
 or with Escape. It holds, in this order:
 
 - "Search only my collection", with its switch (see *Where to search*);
-- the safety lock, "Lock the collection", with its switch;
+- the edit switch (*Edit switch*, below), the whole width of the menu;
 - "My collection", which opens the statistics, and "My decks", each with an icon;
 - the language, ENG or ITA (§7, "i18n"), and light, dark or automatic pages (§7,
   "Light and dark"), each a row of small buttons with the current one filled in;
@@ -643,7 +645,7 @@ in the notice links to `https://company.wizards.com/` and "Scryfall" to
 `{wizards}` and `{scryfall}` in the translated sentences: a template macro makes the
 link, and `t()` escapes the sentence and keeps the link when it is given one.
 
-- **Where to search.** In the menu there is a switch, drawn like the safety lock:
+- **Where to search.** In the menu there is a switch:
   "search only my collection". It belongs to the search form (`form="search-form"`) and
   comes after the Search button, which is therefore the one Enter presses. Searching
   the collection is not a mode but
@@ -681,28 +683,38 @@ link, and `t()` escapes the sentence and keeps the link when it is given one.
 - Style sheet and scripts are addressed with a fingerprint of their content
   (`templating.asset`), so a browser never keeps an old one after an upgrade.
 
-**Safety lock.** A switch that makes the collection read-only, against accidental
-changes (`lock.py`). It is one state for the whole server, saved in the `settings`
-table (migration 0002) so that it survives a restart, and mirrored in
-`app.state.locked`. A new collection is unlocked.
+**Edit switch.** What may change, against accidental changes (`lock.py`): one switch
+with three positions, which replaced the old safety lock.
 
-- While locked, cards and the collection can be searched, browsed, exported, counted
-  in the statistics and backed up; the card catalog can be updated. Nothing can change
-  the collection or the decks: adding, editing, removing, importing.
+- *Locked* (a padlock): nothing can change the collection or the decks. A new database
+  starts here, and so does one saved with the old lock, whatever it said.
+- *Collection input*: the collection can change — fast input in the search results,
+  the card page's form and its Edit links, the edit page, import. The decks cannot.
+- *Deck building*: the decks can change — deck mode in the search results, the deck
+  pages, "Add to the deck" on a card's page. The collection cannot.
+- In every position cards, the collection and the decks can be searched, browsed,
+  exported, counted in the statistics and backed up; the card catalog can be updated.
+- It is one state for the whole server, saved in the `settings` table under
+  `edit_mode` (`locked|input|deck`) so that it survives a restart, and mirrored in
+  `app.state.edit_mode`. The templates get `edit_mode`, `locked_collection` and
+  `locked_decks`.
 - Enforcement is on the server, in one place: a middleware refuses every request that
-  is not a plain read (`GET`, `HEAD`, `OPTIONS`) with status 423 and a page that offers
-  to unlock, except `POST /lock` itself, `POST /theme` and `POST /admin/…`. It denies
-  by default, so a
-  page added later that changes the collection is locked without anyone remembering.
+  is not a plain read (`GET`, `HEAD`, `OPTIONS`) unless the switch is where
+  `lock.needs(path)` says: every path under `/deck` (`/decks…`, `/deck-cards`,
+  `/deckmode/…`) needs Deck building; `POST /mode`, `POST /theme` and `POST /admin/…`
+  need nothing; anything else needs Collection input. It denies by default, so a page
+  added later that changes the collection is protected without anyone remembering. A
+  refused change is answered with status 423 and a page that offers the position that
+  would allow it.
+- The switch is three buttons of one form (`POST /mode` with `state` and `next`), the
+  one in use pressed (`aria-pressed`): it works without JavaScript and loads the whole
+  page again, since the search results follow it. It is in the menu of every page and
+  above the search results. Locked is drawn in amber, the others in the accent colour.
 - While locked, the menu button carries a small amber padlock and its name says so
-  ("Menu · Collection locked: read only"), so the state shows with the menu closed.
-- A switch in the menu of every page (second line) shows the state and changes it
-  (`POST /lock` with `state=on|off` and `next`): a sliding toggle with a padlock on its
-  knob, closed and amber when locked, open and grey when unlocked. It is a form button
-  with `role="switch"`, so it works without JavaScript and reads properly to a screen
-  reader. The lock covers the decks as well as the collection. While locked the pages do
-  not show the forms and links that would be refused; they show a notice with "Unlock"
-  instead, which comes back to the same page.
+  ("Menu · Locked"), so the state shows with the menu closed.
+- Pages do not show the forms and links the switch would refuse. The import, edit and
+  deck pages show instead a notice with a button to the position they need, which comes
+  back to the same page; the search results need none, since the switch is above them.
 - The switch is a deliberate click, not a password: it guards against accidents, not
   against people. Use `MAGICDB_PASSWORD` or an access gateway for that.
 

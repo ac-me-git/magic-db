@@ -31,7 +31,7 @@ and why; read it before changing behaviour.
 
 ```
 src/magicdb/
-  app.py            the application factory and its middlewares (password, same-origin, lock)
+  app.py            the application factory and its middlewares (password, same-origin, edit switch)
   cli.py            command line, and what the Windows executable does at start
   config.py         settings from environment variables
   db.py             connections and collection migrations
@@ -41,7 +41,7 @@ src/magicdb/
   decks/            deck lists: service, text parser, routes
   stats.py          the statistics page's numbers
   jobs.py           nightly catalog update and backup, rotation, scheduler
-  lock.py           the safety lock
+  lock.py           the edit switch: locked, collection input, deck building
   images.py, symbols.py   download-once caches for card images and mana symbols
   templating.py     the Jinja environment, per-visitor language
   admin.py, web.py  pages
@@ -66,10 +66,12 @@ Two databases:
 - **Routes are thin**: read the form, call a service function, render or redirect. SQL
   lives in the services.
 - **Every change is a POST followed by a redirect**, so reloading a page never repeats it.
-- **The safety lock denies by default**: any request that is not a plain read is refused
-  while the collection is locked, unless `lock.allowed_while_locked` lists it. A new page
-  needs no code for the lock, but should hide its forms with
-  `{% if locked %}{% include "_locked_notice.html" %}{% else %}…{% endif %}`.
+- **The edit switch denies by default**: any request that is not a plain read is refused
+  unless the switch is where `lock.needs(path)` says — Deck building for paths under
+  `/deck`, Collection input for everything else, nothing for `/mode`, `/theme` and
+  `/admin/…`. A new page needs no code for it, but should hide its forms with
+  `{% if locked_collection %}{% with needed="input" %}{% include "_locked_notice.html" %}{% endwith %}{% else %}…{% endif %}`
+  (or `locked_decks` and `"deck"`).
 - **Interface text goes through `t()`** and exists in both `i18n/en.json` and
   `i18n/it.json`; a test fails if the two disagree.
 - **The search syntax has one definition**: the `FILTERS` table in `search/compiler.py`.

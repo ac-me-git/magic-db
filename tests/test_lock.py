@@ -1,5 +1,6 @@
-"""The safety lock: a locked collection can be read but not changed (SPEC §7)."""
+"""The switch of what may change: locked, collection input, deck building (SPEC §7)."""
 
+import re
 import sqlite3
 import time
 from contextlib import closing
@@ -9,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from magicdb import db, jobs, lock
 from magicdb.app import create_app
-from tests.conftest import FIXTURES
+from tests.conftest import FIXTURES, editing
 
 TOPDECKED = FIXTURES / "topdecked-sample.csv"
 
@@ -28,14 +29,20 @@ def bolt(fixture_cards):
 
 @pytest.fixture
 def stocked(client, bolt):
-    """An unlocked collection with three Lightning Bolts and a deck."""
-    client.post("/add", data={"printing": bolt, "quantity": "3"})
-    client.post("/decks", data={"name": "Burn"})
-    return client
+    """Three Lightning Bolts and a deck, and the switch back on locked."""
+    editing(client, "input").post("/add", data={"printing": bolt, "quantity": "3"})
+    editing(client, "deck").post("/decks", data={"name": "Burn"})
+    return editing(client, "locked")
 
 
-def set_lock(client, state, next_page=""):
-    return client.post("/lock", data={"state": state, "next": next_page})
+def set_mode(client, state, next_page=""):
+    return client.post("/mode", data={"state": state, "next": next_page})
+
+
+def pressed(page):
+    """The position of the switch in the menu."""
+    menu = page.split('<div class="menu-row menu-switch">')[1].split("</form>")[0]
+    return re.findall(r'value="(\w+)" aria-pressed="true"', menu)
 
 
 def snapshot(settings):
@@ -50,57 +57,49 @@ def snapshot(settings):
 # --- the switch -----------------------------------------------------------------------
 
 
-def test_a_new_collection_is_unlocked(client, catalog):
-    assert lock.load(catalog) is False
+def test_a_new_database_starts_locked(client, catalog):
+    assert lock.load(catalog) == "locked"
     page = client.get("/").text
-    assert 'class="menu-row lock-switch is-unlocked"' in page
-    assert '<label for="lock-switch">Lock the collection</label>' in page
-    assert '<summary title="Menu" aria-label="Menu">' in page and "menu-lock" not in page
-    assert 'name="state" value="on"' in page
-    assert 'title="Collection unlocked: changes allowed"' in page
-
-
-def test_locking_and_unlocking(client, catalog):
-    response = set_lock(client, "on", "/stats?sets=name")
-    assert (response.status_code, response.headers["location"]) == (303, "/stats?sets=name")
-    assert lock.load(catalog) is True
-    page = client.get("/stats?sets=name").text
-    assert 'class="menu-row lock-switch is-locked"' in page
-    # the lock is in the menu, so the button that opens it says it is on
-    name = "Menu · Collection locked: read only"
+    assert pressed(page) == ["locked"]
+    assert 'aria-label="What may change"' in page
+    for label in ('aria-label="Locked"', ">Collection input</button>", ">Deck building</button>"):
+        assert label in page, label
+    # the switch is in the menu, so the button that opens it says it is locked
+    name = "Menu · Locked"
     assert f'<summary title="{name}" aria-label="{name}">' in page
-    button = page.split("<summary")[1].split("</summary>")[0]
-    assert '<span class="menu-lock"><svg' in button
-    assert 'name="state" value="off"' in page
-    assert 'title="Collection locked: read only"' in page
+    assert '<span class="menu-lock"><svg' in page.split("<summary")[1].split("</summary>")[0]
+
+
+@pytest.mark.parametrize("state", ["input", "deck", "locked"])
+def test_moving_the_switch(client, catalog, state):
+    response = set_mode(client, state, "/stats?sets=name")
+    assert (response.status_code, response.headers["location"]) == (303, "/stats?sets=name")
+    assert lock.load(catalog) == state
+    page = client.get("/stats?sets=name").text
+    assert pressed(page) == [state]
     assert 'name="next" value="/stats?sets=name"' in page  # comes back to this page
-
-    assert set_lock(client, "off").headers["location"] == "/"
-    assert lock.load(catalog) is False
-    assert "is-unlocked" in client.get("/").text
+    assert ("menu-lock" in page) == (state == "locked")
 
 
-def test_the_lock_survives_a_restart(client, catalog):
-    set_lock(client, "on")
+def test_the_switch_survives_a_restart(client, catalog):
+    set_mode(client, "deck")
     restarted = TestClient(create_app(catalog))  # a new process reads the saved state
-    assert restarted.app.state.locked is True
-    assert "is-locked" in restarted.get("/").text
-    set_lock(restarted, "off")
-    assert TestClient(create_app(catalog)).app.state.locked is False
+    assert restarted.app.state.edit_mode == "deck"
+    assert pressed(restarted.get("/").text) == ["deck"]
 
 
-@pytest.mark.parametrize("state", ["", "maybe", "ON", "1"])
+@pytest.mark.parametrize("state", ["", "maybe", "INPUT", "1", "on", "off"])
 def test_a_meaningless_state_changes_nothing(client, catalog, state):
-    set_lock(client, "on")
-    assert set_lock(client, state).status_code == 303
-    assert lock.load(catalog) is True
+    set_mode(client, "input")
+    assert set_mode(client, state).status_code == 303
+    assert lock.load(catalog) == "input"
 
 
 def test_switch_redirect_stays_on_this_site(client):
-    assert set_lock(client, "on", "https://evil.example/").headers["location"] == "/"
+    assert set_mode(client, "input", "https://evil.example/").headers["location"] == "/"
 
 
-def test_the_bar_is_on_every_page(stocked, bolt):
+def test_the_switch_is_on_every_page(stocked, bolt):
     for path in (
         "/",
         "/search?q=bolt",
@@ -113,42 +112,60 @@ def test_the_bar_is_on_every_page(stocked, bolt):
         "/syntax",
         "/nothing-here",
     ):
-        assert 'action="/lock"' in stocked.get(path).text, path
+        assert 'action="/mode"' in stocked.get(path).text, path
     partial = stocked.get("/search?q=bolt", headers={"HX-Request": "true"}).text
-    assert 'action="/lock"' not in partial  # a fragment has no page chrome
+    assert 'class="menu' not in partial  # a fragment has no page chrome
+    assert partial.count('action="/mode"') == 1  # but the results bar has the switch
 
 
-# --- a locked collection cannot be changed --------------------------------------------
+def test_the_old_lock_is_gone(client):
+    assert client.post("/lock", data={"state": "off"}).status_code == 423
+    assert client.get("/lock").status_code in (404, 405)
 
-CHANGES = [
+
+# --- what each position refuses -------------------------------------------------------
+
+COLLECTION_CHANGES = [
     ("/add", {"printing": "BOLT", "quantity": "1"}),
     ("/collection/1", {"quantity": "9", "finish": "foil"}),
     ("/collection/1/remove", {"quantity": "1"}),
     ("/collection/1/remove", {}),
     ("/fast/toggle", {"printing": "BOLT", "finish": "foil", "action": "add"}),
-    ("/deckmode/card", {"deck": "1", "printing": "BOLT", "action": "add"}),
-    ("/decks", {"name": "Control"}),
-    ("/decks/1", {"name": "Renamed"}),
     ("/import/0123456789abcdef0123456789abcdef/confirm", {"mode": "replace"}),
     ("/some/page/that/does/not/exist/yet", {}),
 ]
+DECK_CHANGES = [
+    ("/deckmode/card", {"deck": "1", "printing": "BOLT", "action": "add"}),
+    ("/decks", {"name": "Control"}),
+    ("/decks/1", {"name": "Renamed"}),
+    ("/deck-cards", {"deck": "1", "printing": "BOLT", "quantity": "1"}),
+]
+CASES = [(state, "input", *change) for state in ("locked", "deck") for change in COLLECTION_CHANGES]
+CASES += [(state, "deck", *change) for state in ("locked", "input") for change in DECK_CHANGES]
 
 
-@pytest.mark.parametrize(("path", "data"), CHANGES, ids=[path for path, _ in CHANGES])
-def test_every_change_is_refused_while_locked(stocked, catalog, bolt, path, data):
-    set_lock(stocked, "on")
+@pytest.mark.parametrize(
+    ("state", "needed", "path", "data"),
+    CASES,
+    ids=[f"{state}:{path}" for state, _, path, _ in CASES],
+)
+def test_a_change_is_refused_unless_the_switch_allows_it(
+    stocked, catalog, bolt, state, needed, path, data
+):
+    editing(stocked, state)
     before = snapshot(catalog)
     data = {key: bolt if value == "BOLT" else value for key, value in data.items()}
 
     refused = stocked.post(path, data=data)
     assert refused.status_code == 423
-    assert "The collection is locked" in refused.text and "Nothing was changed." in refused.text
-    assert 'name="state" value="off"' in refused.text  # the way out is on the page
+    assert "Protected from changes" in refused.text and "Nothing was changed." in refused.text
+    # the way out is on the page: the position that would allow it
+    notice = refused.text.split('class="notice locked-notice"')[1].split("</form>")[0]
+    assert f'name="state" value="{needed}"' in notice
     assert snapshot(catalog) == before
 
 
-def test_importing_is_refused_while_locked(stocked, catalog):
-    set_lock(stocked, "on")
+def test_importing_is_refused_out_of_collection_input(stocked, catalog):
     before = snapshot(catalog)
     upload = stocked.post("/import", files={"file": ("x.csv", TOPDECKED.read_bytes(), "text/csv")})
     assert upload.status_code == 423
@@ -156,25 +173,26 @@ def test_importing_is_refused_while_locked(stocked, catalog):
     assert snapshot(catalog) == before
 
 
-def test_other_methods_are_refused_too(stocked, catalog):
-    set_lock(stocked, "on")
+def test_other_methods_are_refused_too(stocked):
     for method in ("put", "patch", "delete"):
         assert getattr(stocked, method)("/collection/1").status_code == 423
+        assert getattr(stocked, method)("/decks/1").status_code == 423
 
 
-def test_the_same_changes_work_again_once_unlocked(stocked, catalog, bolt):
-    set_lock(stocked, "on")
+def test_each_position_allows_its_own_changes(stocked, catalog, bolt):
     assert stocked.post("/add", data={"printing": bolt, "quantity": "2"}).status_code == 423
-    set_lock(stocked, "off")
+    editing(stocked, "input")
     assert stocked.post("/add", data={"printing": bolt, "quantity": "2"}).status_code == 303
     assert snapshot(catalog)["entries"][0][6] == 5  # quantity: 3 + 2
+    editing(stocked, "deck")
+    assert stocked.post("/decks/1", data={"name": "Burn 2"}).status_code == 303
+    assert snapshot(catalog)["decks"][0][1] == "Burn 2"
 
 
-# --- but it can still be read, exported and backed up ---------------------------------
+# --- whatever the position, everything can be read, exported and backed up ------------
 
 
 def test_reading_works_while_locked(stocked, bolt):
-    set_lock(stocked, "on")
     for path in (
         "/",
         "/search?q=bolt",
@@ -196,14 +214,13 @@ def test_reading_works_while_locked(stocked, bolt):
 
 
 def test_changing_the_language_works_while_locked(stocked):
-    set_lock(stocked, "on")
     assert stocked.get("/lang/it").status_code == 303
-    assert "Collezione bloccata: sola lettura" in stocked.get("/stats").text
+    page = stocked.get("/stats").text
+    assert 'aria-label="Cosa si può modificare"' in page and "Bloccato" in page
 
 
 def test_backups_and_catalog_updates_work_while_locked(stocked, catalog, monkeypatch):
     monkeypatch.setitem(jobs.RUNNERS, "catalog", lambda settings: jobs.JobResult("ok", "fake"))
-    set_lock(stocked, "on")
     assert stocked.post("/admin/backup/run").headers["location"] == "/admin?started=yes"
     assert stocked.post("/admin/catalog/run").headers["location"] == "/admin?started=yes"
     for _ in range(100):  # the backup runs in the background: give it a moment
@@ -216,56 +233,71 @@ def test_backups_and_catalog_updates_work_while_locked(stocked, catalog, monkeyp
 
 # --- the pages do not offer what would be refused -------------------------------------
 
+COLLECTION_FORMS = {
+    "/card/BOLT": 'action="/add"',
+    "/import": 'enctype="multipart/form-data"',
+    "/collection/1/edit": 'action="/collection/1"',
+}
+DECK_FORMS = {
+    "/decks/1": 'action="/decks/1/cards"',
+    "/decks": 'action="/decks"',
+    "/card/BOLT": 'action="/deck-cards"',
+}
 
-def test_pages_hide_their_forms_while_locked(stocked, bolt):
-    open_pages = {
-        f"/card/{bolt}": 'name="printing"',
-        "/decks/1": 'action="/decks/1/cards"',
-        "/import": 'enctype="multipart/form-data"',
-        "/collection/1/edit": 'action="/collection/1"',
-    }
-    for path, control in open_pages.items():
-        assert control in stocked.get(path).text, path
 
-    set_lock(stocked, "on")
-    for path, control in open_pages.items():
+def page_of(client, path, bolt):
+    return client.get(path.replace("BOLT", bolt)).text
+
+
+@pytest.mark.parametrize("state", ["locked", "input", "deck"])
+def test_pages_offer_only_what_the_switch_allows(stocked, bolt, state):
+    editing(stocked, state)
+    for forms, open_in in ((COLLECTION_FORMS, "input"), (DECK_FORMS, "deck")):
+        for path, control in forms.items():
+            assert (control in page_of(stocked, path, bolt)) == (state == open_in), (path, state)
+    card = page_of(stocked, "/card/BOLT", bolt)
+    assert ">3</td>" in card  # my copies are always shown
+    assert ("Edit</a>" in card) == (state == "input")
+    assert "Burn" in stocked.get("/decks/1").text
+
+
+def test_protected_pages_say_how_to_change_them(stocked):
+    for path, needed, text in (
+        ("/import", "input", "The collection is protected"),
+        ("/collection/1/edit", "input", "The collection is protected"),
+        ("/decks/1", "deck", "The decks are protected"),
+        ("/decks", "deck", "The decks are protected"),
+    ):
         page = stocked.get(path).text
-        assert control not in page, path
-        assert "Lightning Bolt" in page or path in ("/decks/1", "/import"), path
-    assert "Burn" in stocked.get("/decks/1").text  # still shown
-    for path in ("/decks/1", "/import", "/collection/1/edit"):
-        page = stocked.get(path).text
-        assert "so nothing can change them by accident" in page, path
-    assert "Edit</a>" not in stocked.get(f"/card/{bolt}").text
-    assert ">3</td>" in stocked.get(f"/card/{bolt}").text  # my copies are still shown
+        notice = page.split('class="notice locked-notice"')[1].split("</form>")[0]
+        assert text in notice and f'name="state" value="{needed}"' in notice, path
 
 
-def test_unlocking_from_a_notice_comes_back_to_that_page(stocked):
-    set_lock(stocked, "on")
+def test_switching_from_a_notice_comes_back_to_that_page(stocked):
     page = stocked.get("/collection/1/edit?next=%2Fstats").text
     notice = page.split('class="notice locked-notice"')[1].split("</form>")[0]
     assert 'name="next" value="/collection/1/edit?next=%2Fstats"' in notice
-    back = set_lock(stocked, "off", "/collection/1/edit?next=%2Fstats").headers["location"]
+    back = set_mode(stocked, "input", "/collection/1/edit?next=%2Fstats").headers["location"]
     assert back == "/collection/1/edit?next=%2Fstats"
     assert 'action="/collection/1"' in stocked.get(back).text  # the form is there again
 
 
-# --- the lock itself is not open to other sites, and respects the password ------------
+# --- the switch itself is not open to other sites -------------------------------------
 
 
-def test_another_site_cannot_unlock(stocked, catalog):
-    set_lock(stocked, "on")
+def test_another_site_cannot_move_the_switch(stocked, catalog):
     refused = stocked.post(
-        "/lock", data={"state": "off"}, headers={"Origin": "https://evil.example"}
+        "/mode", data={"state": "input"}, headers={"Origin": "https://evil.example"}
     )
-    assert refused.status_code == 403 and lock.load(catalog) is True
+    assert refused.status_code == 403 and lock.load(catalog) == "locked"
 
 
-def test_unlocking_is_a_post(client):
-    assert client.get("/lock").status_code in (404, 405)
+def test_moving_the_switch_is_a_post(client, catalog):
+    assert client.get("/mode?state=input").status_code in (404, 405)
+    assert lock.load(catalog) == "locked"
 
 
-# --- upgrading a database made before the lock existed --------------------------------
+# --- upgrading a database made before the switch existed ------------------------------
 
 
 def test_upgrade_adds_the_settings_table_and_backs_up_first(settings):
@@ -280,7 +312,7 @@ def test_upgrade_adds_the_settings_table_and_backs_up_first(settings):
     with closing(db.connect(settings)) as conn:
         assert conn.execute("PRAGMA user_version").fetchone()[0] >= 2
         assert conn.execute("SELECT COUNT(*) FROM settings").fetchone()[0] == 0
-    assert client.app.state.locked is False  # an upgraded collection starts unlocked
+    assert client.app.state.edit_mode == "locked"  # an upgraded collection starts locked
 
     (backup,) = settings.backup_dir.glob("pre-migration-*.db")
     with closing(sqlite3.connect(backup)) as copy:
@@ -288,3 +320,9 @@ def test_upgrade_adds_the_settings_table_and_backs_up_first(settings):
         assert copy.execute("SELECT name FROM locations").fetchone()[0] == "Old binder"
         tables = {row[0] for row in copy.execute("SELECT name FROM sqlite_master")}
         assert "settings" not in tables
+
+
+def test_a_database_saved_with_the_old_lock_starts_locked(catalog):
+    with closing(db.connect(catalog)) as conn, conn:
+        conn.execute("INSERT INTO settings (key, value) VALUES ('locked', '0')")
+    assert TestClient(create_app(catalog)).app.state.edit_mode == "locked"

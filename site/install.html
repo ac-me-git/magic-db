@@ -62,7 +62,7 @@ uv run magicdb</code></pre>
 
 <h2 id="outside">Reaching it from outside your home</h2>
 <p>AMTG is meant for one household. <strong>Do not put it on the open internet as it is.</strong> Put something in front of it that decides who gets in: a VPN such as Tailscale or WireGuard, or an access gateway such as Cloudflare Access. At the very least, set <code>MAGICDB_PASSWORD</code> and serve it over HTTPS through a reverse proxy.</p>
-<p>Behind a reverse proxy, pass the public host name to the app (<code>Host</code> or <code>X-Forwarded-Host</code>): AMTG refuses changes that do not come from its own pages, and recognises its own pages by that name. The safety lock is not access control; it stops accidents, not people.</p>
+<p>Behind a reverse proxy, pass the public host name to the app (<code>Host</code> or <code>X-Forwarded-Host</code>): AMTG refuses changes that do not come from its own pages, and recognises its own pages by that name. The switch of what may change is not access control; it stops accidents, not people.</p>
 
 <h2>Limits</h2>
 <ul>

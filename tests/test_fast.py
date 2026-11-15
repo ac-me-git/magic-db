@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from magicdb import db, search
 from magicdb.app import create_app
 from magicdb.collection import service
+from tests.conftest import editing
 
 HTMX = {"HX-Request": "true"}
 UNKNOWN = "00000000-0000-4000-8000-000000000000"
@@ -16,7 +17,9 @@ UNKNOWN = "00000000-0000-4000-8000-000000000000"
 
 @pytest.fixture
 def client(catalog):
-    return TestClient(create_app(catalog), follow_redirects=False)
+    client = TestClient(create_app(catalog), follow_redirects=False)
+    client.post("/mode", data={"state": "input"})  # what these tests change
+    return client
 
 
 @pytest.fixture
@@ -69,19 +72,34 @@ def page_row(client, card):
 # --- the view -------------------------------------------------------------------------
 
 
-def test_results_offer_fast_input_as_a_third_view(client):
+def switch_of(page):
+    """The three-way switch above the results: {state: pressed}."""
+    form = page.split('<div class="views">')[1].split("</form>")[0]
+    return {
+        state: pressed == "true"
+        for state, pressed in re.findall(r'value="(\w+)" aria-pressed="(\w+)"', form)
+    }
+
+
+def test_fast_input_follows_the_switch(client):
     page = client.get("/search?q=bolt").text
-    assert ">Fast input</a>" in page and "view=input" in page
-    assert "bigcheck" not in page  # the boxes are only in that view
-    assert 'class="info"' not in page  # nor the (i) that explains them
+    assert switch_of(page) == {"locked": False, "input": True, "deck": False}
+    assert "bigcheck" in page and ">Collection input</button>" in page
+    editing(client, "locked")
+    page = client.get("/search?q=bolt").text
+    assert switch_of(page) == {"locked": True, "input": False, "deck": False}
+    assert "bigcheck" not in page  # the boxes are only there while adding cards
+    assert "locked-notice" not in page  # the switch says it: no notice above the results
 
 
-def test_the_explanation_is_behind_an_info_button(client, both):
-    page = client.get(f"/search?q=set:{both['set']}&view=input").text
-    info = page.split('<details class="info">', 1)[1].split("</details>", 1)[0]
-    assert 'aria-label="How does it work?"' in info
-    assert "Tick a box to add one copy" in info
-    assert page.count("Tick a box to add one copy") == 1
+def test_the_explanation_is_behind_one_info_button(client):
+    for state in ("locked", "input", "deck"):
+        page = editing(client, state).get("/search?q=bolt").text
+        assert page.count('<details class="info">') == 1, state  # always there
+        info = page.split('<details class="info">', 1)[1].split("</details>", 1)[0]
+        assert 'aria-label="How does it work?"' in info
+        for text in ("<strong>Locked</strong>", "Tick a box to add one copy", "Press + to put"):
+            assert text in info and page.count(text) == 1, (state, text)
 
 
 def test_input_view_has_two_boxes_per_printing(client, both):
@@ -93,7 +111,7 @@ def test_input_view_has_two_boxes_per_printing(client, both):
     assert ">Non-foil</th>" in page and ">Foil</th>" in page
     # nothing to choose above the list: no place, condition or language
     assert 'action="/fast/settings"' not in page and "<select" not in page.split("fast-list")[0]
-    assert 'aria-current="true"' in page.split(">Fast input</a>")[0].rsplit("<a", 1)[1]
+    assert switch_of(page)["input"]
 
 
 def test_input_view_always_lists_printings(client, fixture_cards):
@@ -106,6 +124,7 @@ def test_input_view_always_lists_printings(client, fixture_cards):
     printings = sum(c["name"] == name for c in fixture_cards)
     page = client.get("/search", params={"q": f'!"{name}"', "view": "input"}).text
     assert page.count("<tr>") - 1 == printings
+    editing(client, "locked")
     assert "1 card" in client.get("/search", params={"q": f'!"{name}"'}).text
 
 
@@ -129,7 +148,7 @@ def test_a_finish_that_was_not_printed_cannot_be_ticked(client, foil_only):
 def test_sorting_and_paging_stay_in_the_view(client, both):
     page = client.get(f"/search?q=set:{both['set']}&view=input").text
     sort_links = re.findall(r'class="sorter[^"]*" href="([^"]+)"', page)
-    assert len(sort_links) == 2 and all("view=input" in link for link in sort_links)
+    assert len(sort_links) == 2 and all("view=list" in link for link in sort_links)
 
 
 def test_fast_input_is_only_a_view_of_the_search_results(client):
@@ -261,16 +280,14 @@ def test_nonsense_is_refused(client, catalog, both):
     assert cross.status_code == 403 and entries(catalog) == []
 
 
-def test_locked_collection_shows_the_boxes_but_does_not_change(client, catalog, both):
+@pytest.mark.parametrize("state", ["locked", "deck"])
+def test_out_of_collection_input_the_boxes_go_and_nothing_changes(client, catalog, both, state):
     toggle(client, both)
-    client.post("/lock", data={"state": "on"})
+    editing(client, state)
     assert toggle(client, both, "foil").status_code == 423
     assert len(entries(catalog)) == 1
-    page = client.get(f"/search?q=set:{both['set']}&view=input").text
-    assert "locked-notice" in page
-    row = next(r for r in page.split("<tr>") if both["id"] in r)
-    assert box(row, "nonfoil") == (True, True, "remove")
-    assert box(row, "foil") == (False, True, "add")
+    page = client.get(f"/search?q=set:{both['set']}&view=list").text
+    assert "bigcheck" not in page and "locked-notice" not in page
 
 
 def test_copies_by_finish_and_take_one(catalog, both):
@@ -288,5 +305,5 @@ def test_copies_by_finish_and_take_one(catalog, both):
 def test_in_italian(client, both):
     client.get("/lang/it")
     page = client.get(f"/search?q=set:{both['set']}&view=input").text
-    assert ">Inserimento rapido</a>" in page and "Spunta una casella" in page
+    assert ">Inserimento collezione</button>" in page and "Spunta una casella" in page
     assert ">Normale</th>" in page

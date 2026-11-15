@@ -11,13 +11,16 @@ from magicdb import db, i18n
 from magicdb.app import create_app
 from magicdb.collection import forms, service
 from magicdb.templating import STATIC_DIR as STATIC
+from tests.conftest import editing
 
 UNKNOWN = "00000000-0000-4000-8000-000000000000"
 
 
 @pytest.fixture
 def client(catalog):
-    return TestClient(create_app(catalog), follow_redirects=False)
+    client = TestClient(create_app(catalog), follow_redirects=False)
+    client.post("/mode", data={"state": "input"})  # what these tests change
+    return client
 
 
 @pytest.fixture
@@ -118,7 +121,7 @@ def test_unusual_finish_is_still_added(client, catalog, ids):
 
 
 def test_adding_needs_the_catalog(settings):
-    client = TestClient(create_app(settings))
+    client = editing(TestClient(create_app(settings)), "input")
     assert client.post("/add", data={"printing": UNKNOWN}).status_code == 503
 
 
@@ -158,6 +161,7 @@ def test_redirect_after_add_stays_on_this_site(client, ids):
 def test_search_results_show_what_i_own(client, ids):
     add(client, ids("Lightning Bolt", "m10"), quantity="3")
     add(client, ids("Lightning Bolt", "lea"), quantity="1")
+    editing(client, "locked")  # a plain search: no fast input
 
     cards = client.get('/search?q=!"Lightning Bolt"').text
     assert '<span class="owned" title="You own 4">×4</span>' in cards  # every printing counts

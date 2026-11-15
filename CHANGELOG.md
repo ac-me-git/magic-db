@@ -15,15 +15,22 @@
   sideboard. A sideboard's cards join the list (when upgrading, pasting a list or
   importing an old export). The colour identity is now the one of the deck's widest
   legendary creature — in practice the commander — or, without one, of all its cards.
+- **What may change: a switch with three positions** replaces the safety lock, above
+  the search results and in the menu. *Locked* (a padlock): nothing can change. A new
+  database starts here, and so does one that had the old lock, on or off.
+  *Collection input*: the collection can change, the decks cannot, and the search
+  results become fast input. *Deck building*: the decks can change, the collection
+  cannot, and the search results become deck mode. The server refuses whatever the
+  switch does not allow, and pages show a button to the position they need instead of
+  their forms.
 - **Deck mode** in the search results: − N + on every card adds it to the deck picked
   at the top or takes it out. A switch *Only cards in this deck* writes `deck:"name"`
   into the search, or takes it out; picking another deck while it is on moves the
   search to it.
-- Fast input and deck mode are modes, each shown as Images or as a List. On images
-  their controls lie over the card art, faint until you point at it, so the grid looks
-  like a plain search; in the list − N + sits where fast input's boxes are. Pressing a
-  mode's link again turns it off. What a mode does is explained by the (i) beside its
-  link, no longer in a paragraph above the results.
+- Images or List is now a slider beside the switch, and both modes work in both. On
+  images the controls lie over the card art, faint until you point at it, so the grid
+  looks like a plain search; in the list − N + sits where fast input's boxes are. One
+  *i* beside them explains each position.
 - The header has a background of its own, a shade apart from the page.
 - The footer has a *Contact me* link with the Reddit icon, beside *Buy me a coffee*.
 

@@ -101,13 +101,17 @@ def build_templates(settings: Settings) -> Jinja2Templates:
         lang = resolve_language(request, settings.lang)
         here = request.url.path + (f"?{request.url.query}" if request.url.query else "")
         chosen = request.cookies.get(THEME_COOKIE)
+        mode = getattr(request.app.state, "edit_mode", "locked")
         return {
             "theme": chosen if chosen in THEMES else "",  # '' follows the device
             "t": _translator(lang),
             "lang": lang,
             "languages": LANGS,
             "here": here,
-            "locked": getattr(request.app.state, "locked", False),
+            # the switch: what may change (lock.py)
+            "edit_mode": mode,
+            "locked_collection": mode != "input",
+            "locked_decks": mode != "deck",
         }
 
     templates = Jinja2Templates(

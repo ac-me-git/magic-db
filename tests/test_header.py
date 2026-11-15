@@ -10,11 +10,13 @@ from fastapi.testclient import TestClient
 from magicdb import db, search, web
 from magicdb.app import create_app
 from magicdb.templating import search_url
+from tests.conftest import editing
 
 
 @pytest.fixture
 def client(catalog):
-    return TestClient(create_app(catalog), follow_redirects=False)
+    client = TestClient(create_app(catalog), follow_redirects=False)
+    return client  # locked, as a new database starts: plain search results
 
 
 @pytest.fixture
@@ -27,13 +29,14 @@ def ids(fixture_cards):
 @pytest.fixture
 def owned(client, ids):
     """Owned: 2 Lightning Bolt (Alpha), 1 Serra Angel, 3 Sol Ring."""
+    editing(client, "input")
     for name, set_code, copies in [
         ("Lightning Bolt", "lea", 2),
         ("Serra Angel", "dom", 1),
         ("Sol Ring", "c21", 3),
     ]:
         client.post("/add", data={"printing": ids(name, set_code), "quantity": str(copies)})
-    return client
+    return editing(client, "locked")
 
 
 def header(page: str) -> str:
@@ -57,7 +60,7 @@ def test_the_header_is_the_logo_the_search_box_and_the_menu(client):
     # from the left: the logo, the search box, the button with three lines that opens the menu
     brand = top.index('class="brand"')
     box = top.index('<form class="search-box" id="search-form"')
-    button = top.index('<details class="menu">\n      <summary title="Menu" aria-label="Menu">')
+    button = top.index('<details class="menu">\n      <summary title="Menu · Locked"')
     assert brand < box < button
     assert '<path d="M4 6h16M4 12h16M4 18h16"/>' in top.split("<summary")[1].split("</summary>")[0]
     # nothing else in the bar: everything after the search box is in the menu
@@ -75,7 +78,7 @@ def test_the_menu_has_the_switches_the_ways_onward_the_choices_and_administratio
     inside = menu(client.get("/syntax").text)
     order = [
         '<label for="mine-switch">Search only my collection</label>',
-        '<label for="lock-switch">Lock the collection</label>',
+        'aria-label="What may change"',
         ">My collection</a>",
         ">My decks</a>",
         "<span>Language</span>",
@@ -94,7 +97,7 @@ def test_the_menu_has_the_switches_the_ways_onward_the_choices_and_administratio
     # the ways onward, the syntax and Administration each have an icon
     for address in ("/stats", "/decks", "/syntax", "/admin"):
         assert inside.split(f'href="{address}"')[1].split("</a>")[0].count("<svg") == 1
-    assert inside.count('role="switch"') == 2
+    assert inside.count('role="switch"') == 1  # only my collection; the other has three
 
 
 def test_the_page_you_are_on_is_marked_in_the_menu(client):
@@ -554,7 +557,9 @@ def test_new_labels_in_italian(owned):
         "I miei mazzi",
         '<button type="submit">Cerca</button>',
         '<label for="mine-switch">Cerca solo nella mia collezione</label>',
-        '<label for="lock-switch">Blocca la collezione</label>',
+        'aria-label="Cosa si può modificare"',
+        ">Inserimento collezione</button>",
+        ">Costruzione mazzi</button>",
         "<span>Lingua</span>",
         "<span>Aspetto</span>",
         ">Chiaro</button>",

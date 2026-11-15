@@ -24,7 +24,7 @@ and rows that differ only in those become one.
 Rows that cannot be imported are listed with the reason, and can be downloaded as a CSV
 to fix and import again. They never stop the other rows.
 
-Importing the same file twice adds the cards twice. The collection must be unlocked.
+Importing the same file twice adds the cards twice. The switch must be on *Collection input*.
 
 ### Formats understood
 
