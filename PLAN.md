@@ -132,7 +132,7 @@ marked **owner**.
 - [x] Version number: 2.0.0 tonight, then 2.0.1 with the link to the Reddit post (owner,
   2026-11-15).
 - [x] Branch: `CLAUDE.md` says `main`, this session was set up on
-  `ccr-b454176f-ogs7w6`. Owner: "fai la release 2.0.0" (2026-11-15): merged into `main`, tagged `v2.0.0`.
+  `ccr-b454176f-ogs7w6`. Owner: "fai la release 2.0.0" (2026-11-15): merged into `main`. The session could not push the tag (the remote hangs up on tag pushes; branch pushes work), so the owner creates `v2.0.0`.
 
 ---
 
