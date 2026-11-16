@@ -1,3 +1,3 @@
 """magic-db: self-hosted Magic: The Gathering card browser and collection tracker."""
 
-__version__ = "2.0.1"
+__version__ = "2.0.2"

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.2 — 2026-11-16
+
+- On a phone the footer's notice is a little smaller, so each of its sentences keeps to
+  two lines instead of three.
+
 ## 2.0.1 — 2026-11-15
 
 - The footer of the app and of the website: *Contact me* is now **Report a bug**, with a
