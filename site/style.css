@@ -49,8 +49,6 @@ footer{text-align:center}
 footer p{margin:.4em 0}
 footer .ico{vertical-align:-.2em;margin-right:.3em}
 footer .links a{margin:0 .8em}
-.support{text-align:center}
-.support .btn{margin-top:4px}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 @media (max-width:520px){.hero h1{font-size:2rem}body{font-size:16px}}
 .shots a{display:block;cursor:zoom-in}

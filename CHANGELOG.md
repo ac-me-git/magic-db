@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.3 — 2026-11-23
+
+- *Buy me a coffee* is gone from the footer of the app and of every page of the
+  website, and from the website's homepage "Support AMTG" section (removed with it).
+  Only *Report a bug* is left. The GitHub Sponsors button (`.github/FUNDING.yml`) is
+  gone too.
+
 ## 2.0.2 — 2026-11-16
 
 - On a phone the footer's notice is a little smaller, so each of its sentences keeps to

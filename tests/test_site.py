@@ -17,15 +17,16 @@ def links_line(page: Path) -> str:
     return found[0]
 
 
-def test_every_page_has_the_coffee_and_the_bug_link_in_that_order():
+def test_every_page_has_only_the_bug_link():
     assert len(pages()) == 15
     for page in pages():
         line = links_line(page)
         hrefs = re.findall(r'href="([^"]+)"', line)
-        assert hrefs == ["https://buymeacoffee.com/amtg", ISSUES], page
+        assert hrefs == [ISSUES], page
         italian = page.relative_to(SITE).parts[0] == "it"
         assert ("Segnala un bug" if italian else "Report a bug") in line, page
         assert "Contact me" not in line and "Contattami" not in line, page
+        assert "buymeacoffee" not in line, page
 
 
 def test_the_404_page_points_at_its_files_from_the_root():

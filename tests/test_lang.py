@@ -161,14 +161,6 @@ WIZARDS = '<a href="https://company.wizards.com/" target="_blank" rel="noopener"
 SCRYFALL = '<a href="https://scryfall.com/" target="_blank" rel="noopener">Scryfall</a>'
 
 
-def test_footer_links_to_the_coffee_page_in_both_languages(client):
-    link = 'href="https://buymeacoffee.com/amtg"'
-    english = client.get("/").text
-    assert link in english and "Buy me a coffee" in english
-    italian = client.get("/", headers={"Accept-Language": "it"}).text
-    assert link in italian and "Offrimi un caffè" in italian
-
-
 def test_footer_breaks_the_legal_notice_before_the_copyright_line(client):
     english = client.get("/").text
     assert f"Not approved/endorsed by {WIZARDS}.<br>Portions of the materials" in english
@@ -183,22 +175,21 @@ def test_footer_credits_scryfall_on_the_copyright_line(client):
     assert f"©Wizards of the Coast LLC. Dati delle carte forniti da {SCRYFALL}.</p>" in italian
 
 
-def test_footer_has_a_bug_link_after_the_coffee_in_both_languages(client):
+def test_footer_has_a_bug_link_in_both_languages(client):
     english = footer(client.get("/").text)
-    assert "Report a bug" in english and english.index("buymeacoffee") < english.index("/issues")
+    assert "Report a bug" in english
     italian = footer(client.get("/", headers={"Accept-Language": "it"}).text)
     assert "Segnala un bug" in italian
 
 
-def test_footer_has_only_the_notice_and_then_the_coffee(client):
+def test_footer_has_only_the_notice_and_then_the_bug_link(client):
     for address in ("/", "/syntax", "/admin"):
         bottom = footer(client.get(address).text)
         assert len(re.findall(r"<p[ >]", bottom)) == 2, address
-        assert bottom.index("Fan Content Policy") < bottom.index("buymeacoffee.com"), address
+        assert bottom.index("Fan Content Policy") < bottom.index("github.com"), address
         assert re.findall(r'href="([^"]+)"', bottom) == [
             "https://company.wizards.com/",
             "https://scryfall.com/",
-            "https://buymeacoffee.com/amtg",
             "https://github.com/ac-me-git/magic-db/issues",
         ], address
 
