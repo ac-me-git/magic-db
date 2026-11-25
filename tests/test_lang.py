@@ -182,14 +182,23 @@ def test_footer_has_a_bug_link_in_both_languages(client):
     assert "Segnala un bug" in italian
 
 
-def test_footer_has_only_the_notice_and_then_the_bug_link(client):
+def test_footer_links_to_the_website_beside_the_bug_link_in_both_languages(client):
+    for headers in ({}, {"Accept-Language": "it"}):
+        links = footer(client.get("/", headers=headers).text).split('<p class="links">')[1]
+        site = links.index('<a href="https://amtg.fans/" target="_blank" rel="noopener">')
+        assert "<circle" in links[site:] and "amtg.fans</a>" in links[site:]
+        assert site < links.index("/issues") < links.index("</p>")
+
+
+def test_footer_has_only_the_notice_and_then_the_links(client):
     for address in ("/", "/syntax", "/admin"):
         bottom = footer(client.get(address).text)
         assert len(re.findall(r"<p[ >]", bottom)) == 2, address
-        assert bottom.index("Fan Content Policy") < bottom.index("github.com"), address
+        assert bottom.index("Fan Content Policy") < bottom.index("amtg.fans"), address
         assert re.findall(r'href="([^"]+)"', bottom) == [
             "https://company.wizards.com/",
             "https://scryfall.com/",
+            "https://amtg.fans/",
             "https://github.com/ac-me-git/magic-db/issues",
         ], address
 

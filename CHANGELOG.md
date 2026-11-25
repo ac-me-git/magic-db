@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.4 — 2026-11-25
+
+- The app's footer links to the website, **amtg.fans**, with a globe icon, on the same
+  line as *Report a bug*.
+
 ## 2.0.3 — 2026-11-23
 
 - *Buy me a coffee* is gone from the footer of the app and of every page of the
