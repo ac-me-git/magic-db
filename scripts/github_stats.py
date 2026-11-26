@@ -25,12 +25,14 @@ import json
 import shutil
 import subprocess
 import sys
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
 REPO = "ac-me-git/magic-db"
 OUT = Path.home() / "amtg-stats"
+REPLACE_TRIES = 10
 
 TRAFFIC = ["date", "views", "unique_views", "clones", "unique_clones"]
 DOWNLOADS = ["date", "release", "file", "downloads"]
@@ -71,11 +73,17 @@ def write_rows(path: Path, fields: list[str], rows: list[dict]) -> None:
         writer = csv.DictWriter(file, fields)
         writer.writeheader()
         writer.writerows(rows)
-    try:
-        temp.replace(path)
-    except PermissionError:  # on Windows, a spreadsheet that has it open locks it
-        temp.unlink(missing_ok=True)
-        raise RuntimeError(f"{path.name} is open in another program: close it") from None
+    # On Windows a file that is open elsewhere cannot be replaced: a sync client such as
+    # OneDrive holds it for a moment, a spreadsheet until it is closed.
+    for attempt in range(REPLACE_TRIES):
+        try:
+            temp.replace(path)
+            return
+        except PermissionError:
+            if attempt + 1 < REPLACE_TRIES:
+                time.sleep(1)
+    temp.unlink(missing_ok=True)
+    raise RuntimeError(f"{path.name} is open in another program: close it")
 
 
 def merge_traffic(old: list[dict], views: dict, clones: dict) -> list[dict]:

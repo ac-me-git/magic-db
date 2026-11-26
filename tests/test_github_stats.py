@@ -129,10 +129,28 @@ def test_a_file_open_elsewhere_is_named_and_left_alone(tmp_path, monkeypatch):
         raise PermissionError(13, "The process cannot access the file")
 
     monkeypatch.setattr(Path, "replace", locked)
+    monkeypatch.setattr(stats.time, "sleep", lambda seconds: None)
     with pytest.raises(RuntimeError, match="traffic.csv is open in another program"):
         run(tmp_path, github(views=[day("2026-11-25", 9, 9)]))
     assert (tmp_path / "traffic.csv").read_bytes() == before
     assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_a_file_held_for_a_moment_by_a_sync_client_is_written_after_all(tmp_path, monkeypatch):
+    run(tmp_path, github())
+    replace, refusals, waits = Path.replace, [1, 2], []
+
+    def busy_twice(self, target):
+        if refusals:
+            refusals.pop()
+            raise PermissionError(13, "The process cannot access the file")
+        return replace(self, target)
+
+    monkeypatch.setattr(Path, "replace", busy_twice)
+    monkeypatch.setattr(stats.time, "sleep", waits.append)
+    run(tmp_path, github(views=[day("2026-11-24", 9, 9)]), today="2026-11-26")
+    assert rows(tmp_path / "traffic.csv")[0]["views"] == "9"
+    assert waits == [1, 1]
 
 
 def test_gh_is_asked_for_one_path_and_its_json_read(monkeypatch):
