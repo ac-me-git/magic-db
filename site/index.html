@@ -16,10 +16,12 @@
 <a class="brand" href="index.html"><img class="logo" src="logo.svg" alt="AMTG.FANS" width="199" height="28"></a>
 <nav><a href="index.html" aria-current=page>Home</a><a href="install.html">Install</a><a href="guides/index.html">Guides</a><a href="https://github.com/ac-me-git/magic-db">GitHub</a><a class="lang" href="it/index.html" lang="it" hreflang="it" title="Passa all'italiano" aria-label="Passa all'italiano"><svg class="flag" viewBox="0 0 30 20" aria-hidden="true"><defs><clipPath id="flag-box"><rect width="30" height="20" rx="3"/></clipPath><clipPath id="flag-uk"><path d="M30 0v20H0z"/></clipPath></defs><g clip-path="url(#flag-box)"><path fill="#009246" d="M0 0h6.5v20H0z"/><path fill="#fff" d="M6.5 0h8v20h-8z"/><path fill="#ce2b37" d="M14.5 0H30v20H14.5z"/><g clip-path="url(#flag-uk)"><path fill="#012169" d="M0 0h30v20H0z"/><path stroke="#fff" stroke-width="4" d="m0 0 30 20M30 0 0 20"/><path stroke="#c8102e" stroke-width="1.5" d="m0 0 30 20M30 0 0 20"/><path stroke="#fff" stroke-width="6.6" d="M15 0v20M0 10h30"/><path stroke="#c8102e" stroke-width="4" d="M15 0v20M0 10h30"/></g><path stroke="#fff" stroke-width=".9" d="M30 0 0 20"/></g></svg></a></nav>
 </div></header>
-<main class="wrap">
+<main class="home">
 
 <section class="hero">
-<h1>Another Magic Tracking Gizmo</h1>
+<div class="hero-bg" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+<div class="wrap">
+<h1><img class="title" src="full-name.svg" alt="Another Magic Tracking Gizmo" width="379" height="63"></h1>
 <p class="lead">A self-hosted web app to browse every <em>Magic: The Gathering</em> card and keep track of your own collection and decks. Runs on a Windows PC with nothing else to install, or in Docker. Use it from any browser, phone included.</p>
 <p class="cta">
 <a class="btn" href="https://github.com/ac-me-git/magic-db/releases/latest"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M3 4.5 10.5 3.5v7.4H3zM11.5 3.4 21 2v8.9h-9.5zM3 12.1h7.5v7.4L3 18.5zM11.5 12.1H21V22l-9.5-1.3z"/></svg>Download for Windows</a>
@@ -27,7 +29,9 @@
 <a class="btn alt" href="install.html#source"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg>Source</a>
 </p>
 <p class="small">Free and open source (<a href="https://github.com/ac-me-git/magic-db/blob/main/LICENSE">MIT licence</a>). No account, no subscription, no telemetry.</p>
+</div>
 </section>
+<div class="wrap">
 <section><div class="grid"><div class=card><h3>Every card, every night</h3><p>All cards ever printed, plus previewed ones, refreshed nightly from Scryfall.</p></div><div class=card><h3>Search that speaks Magic</h3><p>Type <code>t:dragon c:r mv&lt;=4</code> or use the filter panel, which writes the query for you.</p></div><div class=card><h3>Your collection, simply</h3><p>For every printing, how many copies you own and in which finish. Nothing more to fill in.</p></div><div class=card><h3>A new set in minutes</h3><p>Fast input puts two boxes, non-foil and foil, beside every card of a search: tick one and that copy is in your collection.</p></div><div class=card><h3>Decks that know what you own</h3><p>Paste a list and see completeness, missing cards, and cards several decks fight over.</p></div><div class=card><h3>Statistics</h3><p>By colour, rarity, type and year; value; set completion.</p></div><div class=card><h3>Your data stays yours</h3><p>One SQLite file, exported to CSV or JSON any time, backed up every night.</p></div><div class=card><h3>A switch for what may change</h3><p>Locked, collection input or deck building: browse on your phone without changing anything by accident.</p></div><div class=card><h3>English and Italian</h3><p>Switch language at the bottom of any page.</p></div></div></section>
 <section>
 <h2>See it at work</h2>
@@ -53,6 +57,7 @@
 </ol>
 <p>On Linux, macOS or a NAS, <a href="install.html#docker">use Docker</a>. Then read the <a href="guides/index.html">guides</a>.</p>
 </section>
+</div>
 
 </main>
 <footer><div class="wrap">

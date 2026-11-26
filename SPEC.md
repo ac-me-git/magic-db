@@ -473,8 +473,9 @@ AMTG, AMTG.FANS and the full name, each for light and for dark backgrounds) and 
 copies the program and the website use: `static/favicon-light.svg` (the binder on a
 violet tile), `favicon-dark.svg` (on an ink tile), `templates/logo.svg` (the header's,
 coloured by `app.css` so that it follows light and dark), `site/favicon.svg` and
-`site/logo.svg` (AMTG.FANS, on every page of the website). A test fails when one of
-them is not what the script draws.
+`site/logo.svg` (AMTG.FANS, on every page of the website) and `site/full-name.svg`
+(the full name, the title of the website's homepage). A test fails when one of them
+is not what the script draws.
 
 **Software version** (`/admin`, first section). Shows the installed version, the latest
 released one and when that was last asked.

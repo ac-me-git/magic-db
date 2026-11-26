@@ -20,8 +20,23 @@ h3{font-size:1.1rem;margin:1.5em 0 .4em}
 .lead{font-size:1.15rem;color:var(--muted)}
 .small{color:var(--muted);font-size:.9rem}
 .hero{padding:24px 0 8px;text-align:center}
+/* homepage: the hero spans the window, the screenshots cross-fading behind the logo */
+main.home{padding-top:0}
+.home .hero{position:relative;isolation:isolate;overflow:hidden;padding:72px 0 56px}
+.hero-bg{position:absolute;inset:0;z-index:-1}
+.hero-bg span{position:absolute;inset:-12px -12px 24px;background:50%/cover no-repeat;filter:blur(3px);opacity:0;animation:hero-slide 36s linear infinite}
+.hero-bg span:nth-child(1){background-image:url(img/search.jpg)}
+.hero-bg span:nth-child(2){background-image:url(img/fast-images.jpg);animation-delay:6s}
+.hero-bg span:nth-child(3){background-image:url(img/deck.jpg);animation-delay:12s}
+.hero-bg span:nth-child(4){background-image:url(img/deck-building.jpg);animation-delay:18s}
+.hero-bg span:nth-child(5){background-image:url(img/fast.jpg);animation-delay:24s}
+.hero-bg span:nth-child(6){background-image:url(img/stats.jpg);animation-delay:30s}
+.hero-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(21,20,27,.66),rgba(21,20,27,.78) 60%,var(--bg))}
+@keyframes hero-slide{0%{opacity:0;transform:scale(1.02)}4%{opacity:1}16.7%{opacity:1}20.7%{opacity:0;transform:scale(1.1)}100%{opacity:0;transform:scale(1.1)}}
+@media (prefers-reduced-motion:reduce){.hero-bg span{animation:none}.hero-bg span:first-child{opacity:1}}
+.hero h1{margin:0 0 .5em}
+.hero .title{display:block;width:min(100%,520px);height:auto;margin:0 auto}
 .hero .lead{max-width:44rem;margin-left:auto;margin-right:auto}
-.hero h1{font-size:2.6rem}
 .btn{display:inline-block;padding:10px 20px;border-radius:8px;background:var(--accent);color:var(--accent-fg);text-decoration:none;font-weight:600}
 .btn{display:inline-flex;align-items:center;gap:8px}
 .ico{width:1.2em;height:1.2em;flex:none}
@@ -50,7 +65,7 @@ footer p{margin:.4em 0}
 footer .ico{vertical-align:-.2em;margin-right:.3em}
 footer .links a{margin:0 .8em}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-@media (max-width:520px){.hero h1{font-size:2rem}body{font-size:16px}}
+@media (max-width:520px){body{font-size:16px}.home .hero{padding:48px 0 40px}}
 .shots a{display:block;cursor:zoom-in}
 html:has(.lightbox[open]){overflow:hidden}
 .lightbox{border:0;padding:0;margin:0;width:100vw;height:100vh;height:100dvh;max-width:none;max-height:none;background:rgba(10,9,14,.94);color:var(--fg)}

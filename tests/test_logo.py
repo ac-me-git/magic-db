@@ -31,6 +31,7 @@ def test_every_logo_file_is_the_one_the_script_draws():
         "src/magicdb/templates/logo.svg",
         "site/favicon.svg",
         "site/logo.svg",
+        "site/full-name.svg",
         "branding/amtg-light.svg",
         "branding/amtg-fans-dark.svg",
         "branding/full-name-light.svg",

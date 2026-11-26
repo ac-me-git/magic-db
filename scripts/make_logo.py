@@ -446,6 +446,7 @@ def text_files() -> dict[str, str]:
         "src/magicdb/templates/logo.svg": header_logo(),
         "site/favicon.svg": files["branding/icon.svg"],
         "site/logo.svg": files["branding/amtg-fans-dark.svg"],  # the website is dark
+        "site/full-name.svg": files["branding/full-name-dark.svg"],  # the homepage title
     }
     return files
 
